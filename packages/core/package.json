@@ -1,0 +1,21 @@
+{
+  "name": "@stroc/core",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "lint": "echo 'lint not configured'",
+    "test": "echo 'test not configured'"
+  },
+  "dependencies": {
+    "@ipld/dag-json": "^10.2.0",
+    "he": "^1.2.0",
+    "multiformats": "^11.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

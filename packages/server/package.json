@@ -1,0 +1,26 @@
+{
+  "name": "@stroc/server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/index.js",
+    "dev": "ts-node --esm src/index.ts",
+    "lint": "echo 'lint not configured'",
+    "test": "echo 'test not configured'"
+  },
+  "dependencies": {
+    "@stroc/core": "0.0.1",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.12",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0"
+  }
+}

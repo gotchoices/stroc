@@ -44,6 +44,20 @@
 - Import/export: YAML (legacy), JSON (Stroc), DAG-JSON bytes
 - Entity decode, control/bidi handling per spec
 - Path normalization and uniqueness checks
+- Outline panel (optional toggle) to navigate/reorder sections
+
+## UI Interaction Model (Lit Web Component)
+
+- **Layout**: Toolbar + main document surface; optional outline panel (toggle).
+- **Toolbar**: Import (YAML/JSON), Export (YAML/JSON/DAG-JSON), Save, Bold/Italic/Underline, Add Section/Paragraph/Sentence, Insert Cross-ref, Include by CID+alias, Toggle “Show structure”.
+- **WYSIWYG default**: Document renders normally; click to edit reveals structure for that block.
+- **Sentence splitting**: On paragraph edit, propose splits; user can merge/split chips inline; stored sentences are whatever the user confirms.
+- **Drag/drop**: Sections, paragraphs, sentences; move/copy/delete; cross-level moves. Outline panel may also support drag/drop.
+- **Inline formatting**: Select text → B/I/U; saved markup normalized to canonical order `<b><i><u>...</u></i></b>`.
+- **Cross-reference insertion**: Prompt for target path (`as/path`); insert `<ref:...>` token.
+- **Include by CID**: Prompt for CID + `as`; insert reference section at selection.
+- **Validation UX**: On save, block with inline errors (refs, uniqueness, disallowed chars).
+- **Import/Export**: Normalize on import; export Stroc JSON/YAML; DAG-JSON/CID via server.
 
 ## Outstanding Implementation Decisions
 
