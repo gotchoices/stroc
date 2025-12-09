@@ -92,6 +92,7 @@
 9. **Invisible/control stripping**: Remove zero-width and control characters (except space/tab/newline) before hashing.
 10. **DAG-JSON constraints**: No non-finite numbers; dates as strings; unique keys; no functions/symbols; no cycles.
 11. **Reserved characters in titles/paths**: Disallow `/`, `#`, `?`, `%`, `\`, and control characters in titles/aliases used in paths; normalization already lowercases and replaces spaces with `_`.
+12. **Entity decoding**: Decode HTML entities in text; store literal characters (no `&amp;`, `&nbsp;`, etc.).
 
 ## Research Notes
 
