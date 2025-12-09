@@ -157,7 +157,7 @@ When text is input, the following normalization rules are applied:
 3. **Sentence spacing**: Sentences are stored as array elements; inter-sentence spacing is not stored
 4. **Empty paragraph removal**: Paragraphs with no sentences are stripped
 5. **Empty sentence removal**: Sentences that are empty after trimming are stripped
-6. **Invisible/control stripping**: Remove zero-width and control characters (except standard space, tab, newline) before hashing
+6. **Invisible/control stripping**: Remove zero-width and control characters (except standard space, tab, newline **and bidi controls** like LRM/RLM/LRE/RLE/PDF/LRI/RLI/FSI/PDI) before hashing
 7. **Entity decoding**: Decode HTML entities in text; store literal characters (no `&amp;`, `&nbsp;`, etc.)
 
 ### Sentence Boundary Detection
