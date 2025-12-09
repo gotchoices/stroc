@@ -72,12 +72,8 @@
 1. **Nested markup**: Is `<b><i>text</i></b>` allowed? (Probably yes, but not specified)
 
 ### Pre-Implementation Decisions
-4. **UI Framework**: Vue (like legacy wylib)? React? Svelte? Web Components?
-5. **Target environment**: Browser only? Node.js only? Both?
-6. **Package structure**: Monorepo with separate packages? Or single library?
-7. **Framework-agnostic core**: Should core library (types, normalization, CID) be separate from UI?
-8. **IPFS integration**: Public IPFS network, private Sereus nodes, or both? Gateway strategy?
-9. **Taleus integration**: How do Stroc CIDs get referenced in tallies? (May need Taleus spec review)
+4. **IPFS integration**: Public IPFS network, private Sereus nodes, or both? Gateway strategy?
+5. **Taleus integration**: How do Stroc CIDs get referenced in tallies? (May need Taleus spec review)
 
 ## Resolved Questions (Research Phase)
 
@@ -93,6 +89,7 @@
 10. **DAG-JSON constraints**: No non-finite numbers; dates as strings; unique keys; no functions/symbols; no cycles.
 11. **Reserved characters in titles/paths**: Disallow `/`, `#`, `?`, `%`, `\`, and control characters in titles/aliases used in paths; normalization already lowercases and replaces spaces with `_`.
 12. **Entity decoding**: Decode HTML entities in text; store literal characters (no `&amp;`, `&nbsp;`, etc.).
+13. **Implementation plan**: Use framework-agnostic TypeScript core, Lit-based Web Component UI, Node reference server; monorepo with packages (`@stroc/core`, `@stroc/ui`, `@stroc/server`). Documented in Implementation.md.
 
 ## Research Notes
 
