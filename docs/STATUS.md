@@ -84,7 +84,7 @@
 1. **Abbreviation handling**: Rely on `Intl.Segmenter` locale rules; author override for edge cases
 2. **Unicode normalization**: NFC (Canonical Composition)
 3. **Sentence drag/drop across sections**: Supported (same as section/paragraph drag/drop)
-4. **Sentence detection fallback**: `@echogarden/text-segmentation` for environments without `Intl.Segmenter`
+4. **Sentence splitting**: One sentence per slot; editors may auto-split, author can merge/split; no mandated splitter.
 5. **Serialization**: IPLD DAG-JSON for IPFS compatibility; CIDs are standard IPFS CIDv1
 6. **Reference validation**: At save time only; invalid references block save. No publish-time check needed (CID-addressed docs are immutable).
 7. **Reference paths and titles**: Section titles must be unique among siblings; reference paths are normalized (trim, collapse spaces, lowercase, spaces→underscores, no `/`). Renaming a section changes the document (new CID); references to the old CID remain valid, new names require including the new CID.

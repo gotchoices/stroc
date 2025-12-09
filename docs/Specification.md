@@ -160,37 +160,12 @@ When text is input, the following normalization rules are applied:
 
 ### Sentence Boundary Detection
 
-**Approach: Locale-Aware Segmentation with Author Override**
+**Requirement: One sentence per slot; author is final authority**
 
-The challenge: Periods appear in abbreviations (Dr., Inc., e.g., i.e., etc.) and don't mark sentence ends.
-
-#### Recommended Implementation
-
-Use the native JavaScript `Intl.Segmenter` API with sentence granularity:
-
-```javascript
-const segmenter = new Intl.Segmenter(language, { granularity: 'sentence' });
-const segments = segmenter.segment(text);
-const sentences = Array.from(segments, ({ segment }) => segment.trim());
-```
-
-**Benefits**:
-- Native browser/Node.js API (no external dependencies)
-- Locale-aware (handles language-specific abbreviations and rules)
-- Actively maintained as part of ECMAScript standard
-
-**Fallback options** (for environments without `Intl.Segmenter`):
-- `@echogarden/text-segmentation` - Multilingual support (Latin, Cyrillic, CJK)
-- `sbd` - Simple, lightweight, European languages
-- `sentencex-js` - Conservative splits, wide language support
-
-#### Author Override
-
-When automatic detection is wrong, the author corrects it in the structured edit view:
-- **Merge**: Combine incorrectly split sentences
-- **Split**: Divide a sentence the parser missed
-
-The UI presents detected structure for author confirmation before storing.
+- Editors may propose sentence boundaries; authors must be able to merge or split.
+- Automatic splitting happens only during edit; stored documents keep the confirmed sentence array.
+- Consumers never split; they only serialize the stored structure for CID verification.
+- Implementations should use locale-aware sentence splitting, but the spec does not mandate a specific library or algorithm.
 
 ---
 
@@ -464,9 +439,9 @@ References are validated at **save time**:
 
 10. **Multilingual documents**: Use a wrapper document that includes multiple language versions by reference, with explicit governing language clause.
 
-11. **Abbreviation handling**: Rely on `Intl.Segmenter` locale-aware rules; author override handles edge cases.
+11. **Sentence splitting**: One sentence per slot; editors may auto-split, author can merge/split; no mandated splitter.
 
-12. **Intl.Segmenter fallback**: Use `@echogarden/text-segmentation` for environments without native support.
+12. **Abbreviation handling**: Author override handles edge cases.
 
 13. **Serialization**: Use IPLD DAG-JSON for IPFS compatibility from the start. CIDs will be standard IPFS CIDs.
 
