@@ -249,6 +249,9 @@ DAG-JSON provides deterministic encoding:
 - Arrays maintain order
 - Undefined fields are omitted
 - Special encoding for CID links: `{"/": "bafy..."}`
+- Non-finite numbers (`NaN`, `Infinity`, `-Infinity`) are not allowed
+- Dates/times must be strings (e.g., ISO 8601), not native Date objects
+- Object keys must be unique; no functions/symbols; no cycles (pure DAG)
 - Special encoding for bytes: `{"/": {"bytes": "base64..."}}`
 
 ### Example
@@ -400,7 +403,7 @@ References use the `as` alias (for included documents) or `title` (for inline se
   - Collapse internal whitespace to a single space
   - Lowercase
   - Replace spaces with underscores
-  - Disallow `/` in titles (or strip them)
+  - Disallow reserved characters: `/`, `#`, `?`, `%`, `\`, and control characters
 - Stored references use the normalized form.
 - Included documents must also satisfy the uniqueness rule; inclusion fails if they do not.
 

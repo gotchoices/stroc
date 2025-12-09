@@ -90,6 +90,8 @@
 7. **Reference paths and titles**: Section titles must be unique among siblings; reference paths are normalized (trim, collapse spaces, lowercase, spaces→underscores, no `/`). Renaming a section changes the document (new CID); references to the old CID remain valid, new names require including the new CID.
 8. **Nested markup**: `<b>`, `<i>`, `<u>` only; lowercase tags; attributes stripped; nesting allowed; canonical order `<b><i><u>...>...</u></i></b>`; normalized markup is hashed.
 9. **Invisible/control stripping**: Remove zero-width and control characters (except space/tab/newline) before hashing.
+10. **DAG-JSON constraints**: No non-finite numbers; dates as strings; unique keys; no functions/symbols; no cycles.
+11. **Reserved characters in titles/paths**: Disallow `/`, `#`, `?`, `%`, `\`, and control characters in titles/aliases used in paths; normalization already lowercases and replaces spaces with `_`.
 
 ## Research Notes
 
