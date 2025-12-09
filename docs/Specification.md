@@ -408,6 +408,18 @@ References use the `as` alias (for included documents) or `title` (for inline se
 <ref:./Additional Terms>        → Local section in current document
 ```
 
+### Path Normalization and Uniqueness
+
+- Section titles must be unique among siblings (save is blocked otherwise).
+- Path components are normalized before hashing:
+  - Trim leading/trailing whitespace
+  - Collapse internal whitespace to a single space
+  - Lowercase
+  - Replace spaces with underscores
+  - Disallow `/` in titles (or strip them)
+- Stored references use the normalized form.
+- Included documents must also satisfy the uniqueness rule; inclusion fails if they do not.
+
 ### Resolution
 
 - References are resolved at **render time**
@@ -417,17 +429,18 @@ References use the `as` alias (for included documents) or `title` (for inline se
 
 ### Validation
 
-Before publishing, validate that all reference paths resolve:
-- Broken references block publishing
-- Helps catch typos and structural errors
+References are validated at **save time**:
+- Invalid references block save (not just publish)
+- Included documents are CID-addressed and immutable, so a valid reference stays valid
+- Local references (`<ref:./Section>`) are checked against current document structure
+- Renaming a section changes the document content and therefore its CID; references to the old CID remain valid, but to use the renamed section you must include the new CID
+- No separate publish-time validation needed
 
 ---
 
 ## Open Questions
 
 1. **Nested markup**: Is `<b><i>text</i></b>` allowed? (Likely yes)
-
-2. **Reference validation timing**: Warnings at save, errors at publish? Or stricter?
 
 ## Resolved Questions
 
@@ -456,6 +469,10 @@ Before publishing, validate that all reference paths resolve:
 12. **Intl.Segmenter fallback**: Use `@echogarden/text-segmentation` for environments without native support.
 
 13. **Serialization**: Use IPLD DAG-JSON for IPFS compatibility from the start. CIDs will be standard IPFS CIDs.
+
+14. **Reference validation**: Validate at save time only. Invalid references block save. No publish-time check needed because CID-addressed documents are immutable.
+
+15. **Reference paths and titles**: Section titles must be unique among siblings; reference paths are normalized (trim, collapse spaces, lowercase, spaces→underscores, no `/`). Renaming a section changes the document (new CID); references to the old CID remain valid, new names require including the new CID.
 
 ---
 

@@ -69,8 +69,7 @@
 ## Open Questions
 
 ### Specification
-1. **Reference validation timing**: At save, at publish, or both?
-2. **Nested markup**: Is `<b><i>text</i></b>` allowed? (Probably yes, but not specified)
+1. **Nested markup**: Is `<b><i>text</i></b>` allowed? (Probably yes, but not specified)
 
 ### Pre-Implementation Decisions
 4. **UI Framework**: Vue (like legacy wylib)? React? Svelte? Web Components?
@@ -87,6 +86,8 @@
 3. **Sentence drag/drop across sections**: Supported (same as section/paragraph drag/drop)
 4. **Sentence detection fallback**: `@echogarden/text-segmentation` for environments without `Intl.Segmenter`
 5. **Serialization**: IPLD DAG-JSON for IPFS compatibility; CIDs are standard IPFS CIDv1
+6. **Reference validation**: At save time only; invalid references block save. No publish-time check needed (CID-addressed docs are immutable).
+7. **Reference paths and titles**: Section titles must be unique among siblings; reference paths are normalized (trim, collapse spaces, lowercase, spaces→underscores, no `/`). Renaming a section changes the document (new CID); references to the old CID remain valid, new names require including the new CID.
 
 ## Research Notes
 
