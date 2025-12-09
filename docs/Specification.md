@@ -157,6 +157,7 @@ When text is input, the following normalization rules are applied:
 3. **Sentence spacing**: Sentences are stored as array elements; inter-sentence spacing is not stored
 4. **Empty paragraph removal**: Paragraphs with no sentences are stripped
 5. **Empty sentence removal**: Sentences that are empty after trimming are stripped
+6. **Invisible/control stripping**: Remove zero-width and control characters (except standard space, tab, newline) before hashing
 
 ### Sentence Boundary Detection
 
@@ -320,6 +321,14 @@ Inline emphasis (bold, italic, underline) within **sentence text** is legally me
 | `<u>...</u>` | Underline emphasis | Sentence text only |
 
 No other HTML or markup is allowed in content.
+
+### Normalization and Nesting
+
+- Tags are limited to `<b>`, `<i>`, `<u>` (lowercase).
+- Attributes are not allowed; any attributes are stripped on save.
+- Nested emphasis is allowed; tags are normalized to lowercase on save.
+- Canonical nesting order when co-wrapping the same span: `<b><i><u>...text...</u></i></b>`.
+- The stored, normalized markup is hashed (emphasis is legally meaningful).
 
 ### Storage Model
 
