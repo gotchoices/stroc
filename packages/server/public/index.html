@@ -7,8 +7,26 @@
 </head>
 <body>
   <h1>Stroc Editor Stub</h1>
-  <p>Server is running. UI component not yet implemented.</p>
+  <p>Server is running. UI component placeholder below.</p>
   <p>Try <code>/health</code> to check status.</p>
+  <stroc-editor></stroc-editor>
+  <script type="importmap">
+    {
+      "imports": {
+        "lit": "/static/lit/index.js",
+        "lit/": "/static/lit/",
+        "lit-html": "/static/lit-html/lit-html.js",
+        "lit-html/": "/static/lit-html/",
+        "@lit/reactive-element": "/static/reactive-element/reactive-element.js",
+        "@lit/reactive-element/": "/static/reactive-element/",
+        "lit-element": "/static/lit-element/lit-element.js",
+        "lit-element/": "/static/lit-element/",
+        "@lit-labs/ssr-dom-shim": "/static/ssr-shim/index.js",
+        "@lit-labs/ssr-dom-shim/": "/static/ssr-shim/"
+      }
+    }
+  </script>
+  <script type="module" src="/static/ui/index.js"></script>
 </body>
 </html>
 

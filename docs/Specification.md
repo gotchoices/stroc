@@ -63,20 +63,7 @@ The document's CID is computed by hashing the entire document. It is not stored 
 
 ### Text Structure
 
-Text is stored as an **array of paragraphs**, where each paragraph is an **array of sentences**:
-
-```json
-"text": [
-  ["Paragraph one, sentence one.", "Paragraph one, sentence two."],
-  ["Paragraph two, sentence one.", "Paragraph two, sentence two.", "Paragraph two, sentence three."]
-]
-```
-
-**Rationale**:
-- Paragraph breaks are semantically meaningful in legal documents
-- Sentence-level granularity enables precise references (e.g., "Section 3.2, paragraph 1, sentence 3")
-- Whitespace between sentences is eliminated from storage entirely
-- Display rendering joins sentences with a single space
+Each section stores a **single paragraph string** in `text`. Additional paragraphs are represented as child sections (which may omit `title` if they are simple paragraphs within a parent section). There is no sentence-level storage.
 
 ### Section Types
 
@@ -87,10 +74,7 @@ Content defined directly within the document:
 ```json
 {
   "title": "Signing Keys",
-  "text": [
-    ["Each Party is in possession of a digital key consisting of a private part and a public part."],
-    ["Each Party is responsible to maintain knowledge and possession of its key."]
-  ],
+  "text": "Each Party is in possession of a digital key consisting of a private part and a public part.",
   "sections": [...]
 }
 ```
@@ -127,10 +111,7 @@ To include multiple language versions of a contract, create a **wrapper document
   "language": "eng",
   "title": "Tally Agreement (Multilingual)",
   "author": "MyCHIPs Foundation",
-  "text": [
-    ["This Agreement is presented in English and French."],
-    ["In case of any conflict between versions, the English version shall govern."]
-  ],
+  "text": "This Agreement is presented in English and French. In case of any conflict between versions, the English version shall govern.",
   "sections": [
     {"source": "abc123...", "as": "English"},
     {"source": "xyz789...", "as": "French"}
@@ -153,21 +134,18 @@ To include multiple language versions of a contract, create a **wrapper document
 When text is input, the following normalization rules are applied:
 
 1. **Whitespace collapse**: Multiple spaces, tabs, and newlines become a single space
-2. **Trim**: Leading and trailing whitespace is removed from each sentence
-3. **Sentence spacing**: Sentences are stored as array elements; inter-sentence spacing is not stored
-4. **Empty paragraph removal**: Paragraphs with no sentences are stripped
-5. **Empty sentence removal**: Sentences that are empty after trimming are stripped
-6. **Invisible/control stripping**: Remove zero-width and control characters (except standard space, tab, newline **and bidi controls** like LRM/RLM/LRE/RLE/PDF/LRI/RLI/FSI/PDI) before hashing
-7. **Entity decoding**: Decode HTML entities in text; store literal characters (no `&amp;`, `&nbsp;`, etc.)
+2. **Trim**: Leading and trailing whitespace is removed from text
+3. **Empty text removal**: Empty text is stripped
+4. **Invisible/control stripping**: Remove zero-width and control characters (except standard space, tab, newline **and bidi controls** like LRM/RLM/LRE/RLE/PDF/LRI/RLI/FSI/PDI) before hashing
+5. **Entity decoding**: Decode HTML entities in text; store literal characters (no `&amp;`, `&nbsp;`, etc.)
 
 ### Sentence Boundary Detection
 
-**Requirement: One sentence per slot; author is final authority**
+**Requirement: One paragraph string per section; author is final authority**
 
-- Editors may propose sentence boundaries; authors must be able to merge or split.
-- Automatic splitting happens only during edit; stored documents keep the confirmed sentence array.
+- Each section has a single `text` paragraph (string). Additional paragraphs are child sections (which may omit `title`).
 - Consumers never split; they only serialize the stored structure for CID verification.
-- Implementations should use locale-aware sentence splitting, but the spec does not mandate a specific library or algorithm.
+- Implementations should normalize text per the Text Normalization rules; no sentence-level storage is required.
 
 ---
 
@@ -180,23 +158,14 @@ Document renders as finished prose. Author sees the document as it would appear 
 
 **Structure Mode (Click to Edit)**:
 Clicking on content reveals the underlying structure:
-- Each sentence in its own editable field
-- Paragraph boundaries visible
+- The section’s paragraph text is editable
 - Section hierarchy exposed
 
 ### Text Input Behavior
 
-1. Author types freely, including multiple sentences and paragraphs
-2. On save/blur, the parser segments text into sentences and paragraphs
-3. UI displays the parsed structure for confirmation
-4. Author can merge/split to correct parsing errors
-5. Confirmed structure is stored
-
-### Paragraph Detection
-
-- Single newline within text: ignored (whitespace normalization)
-- Double newline (blank line): paragraph break
-- This matches common author expectations from other editors
+1. Author types freely
+2. On save/blur, text is normalized (whitespace, entities, controls)
+3. Confirmed structure is stored
 
 ### Drag and Drop
 
@@ -211,8 +180,7 @@ The editor supports drag-and-drop reorganization:
 | **Delete** | Drag to document header/trash area |
 
 Drag and drop works for:
-- Sentences within a paragraph
-- Paragraphs within a section
+- Paragraphs (as child sections)
 - Sections within the document hierarchy
 - Cross-level moves (e.g., promote a subsection)
 

@@ -2,7 +2,7 @@
 
 export interface StrocSection {
   title?: string
-  text?: string[][] // paragraphs -> sentences
+  text?: string       // single paragraph
   sections?: StrocSection[]
   source?: string   // CID
   as?: string       // alias for included doc
@@ -14,6 +14,6 @@ export interface StrocDocument {
   title: string
   author?: string
   published?: string
-  text?: string[][]
+  text?: string       // single paragraph
   sections?: StrocSection[]
 }

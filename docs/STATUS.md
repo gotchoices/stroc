@@ -79,8 +79,8 @@
 
 1. **Abbreviation handling**: Rely on `Intl.Segmenter` locale rules; author override for edge cases
 2. **Unicode normalization**: NFC (Canonical Composition)
-3. **Sentence drag/drop across sections**: Supported (same as section/paragraph drag/drop)
-4. **Sentence splitting**: One sentence per slot; editors may auto-split, author can merge/split; no mandated splitter.
+3. **Paragraph drag/drop**: Sections/paragraphs can be moved/copied/deleted; cross-level moves supported.
+4. **Text model**: One paragraph string per section; additional paragraphs as child sections; no sentence-level storage.
 5. **Serialization**: IPLD DAG-JSON for IPFS compatibility; CIDs are standard IPFS CIDv1
 6. **Reference validation**: At save time only; invalid references block save. No publish-time check needed (CID-addressed docs are immutable).
 7. **Reference paths and titles**: Section titles must be unique among siblings; reference paths are normalized (trim, collapse spaces, lowercase, spaces→underscores, no `/`). Renaming a section changes the document (new CID); references to the old CID remain valid, new names require including the new CID.

@@ -35,18 +35,9 @@ export function normalizeString(input: string): string {
   return text
 }
 
-// Normalize paragraphs/sentences; drop empty sentences and paragraphs
-export function normalizeTextArray(text?: string[][]): string[][] | undefined {
-  if (!text) return undefined
-  const paragraphs = text
-    .map(par => par.map(normalizeString).filter(s => s.length > 0))
-    .filter(par => par.length > 0)
-  return paragraphs.length > 0 ? paragraphs : undefined
-}
-
 function normalizeSection(sec: StrocSection): StrocSection {
   const title = sec.title ? normalizeString(sec.title) : undefined
-  const text = normalizeTextArray(sec.text)
+  const text = sec.text ? normalizeString(sec.text) : undefined
   const sections = sec.sections?.map(normalizeSection).filter(Boolean)
   const source = sec.source ? normalizeString(sec.source) : undefined
   const as = sec.as ? normalizeString(sec.as) : undefined
@@ -64,7 +55,7 @@ export function normalizeDocument(doc: StrocDocument): StrocDocument {
   const language = normalizeString(doc.language)
   const author = doc.author ? normalizeString(doc.author) : undefined
   const published = doc.published ? normalizeString(doc.published) : undefined
-  const text = normalizeTextArray(doc.text)
+  const text = doc.text ? normalizeString(doc.text) : undefined
   const sections = doc.sections?.map(normalizeSection).filter(Boolean)
   return {
     stroc: doc.stroc,

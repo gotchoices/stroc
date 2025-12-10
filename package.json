@@ -5,6 +5,7 @@
     "packages/*"
   ],
   "scripts": {
+    "dev": "yarn workspace @stroc/core build && yarn workspace @stroc/ui build && yarn workspace @stroc/server dev",
     "build": "yarn workspaces run build",
     "lint": "yarn workspaces run lint",
     "test": "yarn workspaces run test"

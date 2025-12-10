@@ -8,21 +8,11 @@ function hasControlChars(str: string): boolean {
 
 function validateText(text: unknown, ctx: string, errors: string[]) {
   if (text === undefined) return
-  if (!Array.isArray(text)) {
-    errors.push(`${ctx}: text must be an array of paragraphs`)
-    return
+  if (typeof text !== 'string') {
+    errors.push(`${ctx}: text must be a string (single paragraph)`)
+  } else if (!text.trim()) {
+    errors.push(`${ctx}: text must not be empty`)
   }
-  text.forEach((par, pIdx) => {
-    if (!Array.isArray(par)) {
-      errors.push(`${ctx}: paragraph ${pIdx} must be an array of sentences`)
-      return
-    }
-    par.forEach((sent, sIdx) => {
-      if (typeof sent !== 'string') {
-        errors.push(`${ctx}: sentence ${pIdx}/${sIdx} must be string`)
-      }
-    })
-  })
 }
 
 function validateTitleOrAlias(label: string, value: string, ctx: string, errors: string[]) {

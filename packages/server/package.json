@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc -b",
     "start": "node dist/index.js",
-    "dev": "yarn workspace @stroc/core build && ts-node --esm src/index.ts",
+    "dev": "yarn workspace @stroc/core build && yarn workspace @stroc/ui build && ts-node --esm src/index.ts",
     "lint": "echo 'lint not configured'",
     "test": "echo 'test not configured'"
   },
