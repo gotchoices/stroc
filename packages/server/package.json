@@ -9,12 +9,12 @@
   "scripts": {
     "build": "tsc -b",
     "start": "node dist/index.js",
-    "dev": "ts-node --esm src/index.ts",
+    "dev": "yarn workspace @stroc/core build && ts-node --esm src/index.ts",
     "lint": "echo 'lint not configured'",
     "test": "echo 'test not configured'"
   },
   "dependencies": {
-    "@stroc/core": "0.0.1",
+    "@stroc/core": "workspace:*",
     "express": "^4.19.2"
   },
   "devDependencies": {

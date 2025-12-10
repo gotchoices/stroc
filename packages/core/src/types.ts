@@ -1,7 +1,5 @@
 // Core types for Stroc documents
 
-export type StrocInline = string
-
 export interface StrocSection {
   title?: string
   text?: string[][] // paragraphs -> sentences

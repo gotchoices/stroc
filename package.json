@@ -8,5 +8,8 @@
     "build": "yarn workspaces run build",
     "lint": "yarn workspaces run lint",
     "test": "yarn workspaces run test"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12"
   }
 }
