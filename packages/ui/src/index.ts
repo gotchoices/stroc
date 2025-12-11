@@ -23,61 +23,136 @@ type Doc = {
 const defaultDoc: Doc = {
   stroc: '1.0',
   language: 'eng',
-  title: 'Sample Stroc Document',
-  author: 'Stroc Editor',
-  text: 'This is a sample structured document. Click on any section to edit it, or click the document title to edit metadata.',
-  sections: [
-    {
-      title: 'Introduction',
-      text: 'This section demonstrates <b>bold</b>, <i>italic</i>, and <u>underline</u> markup within text.',
-      sections: []
-    },
-    {
-      title: 'Key Principles',
-      text: 'Structured documents enable content-addressable legal contracts.',
-      sections: [
-        {
-          title: 'Content Hashing',
-          text: 'Each document has a unique CID based on its normalized content.',
-          sections: []
-        },
-        {
-          title: 'Immutability',
-          text: 'Once published, documents cannot be changed without changing their CID.',
-          sections: []
-        }
-      ]
-    }
-  ]
+  title: 'Untitled Document',
+  text: '',
+  sections: []
 }
 
 export class StrocEditor extends LitElement {
   static styles = css`
     :host {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
       background: white;
       color: #1a1a1a;
     }
 
-    /* Toolbar */
-    .toolbar {
-      position: sticky;
-      top: 0;
-      background: #f8f9fa;
-      border: 1px solid #dee2e6;
-      border-radius: 6px;
-      padding: 12px;
-      margin-bottom: 24px;
+    /* Menu bar */
+    .menubar {
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+      padding: 0;
+      height: 40px;
+      z-index: 100;
+    }
+
+    .menu {
+      position: relative;
+      display: inline-block;
+    }
+
+    .menu-label {
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      background: transparent;
+      color: #212529;
+    }
+
+    .menu-label:hover {
+      background: #e9ecef;
+    }
+
+    .menu-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      min-width: 200px;
+      z-index: 1000;
+    }
+
+    .menu.open .menu-dropdown {
+      display: block;
+    }
+
+    .menu-item {
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .menu-item:hover {
+      background: #f8f9fa;
+    }
+
+    .menu-item:disabled {
+      color: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .menu-item:disabled:hover {
+      background: transparent;
+    }
+
+    .menu-shortcut {
+      color: #6c757d;
+      font-size: 12px;
+      margin-left: 24px;
+    }
+
+    .status-bar {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 16px;
+      font-size: 13px;
+      color: #6c757d;
+    }
+
+    .status-dirty {
+      color: #dc3545;
+      font-weight: 600;
+    }
+
+    .status-cid {
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 11px;
+      background: #e9ecef;
+      padding: 4px 8px;
+      border-radius: 3px;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Toolbar - secondary actions */
+    .toolbar {
+      background: #fff;
+      border-bottom: 1px solid #dee2e6;
+      padding: 8px 12px;
+      display: flex;
       gap: 8px;
       align-items: center;
-      z-index: 100;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     .toolbar-section {
@@ -89,7 +164,37 @@ export class StrocEditor extends LitElement {
 
     .toolbar-section:last-child {
       border-right: none;
-      margin-left: auto;
+    }
+
+    /* Document area */
+    .document-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .drop-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(13, 110, 253, 0.1);
+      border: 4px dashed #0d6efd;
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 600;
+      color: #0d6efd;
+    }
+
+    .drop-overlay.active {
+      display: flex;
     }
 
     button {
@@ -288,9 +393,23 @@ export class StrocEditor extends LitElement {
     .edit-actions {
       display: flex;
       gap: 8px;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid #dee2e6;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .edit-toolbar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 8px;
+      padding: 4px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+
+    .edit-toolbar button {
+      padding: 4px 8px;
+      font-size: 12px;
     }
 
     /* Subsections */
@@ -321,40 +440,153 @@ export class StrocEditor extends LitElement {
   @state() private cid: string | null = null
   @state() private errors: string[] = []
   @state() private editingMeta = false
+  @state() private dirty = false
+  @state() private openMenus: Set<string> = new Set()
+  @state() private dragOver = false
   private currentTextArea: HTMLTextAreaElement | null = null
+  private savedDocJson: string = JSON.stringify(defaultDoc)
+
+  connectedCallback() {
+    super.connectedCallback()
+    window.addEventListener('beforeunload', this.handleBeforeUnload)
+    document.addEventListener('click', this.handleGlobalClick)
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    window.removeEventListener('beforeunload', this.handleBeforeUnload)
+    document.removeEventListener('click', this.handleGlobalClick)
+  }
+
+  private handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    if (this.dirty) {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+  }
+
+  private handleGlobalClick = (e: MouseEvent) => {
+    // Close all menus when clicking outside
+    if (!(e.target as HTMLElement).closest('.menu')) {
+      this.openMenus.clear()
+      this.requestUpdate()
+    }
+  }
+
+  private toggleMenu(menuId: string, e: Event) {
+    e.stopPropagation()
+    if (this.openMenus.has(menuId)) {
+      this.openMenus.delete(menuId)
+    } else {
+      this.openMenus.clear()
+      this.openMenus.add(menuId)
+    }
+    this.requestUpdate()
+  }
+
+  private closeMenus() {
+    this.openMenus.clear()
+    this.requestUpdate()
+  }
+
+  private handleMenuItemClick(callback: () => void, e: Event) {
+    e.stopPropagation()
+    callback()
+    this.closeMenus()
+  }
+
+  private markDirty() {
+    this.dirty = true
+  }
+
+  private markClean() {
+    this.dirty = false
+    this.savedDocJson = JSON.stringify(this.cleanEditingFlags(structuredClone(this.doc)))
+  }
 
   render() {
     return html`
-      <!-- Toolbar -->
-      <div class="toolbar">
-        <div class="toolbar-section">
-          <button @click=${this.onOpen} title="Open Stroc document">Open</button>
-          <button @click=${this.onSave} title="Save Stroc document">Save</button>
-          <button @click=${this.onExportPdf} title="Export to PDF" disabled>PDF</button>
-        </div>
-        
-        <div class="toolbar-section">
-          <button @click=${this.onAddSection} title="Add new section">+ Section</button>
-          <button @click=${this.onIncludeByCid} title="Include document by CID">+ Include</button>
-        </div>
-
-        <div class="toolbar-section">
-          <button @click=${this.onValidate} class="primary">Validate & CID</button>
-        </div>
-
-        ${this.cid ? html`<div class="cid-display" title="${this.cid}">CID: ${this.cid}</div>` : null}
+      <!-- Drop overlay -->
+      <div class="drop-overlay ${this.dragOver ? 'active' : ''}">
+        Drop Stroc document here
       </div>
 
-      ${this.errors.length ? html`<div class="errors">${this.errors.join('; ')}</div>` : null}
+      <!-- Menu bar -->
+      <div class="menubar">
+        <!-- File menu -->
+        <div class="menu ${this.openMenus.has('file') ? 'open' : ''}">
+          <button class="menu-label" @click=${(e: Event) => this.toggleMenu('file', e)}>File</button>
+          <div class="menu-dropdown">
+            <button class="menu-item" @click=${(e: Event) => this.handleMenuItemClick(() => this.onNew(), e)}>
+              <span>New</span>
+              <span class="menu-shortcut">⌘N</span>
+            </button>
+            <button class="menu-item" @click=${(e: Event) => this.handleMenuItemClick(() => this.onOpen(), e)}>
+              <span>Open...</span>
+              <span class="menu-shortcut">⌘O</span>
+            </button>
+            <button class="menu-item" @click=${(e: Event) => this.handleMenuItemClick(() => this.onSave(), e)}>
+              <span>Save</span>
+              <span class="menu-shortcut">⌘S</span>
+            </button>
+            <button class="menu-item" @click=${(e: Event) => this.handleMenuItemClick(() => this.onExportPdf(), e)} disabled>
+              <span>Export PDF...</span>
+            </button>
+            <button class="menu-item" @click=${(e: Event) => this.handleMenuItemClick(() => this.onValidate(), e)}>
+              <span>Validate & Generate CID</span>
+            </button>
+          </div>
+        </div>
 
-      <!-- Document header -->
-      ${this.renderDocHeader()}
+        <!-- Edit menu -->
+        <div class="menu ${this.openMenus.has('edit') ? 'open' : ''}">
+          <button class="menu-label" @click=${(e: Event) => this.toggleMenu('edit', e)}>Edit</button>
+          <div class="menu-dropdown">
+            <button class="menu-item" @click=${(e: Event) => this.handleMenuItemClick(() => { this.editingMeta = true }, e)}>
+              <span>Document Properties...</span>
+            </button>
+          </div>
+        </div>
 
-      <!-- Sections -->
-      ${this.doc.sections?.map((sec, idx) => this.renderSection(sec, `${idx + 1}`, this.doc.sections!))}
+        <!-- Insert menu -->
+        <div class="menu ${this.openMenus.has('insert') ? 'open' : ''}">
+          <button class="menu-label" @click=${(e: Event) => this.toggleMenu('insert', e)}>Insert</button>
+          <div class="menu-dropdown">
+            <button class="menu-item" @click=${(e: Event) => this.handleMenuItemClick(() => this.onAddSection(), e)}>
+              <span>Section</span>
+            </button>
+            <button class="menu-item" @click=${(e: Event) => this.handleMenuItemClick(() => this.onIncludeByCid(), e)}>
+              <span>Include Document by CID...</span>
+            </button>
+          </div>
+        </div>
 
-      <!-- Add root section -->
-      <button class="add-section-btn" @click=${this.onAddSection}>+ Add Section</button>
+        <!-- Status bar -->
+        <div class="status-bar">
+          ${this.dirty ? html`<span class="status-dirty" title="Document has unsaved changes">●</span>` : null}
+          ${this.cid ? html`<div class="status-cid" title="${this.cid}">CID: ${this.cid}</div>` : null}
+        </div>
+      </div>
+
+      <!-- Document area -->
+      <div 
+        class="document-area"
+        @dragenter=${this.handleDragEnter}
+        @dragover=${this.handleDragOver}
+        @dragleave=${this.handleDragLeave}
+        @drop=${this.handleDrop}
+      >
+        ${this.errors.length ? html`<div class="errors">${this.errors.join('; ')}</div>` : null}
+
+        <!-- Document header -->
+        ${this.renderDocHeader()}
+
+        <!-- Sections -->
+        ${this.doc.sections?.map((sec, idx) => this.renderSection(sec, `${idx + 1}`, this.doc.sections!))}
+
+        <!-- Add root section -->
+        <button class="add-section-btn" @click=${this.onAddSection}>+ Add Section</button>
+      </div>
     `
   }
 
@@ -362,11 +594,19 @@ export class StrocEditor extends LitElement {
     if (this.editingMeta) {
       return html`
         <div class="section-edit" style="margin-bottom: 32px;">
+          <div class="edit-toolbar">
+            <button @click=${() => { this.editingMeta = false }}>Done</button>
+            <button @click=${() => this.insertMarkup('<b>', '</b>')} title="Bold" style="font-weight: bold;">B</button>
+            <button @click=${() => this.insertMarkup('<i>', '</i>')} title="Italic" style="font-style: italic;">I</button>
+            <button @click=${() => this.insertMarkup('<u>', '</u>')} title="Underline" style="text-decoration: underline;">U</button>
+            <button @click=${() => this.insertMarkup('<ref:', '>')} title="Cross-reference">Ref</button>
+          </div>
+
           <div class="edit-field">
             <label>Document Title</label>
             <input
               .value=${this.doc.title}
-              @input=${(e: any) => { this.doc.title = e.target.value; this.requestUpdate() }}
+              @input=${(e: any) => { this.doc.title = e.target.value; this.markDirty(); this.requestUpdate() }}
               placeholder="Document title"
             />
           </div>
@@ -375,7 +615,7 @@ export class StrocEditor extends LitElement {
             <label>Author (optional)</label>
             <input
               .value=${this.doc.author ?? ''}
-              @input=${(e: any) => { this.doc.author = e.target.value; this.requestUpdate() }}
+              @input=${(e: any) => { this.doc.author = e.target.value; this.markDirty(); this.requestUpdate() }}
               placeholder="Author name"
             />
           </div>
@@ -384,7 +624,7 @@ export class StrocEditor extends LitElement {
             <label>Language</label>
             <input
               .value=${this.doc.language}
-              @input=${(e: any) => { this.doc.language = e.target.value; this.requestUpdate() }}
+              @input=${(e: any) => { this.doc.language = e.target.value; this.markDirty(); this.requestUpdate() }}
               placeholder="ISO 639-2 code (e.g., eng)"
             />
           </div>
@@ -394,29 +634,19 @@ export class StrocEditor extends LitElement {
             <input
               type="date"
               .value=${this.doc.published ?? ''}
-              @input=${(e: any) => { this.doc.published = e.target.value; this.requestUpdate() }}
+              @input=${(e: any) => { this.doc.published = e.target.value; this.markDirty(); this.requestUpdate() }}
             />
           </div>
 
           <div class="edit-field">
             <label>Document Body Text (optional)</label>
-            <div style="display: flex; gap: 4px; margin-bottom: 4px;">
-              <button @click=${() => this.insertMarkup('<b>', '</b>')} title="Bold" style="font-weight: bold; padding: 4px 8px;">B</button>
-              <button @click=${() => this.insertMarkup('<i>', '</i>')} title="Italic" style="font-style: italic; padding: 4px 8px;">I</button>
-              <button @click=${() => this.insertMarkup('<u>', '</u>')} title="Underline" style="text-decoration: underline; padding: 4px 8px;">U</button>
-              <button @click=${() => this.insertMarkup('<ref:', '>')} title="Cross-reference" style="padding: 4px 8px;">Ref</button>
-            </div>
             <textarea
               .value=${this.doc.text ?? ''}
-              @input=${(e: any) => { this.doc.text = e.target.value; this.requestUpdate() }}
+              @input=${(e: any) => { this.doc.text = e.target.value; this.markDirty(); this.requestUpdate() }}
               @focus=${(e: any) => { this.currentTextArea = e.target }}
               placeholder="Introduction or preamble text..."
               rows="4"
             ></textarea>
-          </div>
-
-          <div class="edit-actions">
-            <button @click=${() => { this.editingMeta = false }}>Done</button>
           </div>
         </div>
       `
@@ -445,6 +675,13 @@ export class StrocEditor extends LitElement {
       // Edit mode for reference section
       return html`
         <div class="section-edit">
+          <div class="edit-toolbar">
+            <button @click=${() => this.toggleEditSection(sec)}>Done</button>
+            <button @click=${() => this.moveSectionUp(sec, parent)}>↑</button>
+            <button @click=${() => this.moveSectionDown(sec, parent)}>↓</button>
+            <button @click=${() => this.deleteSection(sec, parent)} style="margin-left: auto; color: #dc3545;">Delete</button>
+          </div>
+
           <div class="edit-field">
             <label>Included Document CID</label>
             <input
@@ -463,13 +700,6 @@ export class StrocEditor extends LitElement {
               placeholder="e.g., Ethics"
             />
           </div>
-
-          <div class="edit-actions">
-            <button @click=${() => this.toggleEditSection(sec)}>Done</button>
-            <button @click=${() => this.moveSectionUp(sec, parent)}>↑ Move Up</button>
-            <button @click=${() => this.moveSectionDown(sec, parent)}>↓ Move Down</button>
-            <button @click=${() => this.deleteSection(sec, parent)} style="margin-left: auto; color: #dc3545;">Delete</button>
-          </div>
         </div>
       `
     }
@@ -477,6 +707,18 @@ export class StrocEditor extends LitElement {
     if (isEditing) {
       return html`
         <div class="section-edit">
+          <div class="edit-toolbar">
+            <button @click=${() => this.toggleEditSection(sec)}>Done</button>
+            <button @click=${() => this.insertMarkup('<b>', '</b>')} title="Bold" style="font-weight: bold;">B</button>
+            <button @click=${() => this.insertMarkup('<i>', '</i>')} title="Italic" style="font-style: italic;">I</button>
+            <button @click=${() => this.insertMarkup('<u>', '</u>')} title="Underline" style="text-decoration: underline;">U</button>
+            <button @click=${() => this.insertMarkup('<ref:', '>')} title="Cross-reference">Ref</button>
+            <button @click=${() => this.addSubsection(sec)}>+ Subsection</button>
+            <button @click=${() => this.moveSectionUp(sec, parent)}>↑</button>
+            <button @click=${() => this.moveSectionDown(sec, parent)}>↓</button>
+            <button @click=${() => this.deleteSection(sec, parent)} style="margin-left: auto; color: #dc3545;">Delete</button>
+          </div>
+
           <div class="edit-field">
             <label>Section Title</label>
             <input
@@ -488,26 +730,12 @@ export class StrocEditor extends LitElement {
 
           <div class="edit-field">
             <label>Paragraph Text</label>
-            <div style="display: flex; gap: 4px; margin-bottom: 4px;">
-              <button @click=${() => this.insertMarkup('<b>', '</b>')} title="Bold" style="font-weight: bold; padding: 4px 8px;">B</button>
-              <button @click=${() => this.insertMarkup('<i>', '</i>')} title="Italic" style="font-style: italic; padding: 4px 8px;">I</button>
-              <button @click=${() => this.insertMarkup('<u>', '</u>')} title="Underline" style="text-decoration: underline; padding: 4px 8px;">U</button>
-              <button @click=${() => this.insertMarkup('<ref:', '>')} title="Cross-reference" style="padding: 4px 8px;">Ref</button>
-            </div>
             <textarea
               .value=${sec.text ?? ''}
               @input=${(e: any) => this.updateSection(sec, parent, { text: e.target.value })}
               @focus=${(e: any) => { this.currentTextArea = e.target }}
               placeholder="Section content..."
             ></textarea>
-          </div>
-
-          <div class="edit-actions">
-            <button @click=${() => this.toggleEditSection(sec)}>Done</button>
-            <button @click=${() => this.addSubsection(sec)}>+ Subsection</button>
-            <button @click=${() => this.moveSectionUp(sec, parent)}>↑ Move Up</button>
-            <button @click=${() => this.moveSectionDown(sec, parent)}>↓ Move Down</button>
-            <button @click=${() => this.deleteSection(sec, parent)} style="margin-left: auto; color: #dc3545;">Delete</button>
           </div>
 
           ${sec.sections?.length ? html`
@@ -580,6 +808,7 @@ export class StrocEditor extends LitElement {
 
   private updateSection(target: Section, parent: Section[], patch: Partial<Section>) {
     Object.assign(target, patch)
+    this.markDirty()
     this.requestUpdate()
   }
 
@@ -613,6 +842,7 @@ export class StrocEditor extends LitElement {
   private addSubsection(parent: Section) {
     parent.sections = parent.sections ?? []
     parent.sections.push({ title: '', text: '', sections: [] })
+    this.markDirty()
     this.requestUpdate()
   }
 
@@ -620,6 +850,7 @@ export class StrocEditor extends LitElement {
     const idx = parent.indexOf(target)
     if (idx >= 0) {
       parent.splice(idx, 1)
+      this.markDirty()
       this.requestUpdate()
     }
   }
@@ -629,6 +860,7 @@ export class StrocEditor extends LitElement {
     if (idx > 0) {
       // Swap with previous section
       [parent[idx - 1], parent[idx]] = [parent[idx], parent[idx - 1]]
+      this.markDirty()
       this.requestUpdate()
     }
   }
@@ -638,6 +870,7 @@ export class StrocEditor extends LitElement {
     if (idx >= 0 && idx < parent.length - 1) {
       // Swap with next section
       [parent[idx], parent[idx + 1]] = [parent[idx + 1], parent[idx]]
+      this.markDirty()
       this.requestUpdate()
     }
   }
@@ -645,6 +878,7 @@ export class StrocEditor extends LitElement {
   private onAddSection() {
     this.doc.sections = this.doc.sections ?? []
     this.doc.sections.push({ title: '', text: '', sections: [], _editing: true })
+    this.markDirty()
     this.requestUpdate()
   }
 
@@ -661,10 +895,90 @@ export class StrocEditor extends LitElement {
       as: alias.trim(),
       sections: []
     })
+    this.closeMenus()
+    this.markDirty()
     this.requestUpdate()
   }
 
+  private dragCounter = 0
+
+  private handleDragOver = (e: DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'copy'
+    }
+    if (!this.dragOver) {
+      this.dragOver = true
+    }
+  }
+
+  private handleDragEnter = (e: DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    this.dragCounter++
+    if (this.dragCounter === 1) {
+      this.dragOver = true
+    }
+  }
+
+  private handleDragLeave = (e: DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    this.dragCounter--
+    if (this.dragCounter === 0) {
+      this.dragOver = false
+    }
+  }
+
+  private handleDrop = async (e: DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    this.dragOver = false
+    this.dragCounter = 0
+
+    const files = e.dataTransfer?.files
+    if (!files || files.length === 0) return
+
+    const file = files[0]
+    if (!file.name.endsWith('.json')) {
+      alert('Please drop a .json file')
+      return
+    }
+
+    if (this.dirty && !confirm('You have unsaved changes. Opening a new document will discard them. Continue?')) {
+      return
+    }
+
+    try {
+      const text = await file.text()
+      const data = JSON.parse(text)
+      if (!data.stroc || !data.language || !data.title) {
+        alert('Invalid Stroc document: missing required fields (stroc, language, title)')
+        return
+      }
+      this.doc = data
+      this.cid = null
+      this.errors = []
+      this.markClean()
+    } catch (err: any) {
+      alert(`Failed to open: ${err.message}`)
+    }
+  }
+
+  private onNew() {
+    this.closeMenus()
+    if (this.dirty && !confirm('You have unsaved changes. Creating a new document will discard them. Continue?')) {
+      return
+    }
+    this.doc = structuredClone(defaultDoc)
+    this.cid = null
+    this.errors = []
+    this.markClean()
+  }
+
   private async onValidate() {
+    this.closeMenus()
     this.cid = null
     this.errors = []
 
@@ -714,6 +1028,11 @@ export class StrocEditor extends LitElement {
   }
 
   private onOpen() {
+    this.closeMenus()
+    if (this.dirty && !confirm('You have unsaved changes. Opening a new document will discard them. Continue?')) {
+      return
+    }
+
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = '.json'
@@ -732,6 +1051,7 @@ export class StrocEditor extends LitElement {
         this.doc = data
         this.cid = null
         this.errors = []
+        this.markClean()
       } catch (err: any) {
         alert(`Failed to open: ${err.message}`)
       }
@@ -740,6 +1060,7 @@ export class StrocEditor extends LitElement {
   }
 
   private onSave() {
+    this.closeMenus()
     const cleanDoc = this.cleanEditingFlags(structuredClone(this.doc))
     const json = JSON.stringify(cleanDoc, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
@@ -749,9 +1070,11 @@ export class StrocEditor extends LitElement {
     a.download = `${cleanDoc.title.replace(/\s+/g, '_')}.json`
     a.click()
     URL.revokeObjectURL(url)
+    this.markClean()
   }
 
   private onExportPdf() {
+    this.closeMenus()
     // TODO: Implement PDF export using pdfmake or similar
     alert('PDF export not yet implemented')
   }
