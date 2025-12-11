@@ -1,0 +1,47 @@
+{
+  "stroc": "1.0",
+  "language": "eng",
+  "title": "MyCHIPs Tally Agreement",
+  "author": "MyCHIPs.org",
+  "published": "2020-04-01",
+  "text": "This written Contract is part of an Agreement by and between the Parties, with one Party hereinafter referred to as Foil Holder and the the as Stock Holder. A digital hash of this Contract has been incorporated into a MyCHIPs digital Tally which also contains other Data relevant to the Agreement. Tally Data includes details about the identities of the Parties as well as digital signatures by the Parties attesting to their acceptance of this Agreement and is shown at the end of the Contract. This Contract also incorporates further documents by reference, including their digital hashes. All terms and conditions, including those contained in the Tally itself, this document, the other documents it references, and the communications between the Parties, together form the complete Tally Agreement between the Parties.",
+  "sections": [
+    {
+      "source": "wSYXyrYBFeRAGJ_5Mzs7ezCNzzmr2m_EOf-P0UPHDjQ",
+      "as": "Recitals"
+    },
+    {
+      "source": "S2JUVE7dOWRtkC_fKNRzgQV1odrDIp1_lz98CM3-rpg",
+      "as": "Values"
+    },
+    {
+      "source": "Z2XFBa24t7apXjWaxxqrEEfTDgNnSUPZhshLCs1VmrY",
+      "as": "Tally_Definition"
+    },
+    {
+      "source": "mCbnxwihhxT932QUzM00ORHyx47GNHlOjQN_KGVuwuw",
+      "as": "CHIP_Definition"
+    },
+    {
+      "source": "SgMhedRY-zj8MaPJkz_cz8Ajfmcg3JSvEq9vF3SuOss",
+      "as": "Ethics"
+    },
+    {
+      "source": "yzro7w8EZ6Vsp0fGiFxli6nQ3B1nBvWW9yiKK7MRdSQ",
+      "as": "Duties_Rights"
+    },
+    {
+      "source": "0Mil_AC-GxDHZ1L2oPd1g5wOF8fw6j0MANuJxakV9jI",
+      "as": "Representations"
+    },
+    {
+      "source": "N-xCf_jf4aOu-gBpOk_Au37i5VHrb8XiDoqorXtHDgg",
+      "as": "Defaults"
+    },
+    {
+      "source": "J--xL3Oqbr0BKiQHeM8m4pEiqzw5ANFQfYP7c5sdXLQ",
+      "as": "Credit_Terms"
+    }
+  ]
+}
+

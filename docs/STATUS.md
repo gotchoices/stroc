@@ -1,162 +1,98 @@
 # Stroc Development Status
 
-## Completed Decisions
+## Specification - Complete ✓
 
-- [x] **Text structure**: Array of paragraphs, each an array of sentences
-- [x] **Whitespace handling**: Normalize on input, store normalized form only
-- [x] **Empty paragraphs**: Strip/eliminate during normalization
-- [x] **Sentence detection**: Rule-based with author override in UI
-- [x] **Inline markup**: `<b>`, `<i>`, `<u>` in sentence text is content (hashed); structural styling is renderer-determined
-- [x] **Document identity**: CID is external (not stored in document)
+All design decisions finalized and documented in [Specification.md](Specification.md):
+
+- [x] **Text structure**: Single paragraph string per section; additional paragraphs as child sections
+- [x] **Whitespace handling**: Normalize on input (collapse, trim, entity decode, NFC)
+- [x] **Inline markup**: `<b>`, `<i>`, `<u>` tags in text; normalized, lowercase, canonical nesting order; hashed
+- [x] **Document identity**: CID external (IPLD DAG-JSON + SHA-256)
 - [x] **Removed fields**: `name`, `version`, `host`, internal `cid`/`rid`
-- [x] **New/changed fields**: `author` (optional, replaces `host`), `title` (required at top level)
-- [x] **Cross-references**: Use `<ref:path>` syntax; paths use `as` alias for included docs, `title` for inline sections
-- [x] **Multilingual documents**: Wrapper document pattern (includes multiple language versions by CID reference)
-- [x] **Drag and drop**: Support for sections, paragraphs, sentences; move, copy, delete, cross-level moves
+- [x] **Field changes**: `author` (optional), `title` (required), `language` (required)
+- [x] **Cross-references**: `<ref:Alias/SectionTitle>` syntax; validated at save
+- [x] **Multilingual**: Wrapper document pattern
+- [x] **Serialization**: IPLD DAG-JSON for IPFS compatibility
+- [x] **Unicode normalization**: NFC (Canonical Composition)
+- [x] **Control/invisible chars**: Strip (except space/tab/newline and bidi controls)
+- [x] **Reserved path chars**: Disallow `/`, `#`, `?`, `%`, `\` in titles/aliases
+- [x] **Nested markup**: Allowed; canonical order `<b><i><u>...</u></i></b>`
+- [x] **Reference validation**: At save time only; blocks save if invalid
 
-## In Progress / To Research
+## Implementation Progress
 
-- [ ] **Serialization library**: Need deterministic JSON serialization
-  - Legacy used `json-stable-stringify` (npm)
-  - Consider IPLD DAG-JSON for IPFS compatibility
-  - Must define: key ordering, Unicode handling, number representation
+### Phase 1: Core Library ✓
+- [x] TypeScript types for Stroc documents and sections
+- [x] Text normalization (whitespace, entity decode, control strip, NFC)
+- [x] IPLD DAG-JSON canonical serialization
+- [x] CID generation (SHA-256 multihash + CIDv1)
+- [x] Document validation (required fields, text shape, title uniqueness, path rules)
+- [x] Helper: `cidFromDocument` (normalize → validate → encode → CID)
 
-- [ ] **Unicode normalization**: Decide NFC vs NFD before hashing
-  - Recommendation: NFC (composed form) - more common, smaller byte size
+### Phase 2: Server Endpoints ✓
+- [x] Express server with static file serving
+- [x] `/health` - Server health check
+- [x] `/validate` - Normalize + validate document
+- [x] `/cid` - Generate CID for valid document
+- [x] Lit dependency resolution (import maps for bare specifiers)
 
-- [x] **Sentence boundary detection library**: Research locale-aware options
-  - Primary: `Intl.Segmenter` (native API, Node.js 16+, modern browsers)
-  - Fallback: `@echogarden/text-segmentation` (multilingual support)
-  - Edge cases: Author override in UI
+### Phase 3: Authoring UI - IN PROGRESS
+**Completed:**
+- [x] Monorepo scaffold with `@stroc/core`, `@stroc/server`, `@stroc/ui`
+- [x] Lit Web Component skeleton
+- [x] Basic toolbar and state management
+- [x] Integration with server endpoints
 
-- [x] **Abbreviation handling**: Decided approach
-  - Rely on `Intl.Segmenter` locale rules (Option A)
-  - Author override handles edge cases (no hard-coded lists needed)
+**To Do (Current Focus):**
+- [ ] **WYSIWYG view mode** - Render document as formatted prose with section numbers
+- [ ] **Click-to-edit per section** - Toggle between view/edit for individual sections
+- [ ] **Section numbering** - Automatic outline (1., 1.1., 1.1.1., etc.)
+- [ ] **B/I/U toolbar** - Insert `<b>`, `<i>`, `<u>` tags at cursor position
+- [ ] **Cross-reference UI** - Insert `<ref:...>` tags with path picker
+- [ ] **Drag and drop** - HTML5 drag events; visual drop zones (before/after/child)
+- [ ] **Include by CID** - UI to add reference sections with `source`/`as` fields
+- [ ] **Document metadata editing** - Clean inputs for title/author/language/published
 
-## Implementation Tasks
+### Phase 4: File I/O ✓
+- [x] Open Stroc JSON files
+- [x] Save Stroc JSON files
+- [x] Basic validation on load
+- ❌ Legacy YAML import (rejected - manual conversion sufficient)
 
-### Phase 1: Core Library
-- [ ] Define TypeScript types for Stroc document structure
-- [ ] Implement text normalization (whitespace collapse, sentence parsing)
-- [ ] Implement canonical JSON serialization
-- [ ] Implement CID generation (SHA-256 + base64url)
-- [ ] Implement document validation (required fields, reference resolution)
+### Phase 5: Renderers (Future)
+- [ ] **PDF export** - Using pdfmake with section numbering, markup rendering
+- [ ] HTML export - Standalone HTML with styles
+- [ ] Plain text export - Strip markup, preserve structure
 
-### Phase 2: Parser / Importer
-- [ ] Parse legacy strdoc YAML format
-- [ ] Convert to new Stroc JSON format
-- [ ] Handle reference section migration (`name`/`source` → `as`/`source`)
-
-### Phase 3: Authoring UI
-- [ ] WYSIWYG display mode
-- [ ] Structure edit mode (click to reveal)
-- [ ] Sentence/paragraph parsing with author confirmation
-- [ ] Drag and drop (sections, paragraphs, sentences)
-- [ ] Bold/italic/underline toolbar
-- [ ] Cross-reference insertion
-- [ ] Document inclusion by CID
-
-### Phase 4: Renderers
-- [ ] HTML renderer
-- [ ] PDF renderer (pdfmake or similar)
-- [ ] Plain text renderer
-
-### Phase 5: Integration
-- [ ] IPFS storage/retrieval
-- [ ] Taleus/MyCHIPs tally integration
+### Phase 6: Integration (Future)
+- [ ] IPFS storage/retrieval (`ipfs dag put/get`)
+- [ ] Taleus/MyCHIPs tally contract referencing
 - [ ] Document signing workflow
 
 ## Open Questions
 
-### Specification
-1. **Nested markup**: Is `<b><i>text</i></b>` allowed? (Probably yes, but not specified)
+### Integration (Deferred to Phase 6)
+1. **IPFS deployment**: Public IPFS network, private Sereus nodes, or both? Gateway strategy?
+2. **Taleus integration**: How do Stroc CIDs get referenced in tallies? (May need Taleus spec review)
 
-### Pre-Implementation Decisions
-4. **IPFS integration**: Public IPFS network, private Sereus nodes, or both? Gateway strategy?
-5. **Taleus integration**: How do Stroc CIDs get referenced in tallies? (May need Taleus spec review)
+## Technology Choices
 
-## Resolved Questions (Research Phase)
+**Core:**
+- Language: TypeScript (ES modules, NodeNext)
+- Serialization: IPLD DAG-JSON (`@ipld/dag-json`, `multiformats`)
+- Normalization: Unicode NFC, HTML entity decoding (`he`)
 
-1. **Abbreviation handling**: Rely on `Intl.Segmenter` locale rules; author override for edge cases
-2. **Unicode normalization**: NFC (Canonical Composition)
-3. **Paragraph drag/drop**: Sections/paragraphs can be moved/copied/deleted; cross-level moves supported.
-4. **Text model**: One paragraph string per section; additional paragraphs as child sections; no sentence-level storage.
-5. **Serialization**: IPLD DAG-JSON for IPFS compatibility; CIDs are standard IPFS CIDv1
-6. **Reference validation**: At save time only; invalid references block save. No publish-time check needed (CID-addressed docs are immutable).
-7. **Reference paths and titles**: Section titles must be unique among siblings; reference paths are normalized (trim, collapse spaces, lowercase, spaces→underscores, no `/`). Renaming a section changes the document (new CID); references to the old CID remain valid, new names require including the new CID.
-8. **Nested markup**: `<b>`, `<i>`, `<u>` only; lowercase tags; attributes stripped; nesting allowed; canonical order `<b><i><u>...>...</u></i></b>`; normalized markup is hashed.
-9. **Invisible/control stripping**: Remove zero-width and control characters (except space/tab/newline and standard bidi controls LRM/RLM/LRE/RLE/PDF/LRI/RLI/FSI/PDI) before hashing.
-10. **DAG-JSON constraints**: No non-finite numbers; dates as strings; unique keys; no functions/symbols; no cycles.
-11. **Reserved characters in titles/paths**: Disallow `/`, `#`, `?`, `%`, `\`, and control characters in titles/aliases used in paths; normalization already lowercases and replaces spaces with `_`.
-12. **Entity decoding**: Decode HTML entities in text; store literal characters (no `&amp;`, `&nbsp;`, etc.).
-13. **Implementation plan**: Use framework-agnostic TypeScript core, Lit-based Web Component UI, Node reference server; monorepo with packages (`@stroc/core`, `@stroc/ui`, `@stroc/server`). Documented in Implementation.md.
+**UI:**
+- Framework: Lit (Web Components for embeddability)
+- Styling: CSS-in-JS (Lit's `css` tag)
 
-## Research Notes
+**Server:**
+- Runtime: Node.js with Express
+- Dev: ts-node with ESM support
 
-### Sentence Boundary Detection Options
-
-#### 1. Intl.Segmenter (JavaScript Native API) - RECOMMENDED PRIMARY
-
-```javascript
-const segmenter = new Intl.Segmenter('en', { granularity: 'sentence' });
-const segments = segmenter.segment('Dr. Smith went to the store. He bought milk.');
-for (const { segment } of segments) {
-  console.log(segment);
-}
-// Output:
-// "Dr. Smith went to the store. "
-// "He bought milk."
-```
-
-**Pros**:
-- Native browser/Node.js API (no dependencies)
-- Locale-aware (handles language-specific rules)
-- Handles common abbreviations automatically
-
-**Cons**:
-- Behavior may vary slightly across browser versions
-- May need fallback for older environments
-- Accuracy for legal text with unusual abbreviations unknown
-
-#### 2. Fallback Libraries (when Intl.Segmenter unavailable)
-
-| Library | Best For | Notes |
-|---------|----------|-------|
-| **sbd** | Simple, European-language text | Easy, lightweight |
-| **@echogarden/text-segmentation** | Multilingual (Latin, Cyrillic, CJK) | Strong for mixed-language |
-| **winkNLP** | Full NLP pipeline | More dependencies, more features |
-| **sentencex-js** | Wide-language fallback | Conservative (errs toward not splitting) |
-
-**Recommendation for Stroc**:
-1. Primary: `Intl.Segmenter` (native, locale-aware)
-2. Fallback: `@echogarden/text-segmentation` (multilingual support matches our needs)
-3. Legal text edge cases: Author override in UI
-
-### json-stable-stringify (npm)
-
-```javascript
-const stringify = require('json-stable-stringify');
-const obj = { b: 2, a: 1 };
-console.log(stringify(obj));
-// Output: '{"a":1,"b":2}'
-```
-
-**Behavior**:
-- Keys sorted alphabetically (lexicographic)
-- No whitespace
-- Deterministic output
-
-**Considerations for Stroc**:
-- Need to verify Unicode string handling
-- Need to verify number representation (no trailing zeros, etc.)
-
-### IPLD DAG-JSON
-
-IPLD (InterPlanetary Linked Data) defines canonical encodings for content-addressed data:
-- DAG-JSON: JSON with specific rules for CID links and bytes
-- DAG-CBOR: Binary format, more compact
-
-For Stroc, DAG-JSON alignment would enable direct IPFS compatibility.
+**Build:**
+- Monorepo: Yarn workspaces
+- Packages: `@stroc/core`, `@stroc/ui`, `@stroc/server`
 
 ## Document References
 
