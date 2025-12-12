@@ -99,6 +99,53 @@ Content included by reference to another document's CID:
 
 The included document's content becomes part of the composite document at this position.
 
+### Document Resolution and Verification
+
+When a document includes a reference section with a `source` CID, implementations should:
+
+1. **Fetch** the referenced document by CID
+2. **Verify** the fetched content matches the CID (recompute hash and compare)
+3. **Cache** verified documents to avoid redundant fetches
+4. **Reject** documents that fail verification (hash mismatch)
+
+#### Resolution Strategy
+
+Implementations may attempt resolution from multiple sources in order of preference:
+
+1. **Local cache** - Previously fetched and verified documents
+2. **Local storage** - Documents available locally (file system, database)
+3. **IPFS network** - Fetch via `ipfs dag get <cid>` from public or private nodes
+4. **Sereus nodes** - Fetch from trusted Sereus Fabric nodes
+
+#### API Endpoint (Reference Implementation)
+
+```
+GET /document/:cid
+→ 200 OK with document JSON if found and verified
+→ 404 Not Found if document cannot be located
+→ 500 Internal Server Error if hash verification fails
+```
+
+**Response format:**
+```json
+{
+  "cid": "bafyreig...",
+  "document": { /* Stroc document */ },
+  "verified": true,
+  "source": "cache|local|ipfs|sereus"
+}
+```
+
+#### Reference Validation
+
+When saving a document:
+- Validate that all `<ref:...>` paths resolve to valid sections within the document or its included documents
+- For local `<ref:./SectionTitle>` references, verify the section exists in the current document
+- For external `<ref:Alias/SectionTitle>` references, fetch the aliased document and verify the path exists
+- Block save if any reference is invalid
+
+This ensures all cross-references are valid at the time of document creation, and remain valid due to content-addressability (CIDs are immutable).
+
 ---
 
 ## Multilingual Documents

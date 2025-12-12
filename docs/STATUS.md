@@ -36,22 +36,30 @@ All design decisions finalized and documented in [Specification.md](Specificatio
 - [x] `/cid` - Generate CID for valid document
 - [x] Lit dependency resolution (import maps for bare specifiers)
 
-### Phase 3: Authoring UI - IN PROGRESS
+### Phase 3: Authoring UI ✓
 **Completed:**
 - [x] Monorepo scaffold with `@stroc/core`, `@stroc/server`, `@stroc/ui`
-- [x] Lit Web Component skeleton
-- [x] Basic toolbar and state management
-- [x] Integration with server endpoints
+- [x] Lit Web Component (full-screen editor with menu bar)
+- [x] WYSIWYG view mode with section numbering (1., 1.1., 1.1.1.)
+- [x] Click-to-edit per section and document properties
+- [x] B/I/U/Ref toolbar - Insert markup at cursor position
+- [x] Include by CID - UI to add reference sections with `source`/`as` fields
+- [x] Document metadata editing - Title/author/language/published
+- [x] Section management - Add/delete/move up/down sections
+- [x] Dirty/clean tracking with unsaved changes warning
+- [x] File menu with Open/Save/New/Validate & CID
+- [x] Drag & drop JSON files to open
+- [x] Status bar showing dirty indicator and CID
 
-**To Do (Current Focus):**
-- [ ] **WYSIWYG view mode** - Render document as formatted prose with section numbers
-- [ ] **Click-to-edit per section** - Toggle between view/edit for individual sections
-- [ ] **Section numbering** - Automatic outline (1., 1.1., 1.1.1., etc.)
-- [ ] **B/I/U toolbar** - Insert `<b>`, `<i>`, `<u>` tags at cursor position
-- [ ] **Cross-reference UI** - Insert `<ref:...>` tags with path picker
-- [ ] **Drag and drop** - HTML5 drag events; visual drop zones (before/after/child)
-- [ ] **Include by CID** - UI to add reference sections with `source`/`as` fields
-- [ ] **Document metadata editing** - Clean inputs for title/author/language/published
+**To Do (Next Priority):**
+- [ ] **Document fetcher API** - Mock implementation using local `contracts/` folder
+  - Endpoint: `GET /document/:cid` 
+  - Scan `contracts/*.json` at startup, build CID → document cache
+  - Verify hash matches on fetch
+  - Enable reference section content display and validation
+- [ ] **Cross-reference picker** - Dropdown/autocomplete for `<ref:...>` paths
+- [ ] **Display included document content** - Fetch and inline `source` CID content in view mode
+- [ ] **Outline/navigation panel** - Collapsible sidebar showing document structure
 
 ### Phase 4: File I/O ✓
 - [x] Open Stroc JSON files
@@ -65,15 +73,18 @@ All design decisions finalized and documented in [Specification.md](Specificatio
 - [ ] Plain text export - Strip markup, preserve structure
 
 ### Phase 6: Integration (Future)
-- [ ] IPFS storage/retrieval (`ipfs dag put/get`)
-- [ ] Taleus/MyCHIPs tally contract referencing
-- [ ] Document signing workflow
+- [ ] **IPFS storage/retrieval** - Extend document fetcher to use `ipfs dag put/get`
+  - Replace/augment local mock with IPFS client (`kubo-rpc-client`)
+  - Support public IPFS network and private Sereus nodes
+  - Cache strategy: local → IPFS → Sereus
+- [ ] **Taleus/MyCHIPs tally contract referencing** - How tallies reference Stroc CIDs
+- [ ] **Document signing workflow** - Cryptographic signing of documents
 
 ## Open Questions
 
 ### Integration (Deferred to Phase 6)
-1. **IPFS deployment**: Public IPFS network, private Sereus nodes, or both? Gateway strategy?
-2. **Taleus integration**: How do Stroc CIDs get referenced in tallies? (May need Taleus spec review)
+1. **Taleus integration**: How do Stroc CIDs get referenced in tallies? (May need Taleus spec review)
+2. **IPFS gateway strategy**: Direct connection to IPFS daemon vs. HTTP gateway for browser clients?
 
 ## Technology Choices
 
