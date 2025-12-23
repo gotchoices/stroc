@@ -1,5 +1,22 @@
 # Stroc Development Status
 
+## Next Steps
+- Wait for basic Sereus Network to be established including:
+  - Bootstrap nodes
+  - Ipfs support
+- Test editor usability
+  - Improve menus, iconize functions where possible
+  - Implement drag/drop
+  - Generate/display document CID with copy icon
+- Build document editor/publisher server under sereus
+- Can publish all MyCHIPs documents via ipfs
+- Build AI prompt generator
+  - Builds translation guide
+  - Includes all rules for generating valid stroc document
+  - User can give their doc file and the translation guide to chatGPT or any other agent
+  - Result should be a file they can import into the tool
+  - They can review and then publish
+
 ## Specification - Complete ✓
 
 All design decisions finalized and documented in [Specification.md](Specification.md):
