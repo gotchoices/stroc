@@ -198,9 +198,10 @@ MyCHIPs `top: true` marker, which said only "this may be used directly".
 
 ### Lineage
 
-33. **`replaces`**: an optional array of CIDs, hashed, in which the author says this document
-    supersedes those versions. It gives a review tool a definite earlier version to diff against.
-34. **`translates`**: the same shape, saying this document is a translation of those. Without it a
+33. **`replaces`**: an optional array of links, hashed, in which the author says this document
+    supersedes those versions. It gives a review tool a definite earlier version to diff against,
+    and the folder tools use it to track revisions. In scope now (spec 0.8).
+34. **`translates`** (later): the same shape, saying this document is a translation of those. Without it a
     reader who approved a clause in English sees its translation as entirely new.
 35. **Both are advisory.** Anyone can publish a document claiming to replace or translate
     anything. They are hints for display and diffing, never inherited approval.

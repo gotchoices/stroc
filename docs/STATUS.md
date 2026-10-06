@@ -25,7 +25,7 @@ Stroc stays a general document library: it must not depend on Taleus or Sereus. 
 - **No legacy compatibility.** Clean slate: no legacy RIDs, no `host`/`name`/`version` identity.
   The MyCHIPs contracts are useful only as realistic sample content.
 - **Content addressing stays.** Documents are identified and included by CID, following IPFS
-  principles. Names may exist in drafting tools, not in published documents (see Q3).
+  principles. File names exist only in the folder tools, never in documents (see Q3).
 - **Authors may be anyone**, not only lawyers. Taleus users are mostly readers.
 - **No editor in Taleus.** The editor is a browser tool; Taleus needs fetch, verify and render.
 - **Legal rendering style**: formal, numbered, suitable for an enforceable contract.
@@ -46,6 +46,19 @@ Stroc stays a general document library: it must not depend on Taleus or Sereus. 
   and a linter rejects anything not already canonical (with an automatic fix offered). A link is
   written `source: {/: baguqeera…}`. Comments are allowed and are not content. JSON is accepted
   as well. Markdown moves to "later". Spec 0.7.
+- **Q3 settled: folder tools, not the editor, manage a library.** The editor handles one
+  document: open, edit, validate, save, show its CID, and read included documents by CID. It does
+  not track revisions or update other files. A separate command-line package (depending on the
+  shared library, not on the editor) does housekeeping in place: `stroc lint`, `stroc status`,
+  `stroc update`, and later `stroc publish`. Updates are deliberate (the files you name, one level
+  at a time, or `--all`); the tool never rewrites what you did not ask for. File names live only
+  in the tool's own record file, whose format is the tool's choice. Losing that file costs manual
+  work, never correctness: the tool rebuilds it from the folder and the `replaces` chains. Lint
+  rules live in the shared library so the editor and the linter agree.
+- **`replaces` is in scope now** (was "later"). An optional, hashed list of links in which a
+  document names the versions it supersedes. It is the checkable form of a version history, the
+  tools use it to check revisions and rebuild their records, and it is advisory: it never transfers
+  anyone's approval. Spec 0.8.
 - **Q6 settled: reference scope.** References point only within the document and what it
   includes. Reusable clauses use defined terms for anything outside themselves. Spec 0.6.
 
@@ -55,19 +68,12 @@ Each has a recommendation. Q7 must be settled before golden-vector CIDs are reco
 
 - [x] **Q1. Cross-reference targets.** Settled: section ids (see Decisions).
 - [x] **Q2. How an include is encoded.** Settled: IPLD link (see Decisions).
-- [ ] **Q3. Maintaining a library of documents that include each other.** Editing a clause
-  changes its CID, so every document that includes it must change too, up to the top. Since the
-  YAML file is the real document (Q4), there is no build step and no drafting-only syntax: a
-  `source` always holds a real CID. *Recommended*: a library tool, the successor to strdoc's
-  `hash` and `refcheck`, that edits the files in place:
-  - `stroc check <folder>`: lints every file and reports each `source` whose CID is out of date.
-  - `stroc update <folder>`: rewrites out-of-date `source` CIDs bottom-up until everything is current.
-  - To know that an old CID meant `Ethics.yaml`, the tool keeps a manifest in the folder
-    (file → current and past CIDs). It is a tool file, never part of any document; it replaces
-    the job legacy `name` did for `refcheck`.
-
-  The editor does the same for a library opened in it. Mutable "latest version" names (IPNS
-  style) are out of scope.
+- [x] **Q3. Maintaining a library of documents that include each other.** Settled: folder tools
+  separate from the editor, plus `replaces` (see Decisions).
+- [ ] **Q9. A `version` label.** Should a document be able to carry an optional, hashed `version`
+  string (e.g. `'3'`) so a rendered contract can print "Version 3"? `replaces` already gives a
+  checkable history; a label is only for readers. If adopted, the tools check that it increases
+  relative to the document named in `replaces`. *Recommended*: only if you want it on the page.
 - [x] **Q4. Source format.** Settled: YAML (see Decisions).
 - [ ] **Q5. Render-time data.** Two layers, not mutually exclusive:
   - Documents are written in abstract roles ("Stock Holder", "Foil Holder"). Always works.
@@ -158,7 +164,8 @@ Specification and decisions
 Spec first (per [Workflow.md](Workflow.md)), then code.
 - [x] Spec: reference targets (Q1) and reference scope (Q6), spec 0.6
 - [x] Spec: include encoding (Q2) and YAML format (Q4), spec 0.7
-- [ ] Spec: strictness (Q7), include rendering (Q8), parameter declarations (Q5)
+- [x] Spec: `replaces` field, spec 0.8
+- [ ] Spec: strictness (Q7), include rendering (Q8), parameter declarations (Q5), `version` label (Q9)
 - [ ] Validation completeness (D4): reject unknown fields, empty sections, a reference section
       with anything besides `source` and `id`, `source` that is not a CID, malformed or duplicate
       ids, unknown `stroc` version, `published` not an ISO date, `language` not ISO 639-2
@@ -176,8 +183,15 @@ Spec first (per [Workflow.md](Workflow.md)), then code.
 ### Stage 2 — strdoc parity
 
 Library and composition
-- [ ] `stroc check` / `stroc update`: lint a library folder and bring `source` CIDs up to date
-      in place, with a manifest (Q3). Replaces strdoc's `hash` and `refcheck`.
+- [ ] `replaces` in types and validation (list of CIDv1 DAG-JSON links, no duplicates)
+- [ ] CLI package `@stroc/cli`, independent of the editor (Q3). Replaces strdoc's `hash` and `refcheck`:
+  - [ ] `stroc lint [files]`: the shared lint rules, with `--fix`
+  - [ ] `stroc status [folder]`: each file's CID and `replaces` chain; every `source` pointing at a
+        superseded version, naming the newer file; `source` CIDs the tool has never seen, by file and line
+  - [ ] `stroc update [files] [--all]`: update chosen sources, add `replaces` to each document that
+        changes as a result, report the parents now out of date
+  - [ ] Record file (format of the tool's choosing), rebuilt from the folder and `replaces` if lost
+  - [ ] Version label checks, if Q9 adopts it
 - [ ] Resolver interface: `get(cid)` from an app-supplied source, every fetch verified; folder and
       in-memory implementations
 - [ ] Compose: resolve includes into one numbered tree
@@ -201,13 +215,13 @@ Editor
 - [ ] Renaming an id updates references within the document
 - [ ] Open/Save YAML (standard) and JSON; Save validates and writes the canonical document
 - [ ] Validation errors shown at the offending section
-- [ ] Update a library's `source` CIDs from the editor (Q3)
 
 ### Stage 3 — Taleus readiness
 
 - [ ] Render-time data (Q5): declarations validated; data checked against declarations; schedule
       rendered; placeholders if adopted
 - [ ] Caller-supplied blocks (signatures, identifiers, QR codes) placed by the renderer
+- [ ] `stroc publish`: export the set as a CAR file or upload to an IPFS node
 - [ ] Bundle as a CAR file: root CID → the document and everything it includes; every block verified offline
 - [ ] Document and section CIDs printed in rendered output
 - [ ] Package split so a reader app takes only what it needs: core (types, normalize, validate,
@@ -220,7 +234,7 @@ Editor
 
 - [ ] Markdown import/export
 - [ ] Structural diff between two documents
-- [ ] `replaces` / `translates` lineage
+- [ ] `translates` lineage
 - [ ] IPFS transport adapter (`dag put/get`)
 - [ ] Publisher signatures
 - [ ] AI drafting guide (prompt bundle that produces valid Stroc source)

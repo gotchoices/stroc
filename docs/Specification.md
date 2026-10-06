@@ -1,7 +1,7 @@
 # Stroc Specification
 
 **Status**: Work in Progress  
-**Version**: 0.7 (Draft)
+**Version**: 0.8 (Draft)
 
 Items marked *pending* depend on open questions in [STATUS.md](STATUS.md#blocking-questions).
 
@@ -50,6 +50,21 @@ The document's CID is computed by hashing the entire document. It is not stored 
 | `published` | string | No | ISO 8601 date of publication |
 | `text` | string | No | One paragraph (see Text Structure) |
 | `sections` | array | No | Child sections |
+| `replaces` | array | No | Links to earlier versions this document supersedes (see [Lineage](#lineage)) |
+
+### Lineage
+
+`replaces` is an optional, non-empty array of IPLD links (`{"/": "baguqeera..."}`), each to a
+CIDv1 DAG-JSON document, without duplicates. It is allowed on the top-level document only.
+
+- It is the author's statement that this document supersedes those versions. It is hashed, so the
+  statement cannot be altered after publication.
+- Following `replaces` links backwards gives a document's version history. Tools use it to
+  identify outdated `source` links and to show what changed.
+- It is **advisory**. Anyone can publish a document claiming to replace any other. It never
+  transfers approval or acceptance from the old version to the new one.
+- The replaced documents need not be available; a tool that cannot fetch one reports it, but the
+  document remains valid.
 
 ### Removed Fields (from Legacy)
 
@@ -57,7 +72,7 @@ The document's CID is computed by hashing the entire document. It is not stored 
 |-------|-------------------|
 | `host` | Replaced by `author`; fetch location handled by CID/IPFS |
 | `name` | CID is the document identifier; sections that are reference targets carry an `id` local to the document |
-| `version` | CID versions content; no anchor without `name` |
+| `version` | CID versions content; history is expressed by `replaces`. (An optional display label is under discussion: STATUS Q9) |
 | `cid`/`rid` | Now external, not stored in document |
 
 ### Text Structure
@@ -535,3 +550,4 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 | 0.5 | 2026-10-06 | Prose aligned with the one-paragraph-string model (no sentence arrays); CID prefix corrected to `baguqeera`; removed the nested-markup open question (already settled under Inline Markup); pending items marked |
 | 0.6 | 2026-10-06 | Section `id`s as reference targets, replacing title paths and `as`; ids unique within a document; reference scope limited to the document and its includes; title uniqueness and path normalization rules removed |
 | 0.7 | 2026-10-06 | `source` is an IPLD link; YAML authoring format defined (the YAML file is the document; no build step; lint instead of silent normalization) |
+| 0.8 | 2026-10-06 | `replaces` lineage field |
