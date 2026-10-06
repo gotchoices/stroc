@@ -1,62 +1,84 @@
+// Development server: hosts the editor and exposes validation and CID helpers.
+// Not part of the Stroc library; no app needs it.
 import express from 'express'
+import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { createRequire } from 'module'
-import { cidFromDocument, normalizeDocument, validateDocument } from '@stroc/core'
+import { fromPlain, documentCid } from '@stroc/core'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const require = createRequire(import.meta.url)
+
+// The package root, whether running from src/ (ts-node) or dist/src/ (compiled).
+function packageRoot(start: string): string {
+  let dir = start
+  while (!fs.existsSync(path.join(dir, 'package.json'))) {
+    const parent = path.dirname(dir)
+    if (parent === dir) throw new Error(`no package.json above ${start}`)
+    dir = parent
+  }
+  return dir
+}
+
+const serverRoot = packageRoot(path.dirname(fileURLToPath(import.meta.url)))
+const uiRoot = path.dirname(require.resolve('@stroc/ui/package.json'))
 
 const app = express()
 app.use(express.json({ limit: '1mb' }))
 
-// Serve static stub UI
-const publicDir = path.resolve(__dirname, '../public')
-app.use(express.static(publicDir))
-// Serve UI bundle from workspace dist
-const uiDistDir = path.resolve(__dirname, '../../ui/dist/src')
-app.use('/static/ui', express.static(uiDistDir))
-// Serve lit and deps from their real paths
-const require = createRequire(import.meta.url)
-const litMain = require.resolve('lit')
-const litDir = path.dirname(litMain)
-const litHtmlMain = require.resolve('lit-html')
-const litHtmlDir = path.dirname(litHtmlMain)
-const reactiveMain = require.resolve('@lit/reactive-element')
-const reactiveDir = path.dirname(reactiveMain)
-const litElementMain = require.resolve('lit-element')
-const litElementDir = path.dirname(litElementMain)
-const ssrShimMain = require.resolve('@lit-labs/ssr-dom-shim')
-const ssrShimDir = path.dirname(ssrShimMain)
-app.use('/static/lit', express.static(litDir))
-app.use('/static/lit-html', express.static(litHtmlDir))
-app.use('/static/reactive-element', express.static(reactiveDir))
-app.use('/static/lit-element', express.static(litElementDir))
-app.use('/static/ssr-shim', express.static(ssrShimDir))
+app.use(express.static(path.join(serverRoot, 'public')))
+app.use('/static/ui', express.static(path.join(uiRoot, 'dist/src')))
+
+// Lit and its dependencies, served from their real paths for the import map in index.html.
+const litPackages: [string, string][] = [
+  ['/static/lit', 'lit'],
+  ['/static/lit-html', 'lit-html'],
+  ['/static/reactive-element', '@lit/reactive-element'],
+  ['/static/lit-element', 'lit-element'],
+  ['/static/ssr-shim', '@lit-labs/ssr-dom-shim'],
+]
+for (const [mount, pkg] of litPackages) {
+  app.use(mount, express.static(path.dirname(require.resolve(pkg))))
+}
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' })
 })
 
-app.post('/validate', (req, res) => {
-  const norm = normalizeDocument(req.body)
-  const result = validateDocument(norm)
-  res.status(result.valid ? 200 : 400).json(result)
+// Body: a document as plain JSON (links written {"/": "<cid>"}).
+// Response: { valid, cid?, problems, warnings }. Never a stack trace.
+async function check(body: unknown) {
+  const plain = fromPlain(body)
+  const result = await documentCid(plain.value)
+  const problems = [...plain.problems, ...result.validation.problems]
+  return {
+    valid: problems.length === 0,
+    ...(problems.length === 0 && result.cid ? { cid: result.cid.toString() } : {}),
+    problems,
+    warnings: result.validation.warnings,
+  }
+}
+
+app.post(['/validate', '/cid'], async (req, res) => {
+  try {
+    const out = await check(req.body)
+    res.status(out.valid ? 200 : 400).json(out)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ valid: false, problems: [{ path: [], code: 'internal', message: 'internal error' }] })
+  }
 })
 
-app.post('/cid', async (req, res) => {
-  try {
-    const result = await cidFromDocument(req.body)
-    if (result.errors) return res.status(400).json(result)
-    return res.json(result)
-  } catch (err: any) {
-    console.error(err)
-    return res.status(500).json({ error: err?.message || 'Internal error' })
+// Malformed JSON bodies: report, don't dump a stack trace.
+app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err instanceof SyntaxError) {
+    res.status(400).json({ valid: false, problems: [{ path: [], code: 'bad-json', message: 'request body is not valid JSON' }] })
+    return
   }
+  next(err)
 })
 
 const port = process.env.PORT || 3000
 app.listen(port, () => {
-  console.log(`Stroc server listening on port ${port}`)
+  console.log(`Stroc development server on http://localhost:${port}`)
 })
-

@@ -87,6 +87,19 @@ Stroc stays a general document library: it must not depend on Taleus or Sereus. 
   [Rendering.md](Rendering.md).
 - **Q9 settled: no version label.** `replaces` records history. Renderers print the root CID in
   small type in a page margin and may print it as a QR code at the end.
+- **Language tags are BCP 47** (`en`, `en-US`, `sr-Latn`), replacing ISO 639-2 (`eng`): the standard
+  browsers and date formatting use, and able to name a script. Spec 0.14.
+- **Format version `"0.1"` until frozen.** Documents made during development carry `stroc: "0.1"`.
+  The format is frozen, as `"1.0"`, when golden vectors are recorded and the first real set is
+  published; `"1.0"` tools reject `"0.1"` documents.
+- **Package layout**: `@stroc/core` (types, validation and lint rules, markup tokenizer, encoding,
+  CID, verification; runs everywhere, built without Node types); `@stroc/yaml` (read, write,
+  `--fix`); `@stroc/compose` (resolver, composition, local store, missing check, CAR bundles, HTTP
+  resolver, catalog and provenance); `@stroc/render`; `@stroc/cli`; `@stroc/ui`; plus the dev server,
+  which is not part of the library.
+- **Editor rewritten on Lit** in Stage 2 as small components, running entirely in the browser; the
+  prototype gets only safety fixes until then. Browser spell check in the parity stage; undo later.
+  See [Editor.md](Editor.md).
 - **Q6 settled: reference scope.** References point only within the document and what it
   includes. Reusable clauses use defined terms for anything outside themselves. Spec 0.6.
 
@@ -111,11 +124,8 @@ All settled 2026-10-06; details under Decisions above, and in the spec and
   (the environment, division of responsibility, distributing documents, packaging, guidance for
   apps, possible later features). Material now in the spec, Rendering.md or this file was removed;
   the instrument declaration was set aside. The name is kept, since the file is about Sereus apps.
-- [ ] Delete [FeatureComparison.md](FeatureComparison.md)? The parity checklist below supersedes it.
 - [ ] Rewrite [Implementation.md](Implementation.md) and [Vision.md](Vision.md) once the package split
   is settled (both still describe sentence arrays, a server-backed editor, and "Sereus MyCHIPs").
-- [ ] Undo/redo and spell-check toggle: strdoc had a spell-check toggle and a stubbed undo. In the
-  parity stage or later?
 
 ## Checklist
 
@@ -153,13 +163,17 @@ Specification and decisions
 
 ### Stage 0 — Safety net
 
-- [ ] Vitest in `@stroc/core`, wired to `yarn test`
-- [ ] Unit tests for normalization and validation, including malformed input
-- [ ] Golden-vector CID tests
-- [ ] Malformed input returns errors instead of throwing (D1)
-- [ ] Fix editor XSS (D2)
-- [ ] ESLint configured and passing
-- [ ] Fix `yarn start` and server paths (D3); commit the regenerated `yarn.lock`; untrack `.DS_Store`
+- [x] Vitest in `@stroc/core`, wired to `yarn test` (85 tests)
+- [x] Unit tests for text rules, ids, language tags, markup and validation, including malformed input
+- [x] Golden-vector CID tests (5 fixture documents in `packages/core/test/fixtures/`, including a
+      contract that includes a clause by CID). Recorded for format `"0.1"`; re-recorded at freeze.
+- [x] Malformed input returns problems instead of throwing (D1)
+- [x] Fix editor XSS (D2)
+- [x] ESLint configured and passing (`yarn lint`, all packages)
+- [x] Fix `yarn start` and server paths (D3); untrack `.DS_Store`
+- [ ] Commit the regenerated `yarn.lock` (user)
+- [x] Build `@stroc/core` without Node types
+- [x] Drop the `he` dependency
 
 ### Stage 1 — Document model
 
@@ -171,18 +185,27 @@ Spec first (per [Workflow.md](Workflow.md)), then code.
 - [x] Spec: markup grammar (Q7h), spec 0.10
 - [x] Spec: parameters (Q5) and composition (Q8), spec 0.11
 - [x] Rendering.md: rendering library and legal layout (draft)
-- [ ] Validation completeness (D4): reject unknown fields, empty sections, a reference section
-      with anything besides `source` and `id`, `source` that is not a CID, malformed or duplicate
-      ids, unknown `stroc` version, `published` not an ISO date, `language` not ISO 639-2
-- [ ] Replace `as` with `id` in types, normalization, validation, editor and sample documents;
-      drop the sibling-title uniqueness and reserved-character rules for titles
-- [ ] Markup: tokenizer and validator for the spec 0.10 grammar, with lint fixes (D5); shared by
-      validator, linter, editor and renderers
-- [ ] References: parse id paths, validate local targets and targets in included documents (D6)
-- [ ] `verifyDocument(bytes, cid)` that hashes exactly what was received
+- [x] Editor.md: editor platform and behavior (draft); editor section moved out of the spec
+- [x] Spec: BCP 47 language tags, `"0.1"` format version (spec 0.14)
+- [x] Core rewritten to spec 0.14: no silent normalization; every rule reported as a problem with a
+      path (and offset within text), never thrown (D4, D9)
+- [x] Validation completeness (D4): unknown fields, empty values and sections, include sections
+      with exactly `id` and `source`, links must be CIDv1 DAG-JSON SHA-256, id syntax and
+      document-wide uniqueness, format version (newer rejected), `published` date, BCP 47 tag
+- [x] `as` replaced by `id` in core and the prototype editor; title uniqueness and title
+      character rules dropped
+- [x] Markup tokenizer and validator for the spec 0.10 grammar, exported as a parsed tree for
+      renderers and the editor (`parseMarkup`) (D5)
+- [x] References: id paths parsed; local targets validated; references into includes returned
+      as `external` for composition to check (D6, local part)
+- [x] `verifyDocument(bytes, cid)`: hashes exactly what was received, requires canonical
+      DAG-JSON, then validates
+- [x] `source` and `replaces` as links in core; `fromPlain` / `toPlain` convert `{"/": cid}`
+- [x] `parameters` in types and validation
+- [x] `canonicalizeText` and `suggestId` helpers for lint fixes and the editor
+- [ ] Lint fixes beyond text (markup spelling, language case): offered by the linter
 - [ ] YAML read/write and lint (Q4), in a package separate from core: YAML 1.2 core schema;
       reject non-canonical values (e.g. `stroc: 1.0` parses as a number) with a fix offered
-- [ ] `source` as a link: types, validation (must be a CIDv1 DAG-JSON link), editor, samples
 - [ ] Sample corpus: all 13 MyCHIPs documents converted to the new form, as test fixtures
       (replaces the 3 hand conversions in `contracts/`, which carry stale RIDs and small edits)
 
@@ -226,7 +249,6 @@ Editor
 
 ### Stage 3 — Taleus readiness
 
-- [ ] `parameters` in types and validation (keys unique, id syntax, plain-text labels and defaults)
 - [ ] `checkData`: missing required values, unknown keys, non-string values; paths across includes
 - [ ] Particulars table in `layout`: hoisted, grouped by declaring document, values styled distinctly
 - [ ] App blocks (`heading`, `paragraph`, `table`, `qr`) placed after the document; QR drawn by
@@ -239,9 +261,8 @@ Editor
       does not hold)
 - [ ] HTTP resolver for published sets
 - [ ] Provenance check: base URL + CID → catalog entry (publisher, origin, status, date checked)
-- [ ] Package split so a reader app takes only what it needs: core (types, normalize, validate,
-      CID), io (YAML/JSON), compose (resolver, bundle), render (HTML, PDF), ui, cli. Everything
-      below ui runs in browser, Node and React Native / NativeScript.
+- [ ] Packages per the layout decision; everything except ui and cli runs in browser, Node and
+      React Native / NativeScript
 - [ ] Example tally-style contract written in abstract roles with parameter declarations,
       rendered with sample data
 
@@ -258,28 +279,16 @@ Editor
 
 ## Known defects
 
-Found or confirmed 2026-10-06. Numbers are referenced from the checklist.
+Found 2026-10-06. D1–D6 and D9 fixed 2026-10-06 (Stage 0 and the core rewrite).
 
-- **D1. Malformed input throws.** `null`, a non-string `title`/`text`, or `sections` as an object
-  throw a `TypeError` in normalization; the server returns HTTP 500 with a stack trace.
-- **D2. XSS in the editor.** `renderMarkup` ([ui/src/index.ts:798](../packages/ui/src/index.ts))
-  escapes `<` and `>` but puts the reference path inside a `title="…"` attribute, so
-  `<ref:x" onmouseover="…">` injects an event handler. Core accepts such text and hashes it.
-- **D3. `yarn start` fails.** It runs `dist/index.js`; the build writes `dist/src/index.js`, and the
-  compiled server resolves `public/` and the UI bundle relative to the wrong directory (index and UI
-  return 404). Only `yarn dev` works.
-- **D4. Validation is far thinner than the spec.** All of these pass today: empty sections `{}`;
-  `source` together with `text`; `source: "hello world"`; duplicate `as` aliases; an alias equal to
-  a sibling title; `Foo Bar` beside `foo_bar` (the same normalized path); `stroc: "banana"`;
-  `published: "next tuesday"`; `language: "Klingon!!"`. Unknown fields are dropped silently.
-- **D5. No markup handling.** `<B class="x">` and `<b>` hash differently; `<script>`, unclosed tags
-  pass. `&lt;b&gt;` is decoded into a real `<b>`.
-- **D6. No reference validation.** A reference to a missing section passes.
+- **D6 (remaining part).** References into included documents are only checked when a document is
+  composed; composition does not exist yet (Stage 2).
 - **D7. Editor depends on the dev server** for validation and CID, and keeps the document in private
-  state with no events, so it cannot be embedded or used offline.
-- **D8. Save writes the unnormalized document** without validating it.
-- **D9. Code cleans text silently before hashing** (and keeps U+200B, collapses no-break spaces).
-  Under spec 0.9 it must instead reject non-canonical text and leave fixing to the linter.
+  state with no events, so it cannot be embedded or used offline. (Rewrite, Stage 2.)
+- **D8. Editor Save writes the document without validating it**, and does not produce canonical
+  text. (Rewrite, Stage 2.)
+- **D10. The sample contracts in `contracts/` are invalid under spec 0.14** (legacy RIDs, `as`,
+  `"1.0"`). Replaced by the sample corpus (Stage 1).
 
 ## Running it
 
@@ -288,8 +297,14 @@ yarn dev        # builds core and ui, then serves the editor and API on :3000 (P
 yarn build      # compiles all packages
 ```
 
-Editor at `http://localhost:3000`. `POST /cid` and `POST /validate` take a document as JSON.
-`yarn start`, `yarn test` and `yarn lint` do not work yet (Stage 0).
+```
+yarn test       # core unit tests and golden vectors
+yarn lint       # ESLint, all packages
+yarn start      # build, then run the compiled server
+```
+
+Editor at `http://localhost:3000`. `POST /cid` (or `/validate`) takes a document as plain JSON,
+links written `{"/": "<cid>"}`, and returns `{ valid, cid?, problems, warnings }`.
 
 ## Document references
 
@@ -298,5 +313,5 @@ Editor at `http://localhost:3000`. `POST /cid` and `POST /validate` take a docum
 - [Rendering.md](Rendering.md): the rendering library and legal layout
 - [Legacy.md](Legacy.md): strdoc and MyCHIPs, the parity target
 - [Vision.md](Vision.md), [Implementation.md](Implementation.md): original goals and plan (dated)
-- [FeatureComparison.md](FeatureComparison.md): superseded by this checklist
+- [Editor.md](Editor.md): editor platform and behavior
 - [Workflow.md](Workflow.md): change process

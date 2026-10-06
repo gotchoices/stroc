@@ -7,9 +7,7 @@
   "types": "dist/src/index.d.ts",
   "module": "dist/src/index.js",
   "scripts": {
-    "build": "tsc -b",
-    "lint": "echo 'lint not configured'",
-    "test": "echo 'test not configured'"
+    "build": "tsc -b"
   },
   "dependencies": {
     "lit": "^3.1.4"

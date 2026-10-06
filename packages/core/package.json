@@ -7,27 +7,27 @@
   "module": "dist/src/index.js",
   "exports": {
     ".": {
-      "import": "./dist/src/index.js",
-      "types": "./dist/src/index.d.ts"
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
     },
-    "./types": "./dist/src/types.js",
-    "./normalize": "./dist/src/normalize.js",
-    "./dagjson": "./dist/src/dagjson.js",
-    "./validate": "./dist/src/validate.js"
+    "./markup": {
+      "types": "./dist/src/markup.d.ts",
+      "import": "./dist/src/markup.js"
+    }
   },
   "scripts": {
     "build": "tsc -b",
-    "lint": "echo 'lint not configured'",
-    "test": "echo 'test not configured'"
+    "test": "vitest run"
   },
   "dependencies": {
     "@ipld/dag-json": "^10.2.0",
-    "he": "^1.2.0",
     "multiformats": "^11.0.2"
   },
   "devDependencies": {
-    "@types/he": "^1.2.1",
-    "@types/node": "^20.12.12",
-    "typescript": "^5.4.0"
-  }
+    "typescript": "^5.4.0",
+    "vitest": "^3"
+  },
+  "files": [
+    "dist/src"
+  ]
 }

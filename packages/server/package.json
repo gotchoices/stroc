@@ -3,18 +3,15 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "module": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc -b",
-    "start": "node dist/index.js",
-    "dev": "yarn workspace @stroc/core build && yarn workspace @stroc/ui build && ts-node --esm src/index.ts",
-    "lint": "echo 'lint not configured'",
-    "test": "echo 'test not configured'"
+    "start": "node dist/src/index.js",
+    "dev": "yarn workspace @stroc/core build && yarn workspace @stroc/ui build && ts-node --esm src/index.ts"
   },
   "dependencies": {
     "@stroc/core": "workspace:*",
+    "@stroc/ui": "workspace:*",
     "express": "^4.19.2"
   },
   "devDependencies": {

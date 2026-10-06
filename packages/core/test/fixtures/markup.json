@@ -1,0 +1,6 @@
+{
+  "stroc": "0.1",
+  "language": "en",
+  "title": "Markup <and> \\ escapes in a title are plain text",
+  "text": "Plain, <b>bold</b>, <i>italic</i>, <u>underlined</u>, <b><i><u>all three</u></i></b>, <b>bold with <i>italic</i> inside</b>, a literal \\< and a literal \\\\, plus > and & as typed."
+}

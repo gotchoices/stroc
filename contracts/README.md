@@ -20,7 +20,7 @@ The following transformations were applied:
 - `version:` → removed (CID versions content)
 - `rid:` → removed (CID is now external)
 - `top:` → removed (not needed)
-- Added required `stroc: "1.0"` version field
+- Added required `stroc: "1.0"` version field (now `"0.1"` until the format is frozen; these samples predate that)
 
 ### Section Reference Changes
 - `name` + `source` → `as` + `source`

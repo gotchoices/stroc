@@ -2,11 +2,11 @@ import { LitElement, html, css } from 'lit'
 import { state } from 'lit/decorators.js'
 
 type Section = {
+  id?: string
   title?: string
   text?: string
   sections?: Section[]
-  source?: string
-  as?: string
+  source?: string   // CID string here; sent as a link {"/": cid}
   _editing?: boolean
 }
 
@@ -21,8 +21,8 @@ type Doc = {
 }
 
 const defaultDoc: Doc = {
-  stroc: '1.0',
-  language: 'eng',
+  stroc: '0.1',
+  language: 'en',
   title: 'Untitled Document',
   text: '',
   sections: []
@@ -339,6 +339,11 @@ export class StrocEditor extends LitElement {
 
     .section-text i {
       font-style: italic;
+    }
+
+    .ref {
+      color: #0d6efd;
+      text-decoration: underline;
     }
 
     .section-text u {
@@ -687,16 +692,16 @@ export class StrocEditor extends LitElement {
             <input
               .value=${sec.source ?? ''}
               @input=${(e: any) => this.updateSection(sec, parent, { source: e.target.value })}
-              placeholder="bafy..."
+              placeholder="baguqeera..."
               style="font-family: monospace; font-size: 12px;"
             />
           </div>
 
           <div class="edit-field">
-            <label>Alias (for cross-references)</label>
+            <label>Id (for cross-references, e.g. ethics)</label>
             <input
-              .value=${sec.as ?? ''}
-              @input=${(e: any) => this.updateSection(sec, parent, { as: e.target.value })}
+              .value=${sec.id ?? ''}
+              @input=${(e: any) => this.updateSection(sec, parent, { id: e.target.value })}
               placeholder="e.g., Ethics"
             />
           </div>
@@ -754,7 +759,7 @@ export class StrocEditor extends LitElement {
           <div class="section-view" @click=${() => this.toggleEditSection(sec)} style="background: #fff3cd; border-left: 4px solid #ffc107;">
             <div class="section-header">
               <span class="section-number">${number}.</span>
-              <div class="section-title">${sec.as ?? 'Included Document'}</div>
+              <div class="section-title">${sec.id ?? 'Included Document'}</div>
             </div>
             <div class="section-text" style="font-size: 13px; color: #6c757d; font-family: monospace;">
               📄 CID: ${sec.source}
@@ -784,21 +789,22 @@ export class StrocEditor extends LitElement {
   }
 
   private renderMarkup(text: string): unknown {
-    // Render markup tags as actual HTML
-    // Only allow <b>, <i>, <u>, <ref:...> tags; sanitize everything else
-    const sanitized = text
+    // Escape everything, then re-enable only exact Stroc tokens. Reference paths are restricted to
+    // id characters, so nothing from the text can reach an attribute or become HTML.
+    const escaped = text
+      .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/&lt;b&gt;/g, '<b>')
-      .replace(/&lt;\/b&gt;/g, '</b>')
-      .replace(/&lt;i&gt;/g, '<i>')
-      .replace(/&lt;\/i&gt;/g, '</i>')
-      .replace(/&lt;u&gt;/g, '<u>')
-      .replace(/&lt;\/u&gt;/g, '</u>')
-      .replace(/&lt;ref:([^&]+)&gt;/g, '<span style="color: #0d6efd; text-decoration: underline; cursor: pointer;" title="Reference: $1">→$1</span>')
-    
-    // Use unsafeHTML to render the sanitized markup
-    return html`<span .innerHTML=${sanitized}></span>`
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+    // One left-to-right pass, so an escaped \< is never mistaken for the start of a tag.
+    const rendered = escaped.replace(
+      /\\(&lt;|\\)|&lt;(\/?)([biu])&gt;|&lt;ref:([a-z0-9/-]+)&gt;/g,
+      (_m, lit, slash, tag, ref) =>
+        lit !== undefined ? lit :
+        tag !== undefined ? `<${slash}${tag}>` :
+        `<span class="ref">→${ref}</span>`)
+    return html`<span .innerHTML=${rendered}></span>`
   }
 
   private toggleEditSection(sec: Section) {
@@ -886,14 +892,13 @@ export class StrocEditor extends LitElement {
     const cid = prompt('Enter the CID of the document to include:')
     if (!cid || !cid.trim()) return
 
-    const alias = prompt('Enter an alias for this document (for cross-references):')
+    const alias = prompt('Enter an id for this included document (lowercase, e.g. ethics):')
     if (!alias || !alias.trim()) return
 
     this.doc.sections = this.doc.sections ?? []
     this.doc.sections.push({
       source: cid.trim(),
-      as: alias.trim(),
-      sections: []
+      id: alias.trim()
     })
     this.closeMenus()
     this.markDirty()
@@ -981,34 +986,33 @@ export class StrocEditor extends LitElement {
     this.closeMenus()
     this.cid = null
     this.errors = []
-
-    // Remove editing flags before sending
-    const cleanDoc = this.cleanEditingFlags(structuredClone(this.doc))
-
     try {
-      const res = await fetch('/validate', {
+      const res = await fetch('/cid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cleanDoc)
+        body: JSON.stringify(this.toPlainDoc())
       })
       const data = await res.json()
-      if (!res.ok) {
-        this.errors = data.errors ?? ['Validation failed']
-        return
-      }
-
-      const cidRes = await fetch('/cid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cleanDoc)
-      })
-      const cidData = await cidRes.json()
-      if (cidRes.ok && cidData.cid) {
-        this.cid = cidData.cid
+      if (data.cid) {
+        this.cid = data.cid
+      } else {
+        const problems: { path: (string | number)[], message: string }[] = data.problems ?? []
+        this.errors = problems.length
+          ? problems.map(p => `${p.path.join('.') || 'document'}: ${p.message}`)
+          : ['Validation failed']
       }
     } catch (err: any) {
       this.errors = [err?.message ?? 'Unknown error']
     }
+  }
+
+  // The document as plain JSON for the server: editing flags removed, sources written as links.
+  private toPlainDoc(): any {
+    const toLinks = (secs?: Section[]): any[] | undefined => secs?.map(sec => sec.source !== undefined
+      ? { id: sec.id, source: { '/': sec.source } }
+      : { ...sec, ...(sec.sections ? { sections: toLinks(sec.sections) } : {}) })
+    const doc = this.cleanEditingFlags(structuredClone(this.doc))
+    return { ...doc, ...(doc.sections ? { sections: toLinks(doc.sections) } : {}) }
   }
 
   private cleanEditingFlags(obj: any): any {

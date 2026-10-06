@@ -1,6 +1,6 @@
 # Stroc Implementation Plan (Draft)
 
-> **Dated (2026-10-06).** Sentence-level editing described below is obsolete (one paragraph string per section), and the editor is now meant to run without the server. Rewrite pending the package split in [STATUS.md](STATUS.md).
+> **Dated (2026-10-06).** Superseded by the package layout in [STATUS.md](STATUS.md) and by [Editor.md](Editor.md). Sentence-level editing described below is obsolete (one paragraph string per section), and the editor is now meant to run without the server. Rewrite pending the package split in [STATUS.md](STATUS.md).
 
 
 ## Architecture Overview

@@ -1,7 +1,10 @@
 # Stroc Specification
 
 **Status**: Work in Progress  
-**Version**: 0.13 (Draft)
+**Version**: 0.14 (Draft)
+
+The document format is not yet frozen. Until it is, documents carry `stroc: "0.1"`; the first
+frozen version will be `"1.0"`, and tools for it will reject `"0.1"` documents.
 
 Items marked *pending* depend on open questions in [STATUS.md](STATUS.md#blocking-questions).
 
@@ -23,8 +26,8 @@ Stroc (Structured Documents) is a protocol for creating legal documents where co
 
 ```json
 {
-  "stroc": "1.0",
-  "language": "eng",
+  "stroc": "0.1",
+  "language": "en",
   "title": "Standard MyCHIPs Tally Contract",
   "author": "MyCHIPs Foundation",
   "published": "2024-01-15",
@@ -43,8 +46,8 @@ The document's CID is computed by hashing the entire document. It is not stored 
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `stroc` | string | Yes | Specification version (e.g., "1.0"). A tool rejects a document whose version is newer than it supports, rather than processing it partially. |
-| `language` | string | Yes | ISO 639-2 language code |
+| `stroc` | string | Yes | Format version (`"0.1"` until frozen). A tool rejects a document whose version is newer than it supports, rather than processing it partially. |
+| `language` | string | Yes | BCP 47 language tag (e.g. `en`, `en-US`, `sr-Latn`), in its canonical case |
 | `title` | string | Yes | Human-readable document title |
 | `author` | string | No | Attribution (any string, e.g., "MyCHIPs Foundation") |
 | `published` | string | No | ISO 8601 date of publication |
@@ -243,7 +246,7 @@ what status.
 
 ```json
 {
-  "stroc-catalog": "1.0",
+  "stroc-catalog": "0.1",
   "publisher": "Sereus Foundation",
   "entries": [
     {
@@ -294,8 +297,8 @@ To include multiple language versions of a contract, create a **wrapper document
 
 ```json
 {
-  "stroc": "1.0",
-  "language": "eng",
+  "stroc": "0.1",
+  "language": "en",
   "title": "Tally Agreement (Multilingual)",
   "author": "MyCHIPs Foundation",
   "text": "This Agreement is presented in English and French. In case of any conflict between versions, the English version shall govern.",
@@ -322,8 +325,8 @@ hash of the DAG-JSON spelling. There is no build or compile step between them.
 
 ```yaml
 # Comments are allowed and are not content.
-stroc: '1.0'
-language: eng
+stroc: '0.1'
+language: en
 title: MyCHIPs Tally Agreement
 text: >-
   This written Contract is part of an Agreement by and between the Parties.
@@ -339,8 +342,8 @@ sections:
 
 Rules:
 - YAML 1.2, core schema. Mappings, sequences and strings only; every value in a Stroc document is
-  a string, so values YAML would read as numbers or booleans must be quoted (`stroc: '1.0'`, not
-  `stroc: 1.0`, which is the number 1).
+  a string, so values YAML would read as numbers or booleans must be quoted (`stroc: '0.1'`, not
+  `stroc: 0.1`, which is a number).
 - A link is written as a one-key mapping `{/: <cid>}`; standard YAML and DAG-JSON libraries turn it
   into a link without Stroc-specific conversion.
 - Anchors, aliases, tags and merge keys are not allowed.
@@ -385,40 +388,9 @@ hashing it; a linter reports violations, and editors and fix commands may correc
 
 ---
 
-## Authoring Interface
+## Authoring
 
-### Display Modes
-
-**WYSIWYG Mode (Default)**:
-Document renders as finished prose. Author sees the document as it would appear to readers.
-
-**Structure Mode (Click to Edit)**:
-Clicking on content reveals the underlying structure:
-- The section’s paragraph text is editable
-- Section hierarchy exposed
-
-### Text Input Behavior
-
-1. Author types freely
-2. On save/blur, text is normalized (whitespace, entities, controls)
-3. Confirmed structure is stored
-
-### Drag and Drop
-
-The editor supports drag-and-drop reorganization:
-
-| Operation | Trigger |
-|-----------|---------|
-| **Move before** | Drag to upper half of target |
-| **Move after** | Drag to lower half of target |
-| **Move as child** | Drag to right (indent) |
-| **Copy** (instead of move) | Hold Shift while dragging |
-| **Delete** | Drag to document header/trash area |
-
-Drag and drop works for:
-- Paragraphs (as child sections)
-- Sections within the document hierarchy
-- Cross-level moves (e.g., promote a subsection)
+Editor behavior is not part of the format; see [Editor.md](Editor.md).
 
 ---
 
@@ -467,8 +439,8 @@ const { sha256 } = require('multiformats/hashes/sha2');
 const dagJson = require('@ipld/dag-json');
 
 const document = {
-  language: "eng",
-  stroc: "1.0",
+  language: "en",
+  stroc: "0.1",
   text: "This is a sentence.",
   title: "Example Document"
 }
@@ -483,7 +455,7 @@ const hash = await sha256.digest(bytes);
 const cid = CID.create(1, dagJson.code, hash);
 
 console.log(cid.toString());
-// "baguqeerahghdaba3xpdeymhpbrztpwst7ioctsjdoqxoos7hb2lae7jy7xpq"
+// "baguqeera23wj73l2maypjd4rsenk2gybqesgrydiyhia55u3t2zosx6at2va"
 ```
 
 ### CID Format
@@ -496,7 +468,7 @@ Stroc CIDs are standard IPFS CIDv1:
 
 Because the codec is DAG-JSON, every Stroc CID begins `baguqeera`. (`bafy…` is the prefix for DAG-PB and DAG-CBOR CIDs; a value starting that way is not a Stroc CID.)
 
-Example (the document above): `baguqeerahghdaba3xpdeymhpbrztpwst7ioctsjdoqxoos7hb2lae7jy7xpq`
+Example (the document above): `baguqeera23wj73l2maypjd4rsenk2gybqesgrydiyhia55u3t2zosx6at2va`
 
 ### Verification
 
@@ -580,8 +552,8 @@ Inline markup is stored within paragraph strings and included in the hash:
 
 ```json
 {
-  "stroc": "1.0",
-  "language": "eng",
+  "stroc": "0.1",
+  "language": "en",
   "title": "Tally Agreement",
   "text": "The <b>Stock Holder</b> must <i>not</i> transfer the asset.",
   "sections": [
@@ -723,3 +695,4 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 | 0.11 | 2026-10-06 | `parameters` declarations and data objects; composition of included documents; inline placeholders described as future |
 | 0.12 | 2026-10-06 | Resolution rewritten: app-supplied resolver, verified fetches, CAR bundles, static published sets, no addresses in documents; removed the HTTP endpoint and Sereus-node strategy; nesting-not-depth and document-level identity stated |
 | 0.13 | 2026-10-06 | Published sets: file layout under a base URL, `catalog.json` format with entry status, provenance check |
+| 0.14 | 2026-10-06 | `language` is a BCP 47 tag; documents carry `stroc: "0.1"` until the format is frozen; editor behavior moved to Editor.md |

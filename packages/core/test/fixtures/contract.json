@@ -1,0 +1,18 @@
+{
+  "stroc": "0.1",
+  "language": "en",
+  "title": "Tally Agreement",
+  "author": "Example Publisher",
+  "published": "2026-10-06",
+  "text": "This Agreement is between the Stock Holder and the Foil Holder named in the Particulars. Default is governed by <ref:duties/notice>.",
+  "parameters": [
+    { "key": "stock-name", "label": "Stock Holder" },
+    { "key": "foil-name", "label": "Foil Holder" },
+    { "key": "limit", "label": "Maximum Balance", "default": "24" }
+  ],
+  "replaces": [ { "/": "baguqeera23wj73l2maypjd4rsenk2gybqesgrydiyhia55u3t2zosx6at2va" } ],
+  "sections": [
+    { "id": "duties", "source": { "/": "baguqeerajvalsjwwhumendz7fedvc7sscqwvjcwiwdflwozdvhpor6jg32dq" } },
+    { "id": "terms", "title": "Terms", "text": "The Maximum Balance applies as stated in <ref:terms>." }
+  ]
+}

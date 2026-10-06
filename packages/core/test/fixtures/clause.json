@@ -1,0 +1,14 @@
+{
+  "stroc": "0.1",
+  "language": "en",
+  "title": "Duties of the Parties",
+  "author": "Example Publisher",
+  "published": "2026-10-06",
+  "text": "Each Party has certain duties under this Agreement:",
+  "sections": [
+    { "id": "good-faith", "title": "Good Faith", "text": "Each Party shall behave honestly and with integrity." },
+    { "id": "notice", "title": "Notice of Default", "text": "A Party finding the other in Default shall give written notice, which the other Party may cure under <ref:cure>." },
+    { "id": "cure", "title": "Cure of Default", "text": "A Party receiving notice under <ref:notice> shall make a good faith effort to cure within <b>10 days</b>." },
+    { "text": "An untitled paragraph following the titled sections." }
+  ]
+}
