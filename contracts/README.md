@@ -2,6 +2,8 @@
 
 This folder contains example contracts converted from the legacy MyCHIPs YAML format to the new Stroc JSON format.
 
+> Stroc does not support legacy documents (decided 2026-10-06); these are sample content only. They are due to be replaced by a full converted corpus used as test fixtures (see [STATUS.md](../docs/STATUS.md), Stage 1). Note that the hand conversion also changed `mychips.org` to `MyCHIPs.org` and the title "MyCHIPS" to "MyCHIPs".
+
 ## Source
 
 These documents are hand-converted from the original MyCHIPs contracts located at:
@@ -41,7 +43,7 @@ The following transformations were applied:
 
 ## CID Notes
 
-**Important:** The `source` CIDs in `Tally_Contract.json` are the **original legacy RIDs** (base64url SHA-256 hashes). These are NOT the new Stroc CIDs (which would be IPFS CIDv1 format starting with `bafy...`).
+**Important:** The `source` CIDs in `Tally_Contract.json` are the **original legacy RIDs** (base64url SHA-256 hashes). These are NOT Stroc CIDs (which are IPFS CIDv1, DAG-JSON codec, starting with `baguqeera`).
 
 To generate proper Stroc CIDs:
 1. Load each document in the editor

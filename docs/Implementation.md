@@ -1,5 +1,8 @@
 # Stroc Implementation Plan (Draft)
 
+> **Dated (2026-10-06).** Sentence-level editing described below is obsolete (one paragraph string per section), and the editor is now meant to run without the server. Rewrite pending the package split in [STATUS.md](STATUS.md).
+
+
 ## Architecture Overview
 
 - **Core Library (TypeScript, framework-agnostic)**

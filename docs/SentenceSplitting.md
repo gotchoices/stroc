@@ -1,6 +1,6 @@
 # Sentence Splitting Options (Resource)
 
-This document lists candidate libraries/approaches for editors to propose sentence boundaries. The Stroc specification does **not** mandate any specific splitter; editors must produce one sentence per slot and let authors merge/split as needed.
+This document lists candidate libraries for tools that want to show sentence boundaries (for example, a sentence-level diff or one-sentence-per-line source formatting). Stroc stores one paragraph string per section; sentences are never stored or hashed separately, and the specification does **not** mandate any splitter.
 
 ## Candidate Libraries
 
@@ -13,7 +13,6 @@ This document lists candidate libraries/approaches for editors to propose senten
 | `winkNLP` | Heavier, full NLP pipeline | If additional NLP is desired |
 
 ## Usage Guidance
-- Use any locale-aware splitter to propose boundaries.
-- Always let the author merge/split; author decision is final.
-- Splitting is only during edit; stored sentences are what get hashed. Consumers never split.
+- Use any locale-aware splitter.
+- Splitting is a display or tooling aid only; it never changes the stored paragraph or its hash.
 

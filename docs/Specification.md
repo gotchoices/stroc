@@ -1,7 +1,9 @@
 # Stroc Specification
 
 **Status**: Work in Progress  
-**Version**: 0.2 (Draft)
+**Version**: 0.5 (Draft)
+
+Items marked *pending* depend on open questions in [STATUS.md](STATUS.md#blocking-questions).
 
 ## Overview
 
@@ -26,14 +28,11 @@ Stroc (Structured Documents) is a protocol for creating legal documents where co
   "title": "Standard MyCHIPs Tally Contract",
   "author": "MyCHIPs Foundation",
   "published": "2024-01-15",
-  "text": [
-    ["First paragraph, sentence one.", "First paragraph, sentence two."],
-    ["Second paragraph, sentence one."]
-  ],
+  "text": "The preamble paragraph. It may contain several sentences.",
   "sections": [
     {"source": "abc123...", "as": "Recitals"},
     {"source": "xyz789...", "as": "Ethics"},
-    {"title": "Additional Terms", "text": [...]}
+    {"title": "Additional Terms", "text": "...", "sections": [{"text": "A second paragraph, as an untitled child section."}]}
   ]
 }
 ```
@@ -49,7 +48,7 @@ The document's CID is computed by hashing the entire document. It is not stored 
 | `title` | string | Yes | Human-readable document title |
 | `author` | string | No | Attribution (any string, e.g., "MyCHIPs Foundation") |
 | `published` | string | No | ISO 8601 date of publication |
-| `text` | array | No | Document body (see Text Structure) |
+| `text` | string | No | One paragraph (see Text Structure) |
 | `sections` | array | No | Child sections |
 
 ### Removed Fields (from Legacy)
@@ -129,7 +128,7 @@ GET /document/:cid
 **Response format:**
 ```json
 {
-  "cid": "bafyreig...",
+  "cid": "baguqeera...",
   "document": { /* Stroc document */ },
   "verified": true,
   "source": "cache|local|ipfs|sereus"
@@ -186,13 +185,11 @@ When text is input, the following normalization rules are applied:
 4. **Invisible/control stripping**: Remove zero-width and control characters (except standard space, tab, newline **and bidi controls** like LRM/RLM/LRE/RLE/PDF/LRI/RLI/FSI/PDI) before hashing
 5. **Entity decoding**: Decode HTML entities in text; store literal characters (no `&amp;`, `&nbsp;`, etc.)
 
-### Sentence Boundary Detection
-
-**Requirement: One paragraph string per section; author is final authority**
+### Paragraphs, Not Sentences
 
 - Each section has a single `text` paragraph (string). Additional paragraphs are child sections (which may omit `title`).
+- Sentences are not stored separately. Tools may split a paragraph into sentences for display or diffing, but that never affects the hash.
 - Consumers never split; they only serialize the stored structure for CID verification.
-- Implementations should normalize text per the Text Normalization rules; no sentence-level storage is required.
 
 ---
 
@@ -264,7 +261,7 @@ DAG-JSON provides deterministic encoding:
 - No extraneous whitespace
 - Arrays maintain order
 - Undefined fields are omitted
-- Special encoding for CID links: `{"/": "bafy..."}`
+- Special encoding for CID links: `{"/": "baguqeera..."}` (whether `source` uses this form is *pending*)
 - Non-finite numbers (`NaN`, `Infinity`, `-Infinity`) are not allowed
 - Dates/times must be strings (e.g., ISO 8601), not native Date objects
 - Object keys must be unique; no functions/symbols; no cycles (pure DAG)
@@ -280,7 +277,7 @@ const dagJson = require('@ipld/dag-json');
 const document = {
   language: "eng",
   stroc: "1.0",
-  text: [["This is a sentence."]],
+  text: "This is a sentence.",
   title: "Example Document"
 }
 
@@ -294,7 +291,7 @@ const hash = await sha256.digest(bytes);
 const cid = CID.create(1, dagJson.code, hash);
 
 console.log(cid.toString());
-// "bafyreig..." (base32 encoded CIDv1)
+// "baguqeerahghdaba3xpdeymhpbrztpwst7ioctsjdoqxoos7hb2lae7jy7xpq"
 ```
 
 ### CID Format
@@ -303,9 +300,11 @@ Stroc CIDs are standard IPFS CIDv1:
 - Version: 1
 - Codec: DAG-JSON (0x0129)
 - Hash: SHA-256 (0x12)
-- Encoding: base32 (default) or base58btc
+- Encoding: base32 lowercase (multibase prefix `b`)
 
-Example: `bafyreigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi`
+Because the codec is DAG-JSON, every Stroc CID begins `baguqeera`. (`bafy…` is the prefix for DAG-PB and DAG-CBOR CIDs; a value starting that way is not a Stroc CID.)
+
+Example (the document above): `baguqeerahghdaba3xpdeymhpbrztpwst7ioctsjdoqxoos7hb2lae7jy7xpq`
 
 ### Verification
 
@@ -329,15 +328,15 @@ Documents can be stored and retrieved directly via IPFS:
 
 ### Principle
 
-Inline emphasis (bold, italic, underline) within **sentence text** is legally meaningful and part of the content hash. Styling of **structural elements** (titles, headers, section numbers) is presentational and determined by the renderer.
+Inline emphasis (bold, italic, underline) within **paragraph text** is legally meaningful and part of the content hash. Styling of **structural elements** (titles, headers, section numbers) is presentational and determined by the renderer.
 
 ### Allowed Tags
 
 | Tag | Meaning | Context |
 |-----|---------|---------|
-| `<b>...</b>` | Bold emphasis | Sentence text only |
-| `<i>...</i>` | Italic emphasis | Sentence text only |
-| `<u>...</u>` | Underline emphasis | Sentence text only |
+| `<b>...</b>` | Bold emphasis | Paragraph text only |
+| `<i>...</i>` | Italic emphasis | Paragraph text only |
+| `<u>...</u>` | Underline emphasis | Paragraph text only |
 
 No other HTML or markup is allowed in content.
 
@@ -351,20 +350,18 @@ No other HTML or markup is allowed in content.
 
 ### Storage Model
 
-Inline markup is stored within sentence strings and included in the hash:
+Inline markup is stored within paragraph strings and included in the hash:
 
 ```json
 {
   "stroc": "1.0",
   "language": "eng",
   "title": "Tally Agreement",
-  "text": [
-    ["The <b>Stock Holder</b> must <i>not</i> transfer the asset."]
-  ],
+  "text": "The <b>Stock Holder</b> must <i>not</i> transfer the asset.",
   "sections": [
     {
       "title": "Ethics",
-      "text": [["All parties agree to act in <b>good faith</b>."]]
+      "text": "All parties agree to act in <b>good faith</b>."
     }
   ]
 }
@@ -374,7 +371,7 @@ Inline markup is stored within sentence strings and included in the hash:
 
 | Element | Hashed? | Notes |
 |---------|---------|-------|
-| Sentence text (including `<b>`, `<i>`, `<u>` tags) | ✓ | Emphasis is legally meaningful |
+| Paragraph text (including `<b>`, `<i>`, `<u>` tags) | ✓ | Emphasis is legally meaningful |
 | `title` field content | ✓ | The text of the title |
 | Title styling (bold, size) | ✗ | Renderer decides presentation |
 | Section number formatting | ✗ | Renderer decides presentation |
@@ -383,7 +380,7 @@ Inline markup is stored within sentence strings and included in the hash:
 ### Authoring Experience
 
 1. Author highlights text and clicks Bold/Italic/Underline
-2. Markup tags are inserted into the sentence content
+2. Markup tags are inserted into the paragraph text
 3. UI renders the formatting for WYSIWYG editing
 4. The markup is part of the document and affects the hash
 
@@ -393,11 +390,13 @@ Inline markup is stored within sentence strings and included in the hash:
 
 ### Reference Syntax
 
-Cross-references use the `<ref:...>` tag within sentence text:
+Cross-references use the `<ref:...>` tag within paragraph text:
 
 ```json
-["See <ref:Ethics/Competency> for requirements."]
+"See <ref:Ethics/Competency> for requirements."
 ```
+
+*Pending*: reference targets may change from title paths to section ids (STATUS Q1), and references may be restricted to the document and what it includes (Q6).
 
 ### Reference Paths
 
@@ -406,8 +405,6 @@ References use the `as` alias (for included documents) or `title` (for inline se
 ```
 <ref:Ethics>                    → "Section 3" (included doc with as="Ethics")
 <ref:Ethics/Competency>         → "Section 3.1" (subsection titled "Competency")
-<ref:Ethics/Competency/p2>      → "Section 3.1, paragraph 2"
-<ref:Ethics/Competency/p2/s1>   → "Section 3.1, paragraph 2, sentence 1"
 <ref:./Additional Terms>        → Local section in current document
 ```
 
@@ -443,23 +440,23 @@ References are validated at **save time**:
 
 ## Open Questions
 
-1. **Nested markup**: Is `<b><i>text</i></b>` allowed? (Likely yes)
+Tracked in [STATUS.md](STATUS.md#blocking-questions).
 
 ## Resolved Questions
 
-1. **Sentence detection approach**: Use `Intl.Segmenter` with locale support, plus author override in the UI
+1. **Sentence detection**: Not part of the format. Paragraphs are stored whole; tools may segment for display or diffing (see [SentenceSplitting.md](SentenceSplitting.md))
 
 2. **Whitespace handling**: Normalize on input, store normalized form only
 
-3. **Text structure**: Array of paragraphs, each an array of sentences
+3. **Text structure**: One paragraph string per section; further paragraphs are untitled child sections
 
 4. **Empty paragraphs**: Strip during normalization; they do not appear in stored documents
 
 5. **Unicode normalization**: NFC (Canonical Composition) before hashing
 
-6. **Drag/drop support**: Yes, for sections, paragraphs, and sentences; move, copy, delete, cross-level moves (including sentences across sections)
+6. **Drag/drop support**: Yes, for sections (including untitled paragraph sections); move, copy, delete, cross-level moves
 
-7. **Markup/styling**: Inline markup (`<b>`, `<i>`, `<u>`) in sentence text is part of content and hashed. Structural element styling (titles, headers) is renderer-determined.
+7. **Markup/styling**: Inline markup (`<b>`, `<i>`, `<u>`) in paragraph text is part of content and hashed. Structural element styling (titles, headers) is renderer-determined.
 
 8. **Document identity fields**: Removed `name`, `version`, `host`. Added `author` (optional). CID is external.
 
@@ -467,15 +464,11 @@ References are validated at **save time**:
 
 10. **Multilingual documents**: Use a wrapper document that includes multiple language versions by reference, with explicit governing language clause.
 
-11. **Sentence splitting**: One sentence per slot; editors may auto-split, author can merge/split; no mandated splitter.
+11. **Serialization**: Use IPLD DAG-JSON for IPFS compatibility from the start. CIDs will be standard IPFS CIDs.
 
-12. **Abbreviation handling**: Author override handles edge cases.
+12. **Reference validation**: Validate at save time only. Invalid references block save. No publish-time check needed because CID-addressed documents are immutable.
 
-13. **Serialization**: Use IPLD DAG-JSON for IPFS compatibility from the start. CIDs will be standard IPFS CIDs.
-
-14. **Reference validation**: Validate at save time only. Invalid references block save. No publish-time check needed because CID-addressed documents are immutable.
-
-15. **Reference paths and titles**: Section titles must be unique among siblings; reference paths are normalized (trim, collapse spaces, lowercase, spaces→underscores, no `/`). Renaming a section changes the document (new CID); references to the old CID remain valid, new names require including the new CID.
+13. **Reference paths and titles**: Section titles must be unique among siblings; reference paths are normalized (trim, collapse spaces, lowercase, spaces→underscores, no `/`). Renaming a section changes the document (new CID); references to the old CID remain valid, new names require including the new CID.
 
 ---
 
@@ -487,3 +480,4 @@ References are validated at **save time**:
 | 0.2 | Draft | Removed `name`, `version`, `host`; added `author`; CID now external; added multilingual wrapper pattern; defined cross-reference syntax |
 | 0.3 | Draft | Empty paragraph stripping; `Intl.Segmenter` for sentence detection; NFC Unicode normalization; serialization details |
 | 0.4 | Draft | IPLD DAG-JSON for IPFS-compatible CIDs; updated CID generation algorithm |
+| 0.5 | 2026-10-06 | Prose aligned with the one-paragraph-string model (no sentence arrays); CID prefix corrected to `baguqeera`; removed the nested-markup open question (already settled under Inline Markup); pending items marked |

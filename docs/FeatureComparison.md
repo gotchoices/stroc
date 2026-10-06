@@ -1,5 +1,8 @@
 # Stroc vs. Legacy strdoc Feature Comparison
 
+> **Superseded (2026-10-06).** Several "Implemented" claims here are wrong, and several rejections (drag and drop, YAML, hash tooling) are now parity goals. The current checklist is [STATUS.md](STATUS.md); strdoc capabilities are listed in [Legacy.md](Legacy.md).
+
+
 ## Legend
 - ✅ **Adopt** - Keep as-is or with minor improvements
 - ❌ **Reject** - Not needed or conflicts with new design

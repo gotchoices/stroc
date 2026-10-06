@@ -121,6 +121,27 @@ The `contract/refcheck` script validates that all `source` references point to v
 - **Import/Export**: Save and load documents as JSON files
 - **Section numbering**: Automatic outline numbering (1., 1.1., 1.1.1., etc.)
 
+### Capabilities Stroc must match (parity target)
+
+Verified from `wylib/src/strdoc.vue` on 2026-10-06. Tracked in [STATUS.md](STATUS.md), Stage 2.
+
+- **Direct editing in the rendered view** (`contenteditable`). Pressing Enter to start a new
+  paragraph splits it into new sibling sections when editing ends (`editLeave`).
+- **Per-section `name`** used as a stable anchor for cross-references, independent of the title.
+- **Live cross-reference numbers**: `<x-r name="…">` on a section publishes its number;
+  `<x-r>name</x-r>` in text displays that number, updating as sections move.
+- **Drag and drop**: before or after (upper/lower half), into as a child (drag right past 50px),
+  Shift to copy, drop on the header to delete; custom cursors for each.
+- **Toggle a section between written-out and included** (`togSource`).
+- **Edit-all and preview-all** commands, plus per-section toggle by double-click.
+- **Legal run-in rendering**: "1.2. **Title**: text" with a hanging indent; the top level shows
+  its title centered.
+- **Read-only mode** (`editable: false`) and host integration through a `state` prop and `submit`
+  events (`update`, `dirty`).
+- **Spell-check toggle**; undo was planned but never implemented.
+- **Included documents** link to their resolved source; MyCHIPs materialized them server-side
+  (`mychips.contract_mat` in `schema/contracts.wms`) for viewing and PDF.
+
 ### State Structure
 
 ```javascript
@@ -292,12 +313,13 @@ The YAML format mixes semantic content with presentation concerns:
 - `title` is both content (the heading text) and presentation (implies formatting)
 - No mechanism to specify "this is bold for emphasis" vs. "this should display bold"
 
-### 3. Cross-References Tied to Vue
+### 3. Cross-References Tied to the Browser
 
-The `<x-r>` element is implemented in the Vue component layer, not as part of the document model. This means:
-- Cross-references don't survive serialization to plain text
-- PDF rendering must handle them separately
-- No standard representation in the JSON structure
+`<x-r>` tags are stored in the text, so they survive serialization, but their meaning (resolving a
+name to a section number) lives in a browser custom element. This means:
+- Any non-browser renderer (PDF, plain text) must reimplement resolution
+- Nothing validates that a referenced name exists
+- The anchor `name` is part of the hashed content, so it cannot change without a new document
 
 ### 4. External Reference Resolution
 
