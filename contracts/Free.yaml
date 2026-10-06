@@ -1,0 +1,20 @@
+# Converted from MyCHIPs contract/Free.yaml (published 2020-04-01).
+# Sample content for Stroc; not a legal document in force.
+stroc: '0.1'
+language: en
+title: How to Use MyCHIPs at No Cost
+author: mychips.org
+published: '2020-04-01'
+text: >-
+  End users may use MyCHIPs royalty free on the condition that, in all contracts and transactions, the following contract sections are included in their full force and intent, and abided by:
+sections:
+  - id: recitals
+    source: {/: baguqeeraurtgopiqpgclt7x76s72365z73yyuw7ku5vvepns7dllrmxacqrq}
+  - id: values
+    source: {/: baguqeera6i3jqel72deg3krtailz6oo4km2ahexq5johl6duqojm3jeqohea}
+  - id: tally-definition
+    source: {/: baguqeeraq6zgmmt5c3e3bhvalz2gwvhyz4ik37zlex5hfmh6mfugxdfk5npa}
+  - id: chip-definition
+    source: {/: baguqeeravcxd6xe4hiwi37cc5kzkqcac6ckgvfs7vwsqfrq7oxthfmjwiqga}
+  - id: ethics
+    source: {/: baguqeera7ng4eluiooneaufkarxpbk6iwf77e6mqmt44lpcvvstftqojxamq}

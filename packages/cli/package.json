@@ -1,0 +1,22 @@
+{
+  "name": "@stroc/cli",
+  "version": "0.0.1",
+  "type": "module",
+  "bin": {
+    "stroc": "dist/src/index.js"
+  },
+  "files": [
+    "dist/src"
+  ],
+  "scripts": {
+    "build": "tsc -b && chmod +x dist/src/index.js"
+  },
+  "dependencies": {
+    "@stroc/core": "workspace:*",
+    "@stroc/yaml": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.0"
+  }
+}

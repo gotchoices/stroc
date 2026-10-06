@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit'
 import { state } from 'lit/decorators.js'
+import { parse as parseYaml } from 'yaml'
 
 type Section = {
   id?: string
@@ -945,24 +946,25 @@ export class StrocEditor extends LitElement {
     const files = e.dataTransfer?.files
     if (!files || files.length === 0) return
 
-    const file = files[0]
-    if (!file.name.endsWith('.json')) {
-      alert('Please drop a .json file')
-      return
-    }
-
     if (this.dirty && !confirm('You have unsaved changes. Opening a new document will discard them. Continue?')) {
       return
     }
+    await this.loadFile(files[0])
+  }
 
+  // Open a Stroc document from a .yaml, .yml or .json file. (JSON is also YAML.)
+  private async loadFile(file: File) {
+    if (!/\.(ya?ml|json)$/i.test(file.name)) {
+      alert('Please choose a .yaml or .json file')
+      return
+    }
     try {
-      const text = await file.text()
-      const data = JSON.parse(text)
-      if (!data.stroc || !data.language || !data.title) {
-        alert('Invalid Stroc document: missing required fields (stroc, language, title)')
+      const data = parseYaml(await file.text(), { version: '1.2', schema: 'core' })
+      if (!data || typeof data !== 'object' || !data.title) {
+        alert('This does not look like a Stroc document (no title)')
         return
       }
-      this.doc = data
+      this.doc = this.fromPlainDoc(data)
       this.cid = null
       this.errors = []
       this.markClean()
@@ -1007,12 +1009,34 @@ export class StrocEditor extends LitElement {
   }
 
   // The document as plain JSON for the server: editing flags removed, sources written as links.
+  // The document as plain JSON, as it is validated, hashed and saved: editing flags removed, empty
+  // fields omitted, whitespace tidied (the editor's job under the canonical-form rules), and
+  // sources written as links {"/": cid}.
   private toPlainDoc(): any {
-    const toLinks = (secs?: Section[]): any[] | undefined => secs?.map(sec => sec.source !== undefined
-      ? { id: sec.id, source: { '/': sec.source } }
-      : { ...sec, ...(sec.sections ? { sections: toLinks(sec.sections) } : {}) })
-    const doc = this.cleanEditingFlags(structuredClone(this.doc))
-    return { ...doc, ...(doc.sections ? { sections: toLinks(doc.sections) } : {}) }
+    const tidy = (v: unknown): string | undefined => {
+      if (typeof v !== 'string') return undefined
+      const t = v.replace(/[\s\u00A0]+/g, ' ').trim()
+      return t || undefined
+    }
+    const section = (sec: Section): any => {
+      if (sec.source !== undefined) return { id: tidy(sec.id), source: { '/': tidy(sec.source) ?? '' } }
+      const children = sec.sections?.map(section).filter(c => Object.keys(c).length)
+      return omitEmpty({ id: tidy(sec.id), title: tidy(sec.title), text: tidy(sec.text), sections: children?.length ? children : undefined })
+    }
+    const d = this.doc
+    const sections = d.sections?.map(section).filter(c => Object.keys(c).length)
+    return omitEmpty({
+      stroc: d.stroc, language: tidy(d.language), title: tidy(d.title), author: tidy(d.author),
+      published: tidy(d.published), text: tidy(d.text), sections: sections?.length ? sections : undefined,
+    })
+  }
+
+  // Accept documents saved with links ({"/": cid}) or, from older files, plain CID strings.
+  private fromPlainDoc(data: any): Doc {
+    const section = (sec: any): Section => sec.source !== undefined
+      ? { id: sec.id ?? sec.as, source: typeof sec.source === 'object' ? sec.source['/'] : sec.source }
+      : { ...sec, ...(sec.sections ? { sections: sec.sections.map(section) } : {}) }
+    return { ...data, ...(data.sections ? { sections: data.sections.map(section) } : {}) }
   }
 
   private cleanEditingFlags(obj: any): any {
@@ -1039,39 +1063,23 @@ export class StrocEditor extends LitElement {
 
     const input = document.createElement('input')
     input.type = 'file'
-    input.accept = '.json'
+    input.accept = '.yaml,.yml,.json'
     input.onchange = async (e: any) => {
       const file = e.target.files[0]
-      if (!file) return
-      
-      try {
-        const text = await file.text()
-        const data = JSON.parse(text)
-        // Basic validation
-        if (!data.stroc || !data.language || !data.title) {
-          alert('Invalid Stroc document: missing required fields (stroc, language, title)')
-          return
-        }
-        this.doc = data
-        this.cid = null
-        this.errors = []
-        this.markClean()
-      } catch (err: any) {
-        alert(`Failed to open: ${err.message}`)
-      }
+      if (file) await this.loadFile(file)
     }
     input.click()
   }
 
   private onSave() {
     this.closeMenus()
-    const cleanDoc = this.cleanEditingFlags(structuredClone(this.doc))
+    const cleanDoc = this.toPlainDoc()
     const json = JSON.stringify(cleanDoc, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${cleanDoc.title.replace(/\s+/g, '_')}.json`
+    a.download = `${(cleanDoc.title ?? 'document').replace(/\s+/g, '_')}.json`
     a.click()
     URL.revokeObjectURL(url)
     this.markClean()
@@ -1082,6 +1090,11 @@ export class StrocEditor extends LitElement {
     // TODO: Implement PDF export using pdfmake or similar
     alert('PDF export not yet implemented')
   }
+}
+
+// Drop fields whose value is undefined, so empty values never reach the document.
+function omitEmpty(obj: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined))
 }
 
 customElements.define('stroc-editor', StrocEditor)

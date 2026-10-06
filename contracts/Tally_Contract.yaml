@@ -1,0 +1,32 @@
+# Converted from MyCHIPs contract/Tally_Contract.yaml (published 2020-04-01).
+# Sample content for Stroc; not a legal document in force.
+stroc: '0.1'
+language: en
+title: MyCHIPS Tally Agreement
+author: mychips.org
+published: '2020-04-01'
+text: >-
+  This written Contract is part of an Agreement by and between the Parties, with one Party hereinafter referred to as Foil Holder and the the as Stock Holder.
+  A digital hash of this Contract has been incorporated into a MyCHIPs digital Tally which also contains other Data relevant to the Agreement.
+  Tally Data includes details about the identities of the Parties as well as digital signatures by the Parties attesting to their acceptance of this Agreement and is shown at the end of the Contract.
+  This Contract also incorporates further documents by reference, including their digital hashes.
+  All terms and conditions, including those contained in the Tally itself, this document, the other documents it references, and the communications between the Parties, together form the complete Tally Agreement between the Parties.
+sections:
+  - id: recitals
+    source: {/: baguqeeraurtgopiqpgclt7x76s72365z73yyuw7ku5vvepns7dllrmxacqrq}
+  - id: values
+    source: {/: baguqeera6i3jqel72deg3krtailz6oo4km2ahexq5johl6duqojm3jeqohea}
+  - id: tally-definition
+    source: {/: baguqeeraq6zgmmt5c3e3bhvalz2gwvhyz4ik37zlex5hfmh6mfugxdfk5npa}
+  - id: chip-definition
+    source: {/: baguqeeravcxd6xe4hiwi37cc5kzkqcac6ckgvfs7vwsqfrq7oxthfmjwiqga}
+  - id: ethics
+    source: {/: baguqeera7ng4eluiooneaufkarxpbk6iwf77e6mqmt44lpcvvstftqojxamq}
+  - id: duties-rights
+    source: {/: baguqeeraf7zzdx4c4pagt6lpk6ybquckd4idmwptqf4eafjfwn4cxrg5csea}
+  - id: representations
+    source: {/: baguqeerardiejtjw7p75ptrt442fsnt3cxbbovp5avlr2wzarmrgjt4hjqzq}
+  - id: defaults
+    source: {/: baguqeeramtnbavhp2wz7wnovfcanrjn7rv6kozrlwryslhwqr7cecvruhc4q}
+  - id: credit-terms
+    source: {/: baguqeera6bvvt35rmwsrnobp4hhctkpzvex5365yll4xxuwwd63tchdsdslq}

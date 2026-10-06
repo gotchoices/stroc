@@ -163,7 +163,7 @@ Specification and decisions
 
 ### Stage 0 — Safety net
 
-- [x] Vitest in `@stroc/core`, wired to `yarn test` (85 tests)
+- [x] Vitest in `@stroc/core` and `@stroc/yaml`, wired to `yarn test` (122 tests)
 - [x] Unit tests for text rules, ids, language tags, markup and validation, including malformed input
 - [x] Golden-vector CID tests (5 fixture documents in `packages/core/test/fixtures/`, including a
       contract that includes a clause by CID). Recorded for format `"0.1"`; re-recorded at freeze.
@@ -203,18 +203,23 @@ Spec first (per [Workflow.md](Workflow.md)), then code.
 - [x] `source` and `replaces` as links in core; `fromPlain` / `toPlain` convert `{"/": cid}`
 - [x] `parameters` in types and validation
 - [x] `canonicalizeText` and `suggestId` helpers for lint fixes and the editor
-- [ ] Lint fixes beyond text (markup spelling, language case): offered by the linter
-- [ ] YAML read/write and lint (Q4), in a package separate from core: YAML 1.2 core schema;
-      reject non-canonical values (e.g. `stroc: 1.0` parses as a number) with a fix offered
-- [ ] Sample corpus: all 13 MyCHIPs documents converted to the new form, as test fixtures
-      (replaces the 3 hand conversions in `contracts/`, which carry stale RIDs and small edits)
+- [x] `@stroc/yaml`: parse YAML (or JSON) with line and column for every problem; reject anchors,
+      aliases, tags, merge keys and duplicate keys; write the standard layout (fixed field order,
+      one sentence per line, `{/: cid}` links); `fixYaml` fixes text, language case and unquoted
+      numbers in place, keeping comments and layout. Round trip tested: same CID.
+- [x] `@stroc/cli`: `stroc lint [--fix]` and `stroc cid` (run as `yarn stroc ...`)
+- [x] Sample library: all 13 MyCHIPs documents converted to `contracts/*.yaml`, includes linked
+      by real CID; a test keeps every file valid and every include current (D10)
+- [x] Prototype editor opens `.yaml` files (saves JSON until the rewrite)
+- [ ] Lint fixes for markup spelling (tag order, adjacent spans, edge spaces) and `eng` → `en`
+      style shortest-tag advice
 
 ### Stage 2 — strdoc parity
 
 Library and composition
 - [ ] `replaces` in types and validation (list of CIDv1 DAG-JSON links, no duplicates)
 - [ ] CLI package `@stroc/cli`, independent of the editor (Q3). Replaces strdoc's `hash` and `refcheck`:
-  - [ ] `stroc lint [files]`: the shared lint rules, with `--fix`
+  - [x] `stroc lint [files]`: the shared lint rules, with `--fix`
   - [ ] `stroc status [folder]`: each file's CID and `replaces` chain; every `source` pointing at a
         superseded version, naming the newer file; `source` CIDs the tool has never seen, by file and line
   - [ ] `stroc update [files] [--all]`: update chosen sources, add `replaces` to each document that
@@ -285,10 +290,10 @@ Found 2026-10-06. D1–D6 and D9 fixed 2026-10-06 (Stage 0 and the core rewrite)
   composed; composition does not exist yet (Stage 2).
 - **D7. Editor depends on the dev server** for validation and CID, and keeps the document in private
   state with no events, so it cannot be embedded or used offline. (Rewrite, Stage 2.)
-- **D8. Editor Save writes the document without validating it**, and does not produce canonical
-  text. (Rewrite, Stage 2.)
-- **D10. The sample contracts in `contracts/` are invalid under spec 0.14** (legacy RIDs, `as`,
-  `"1.0"`). Replaced by the sample corpus (Stage 1).
+- **D8. Editor Save does not validate before writing.** Since 2026-10-06 it does write the same
+  tidied document that is validated (empty fields omitted, whitespace collapsed, links as
+  `{"/": cid}`), and Open accepts both link and older string sources. (Rewrite, Stage 2.)
+- **D10 (fixed).** The old sample contracts were replaced by the converted library.
 
 ## Running it
 
@@ -298,8 +303,10 @@ yarn build      # compiles all packages
 ```
 
 ```
-yarn test       # core unit tests and golden vectors
+yarn test       # unit tests, golden vectors, sample library consistency
 yarn lint       # ESLint, all packages
+yarn stroc lint contracts/*.yaml     # check documents (--fix to fix what can be fixed)
+yarn stroc cid contracts/*.yaml      # print CIDs
 yarn start      # build, then run the compiled server
 ```
 

@@ -40,6 +40,8 @@ const litPackages: [string, string][] = [
 for (const [mount, pkg] of litPackages) {
   app.use(mount, express.static(path.dirname(require.resolve(pkg))))
 }
+// The YAML parser's browser build, for opening .yaml files in the editor.
+app.use('/static/yaml', express.static(path.resolve(path.dirname(require.resolve('yaml')), '../browser')))
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' })

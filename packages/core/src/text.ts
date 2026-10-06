@@ -28,15 +28,19 @@ export function checkText(value: string): TextIssue[] {
     issues.push({ code: 'not-nfc', message: 'must be in Unicode NFC form' })
   }
   let offset = 0
-  let prevSpace = false
+  let prevSpace = 0      // length of the current run of spaces
   for (const ch of value) {
     const code = ch.codePointAt(0) ?? 0
     if (ch === ' ') {
-      if (offset === 0) issues.push({ code: 'leading-space', message: 'must not begin with a space', offset })
-      else if (prevSpace) issues.push({ code: 'double-space', message: 'must not contain two spaces in a row', offset })
-      prevSpace = true
+      if (offset === 0) {
+        issues.push({ code: 'leading-space', message: 'must not begin with a space', offset })
+        prevSpace = 2     // the leading run is reported once, as leading-space
+      } else if (prevSpace === 1) {
+        issues.push({ code: 'double-space', message: 'must not contain two spaces in a row', offset })
+      }
+      prevSpace++
     } else {
-      prevSpace = false
+      prevSpace = 0
       if (FORBIDDEN_INVISIBLE.has(ch)) {
         issues.push({ code: 'invisible', message: `invisible character U+${hex(code)} is not allowed`, offset })
       } else if (isWhitespace(ch)) {

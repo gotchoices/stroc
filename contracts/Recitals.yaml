@@ -1,0 +1,24 @@
+# Converted from MyCHIPs contract/Recitals.yaml (published 2020-04-01).
+# Sample content for Stroc; not a legal document in force.
+stroc: '0.1'
+language: en
+title: Purpose of The Contract
+author: mychips.org
+published: '2020-04-01'
+text: >-
+  Whereas:
+sections:
+  - text: >-
+      In pursuit of their various interests, the Parties wish to engage in the exchange of goods and services, hereinafter referred to as Product; and
+  - text: >-
+      It is unlikely in any specific transaction that a two-way exchange of Product can be found that is exactly balanced in both time and value and/or is desired by the Parties; and
+  - text: >-
+      The Parties desire an efficient way to conduct a transfer of Product with consideration being given in the form of a Pledge of Value, or a debt, to be honored at some future time and in a form acceptable to the Parties; and
+  - text: >-
+      The Parties want to issue, receive, and formalize such Pledges of Value, or Credit, in a system of open-account indebtedness and in a digital format for the sake of convenience and accuracy; and
+  - text: >-
+      The Parties desire to use the MyCHIPs Protocol as defined published by MyCHIPs.org and demonstrated by its Reference Implementation, to accomplish this; and
+  - text: >-
+      The Parties desire to exchange value and credits among their trusted network to facilitate and encourage interactions and transactions in that network and to enable the satisfaction of outstanding Pledges of Value;
+  - text: >-
+      Now, thereforet is hereby agreed as follows:

@@ -1,80 +1,50 @@
-# Stroc Example Contracts
+# Sample Library
 
-This folder contains example contracts converted from the legacy MyCHIPs YAML format to the new Stroc JSON format.
+The 13 MyCHIPs contract documents, converted to Stroc format `0.1` YAML. They are sample content
+for developing and testing Stroc, not legal documents in force. Stroc does not support the legacy
+MyCHIPs format; these were converted once, and the converter is not part of Stroc.
 
-> Stroc does not support legacy documents (decided 2026-10-06); these are sample content only. They are due to be replaced by a full converted corpus used as test fixtures (see [STATUS.md](../docs/STATUS.md), Stage 1). Note that the hand conversion also changed `mychips.org` to `MyCHIPs.org` and the title "MyCHIPS" to "MyCHIPs".
+## What the conversion did
 
-## Source
+- `contract:` wrapper, `host`, `name`, `version`, `top` and `rid` removed; `host` kept as `author`.
+- `language: eng` became `en` (BCP 47).
+- Paragraph text: whitespace collapsed to single spaces, written one sentence per line.
+- Each reference section (`name` + legacy `source` RID) became an include: an `id` derived from the
+  name (`Tally_Definition` → `tally-definition`) and a link to the included file's CID.
+- No wording was changed (the original "MyCHIPS Tally Agreement" title is kept as written).
 
-These documents are hand-converted from the original MyCHIPs contracts located at:
-`/Users/kyle/share/devel/mc/mychips/contract/*.yaml`
+## Structure
 
-## Conversion Changes
+`Tally_Contract.yaml` includes nine documents; `Free.yaml` includes five; `Tally_Testing.yaml`
+includes `Tally_Contract.yaml`. The other ten are standalone clauses.
 
-The following transformations were applied:
+| CID | File |
+|-----|------|
+| `baguqeeravcxd6xe4hiwi37cc5kzkqcac6ckgvfs7vwsqfrq7oxthfmjwiqga` | CHIP_Definition.yaml |
+| `baguqeera6bvvt35rmwsrnobp4hhctkpzvex5365yll4xxuwwd63tchdsdslq` | Credit_Terms.yaml |
+| `baguqeeramtnbavhp2wz7wnovfcanrjn7rv6kozrlwryslhwqr7cecvruhc4q` | Defaults.yaml |
+| `baguqeeraf7zzdx4c4pagt6lpk6ybquckd4idmwptqf4eafjfwn4cxrg5csea` | Duties_Rights.yaml |
+| `baguqeera7ng4eluiooneaufkarxpbk6iwf77e6mqmt44lpcvvstftqojxamq` | Ethics.yaml |
+| `baguqeeraype3mnrczouljhczmuyulnn34gx5trbtukftyej42cvets7h4x6a` | Free.yaml |
+| `baguqeeraurtgopiqpgclt7x76s72365z73yyuw7ku5vvepns7dllrmxacqrq` | Recitals.yaml |
+| `baguqeerardiejtjw7p75ptrt442fsnt3cxbbovp5avlr2wzarmrgjt4hjqzq` | Representations.yaml |
+| `baguqeerawiiy2wqafvg7rftiojfvrcxhwp52yckmmidgzk3pjilxsueva62q` | Sending_Value.yaml |
+| `baguqeera56bfnrqnf54kmd3c6ovga3mbinfdkwrdqwks6mntqpez22cjszea` | Tally_Contract.yaml |
+| `baguqeeraq6zgmmt5c3e3bhvalz2gwvhyz4ik37zlex5hfmh6mfugxdfk5npa` | Tally_Definition.yaml |
+| `baguqeeraawxjedwf3rqmgggak6ly64qzbpwlpochthuq56rszxeg3ggcc7hq` | Tally_Testing.yaml |
+| `baguqeera6i3jqel72deg3krtailz6oo4km2ahexq5johl6duqojm3jeqohea` | Values.yaml |
 
-### Field Changes
-- `contract:` wrapper → removed (direct JSON object)
-- `host:` → `author:` (optional field)
-- `name:` → removed (CID is the identifier)
-- `version:` → removed (CID versions content)
-- `rid:` → removed (CID is now external)
-- `top:` → removed (not needed)
-- Added required `stroc: "1.0"` version field (now `"0.1"` until the format is frozen; these samples predate that)
+The CIDs change whenever the format changes before it is frozen at `1.0`.
 
-### Section Reference Changes
-- `name` + `source` → `as` + `source`
-  - `name` was used for file lookups
-  - `as` is the alias used in cross-references within this document
+## Using them
 
-### Text Normalization
-- YAML multi-line strings (` >-`) converted to single-line JSON strings
-- Whitespace collapsed to single spaces (per spec)
-- No other content changes
-
-## Documents Included
-
-### Standalone Documents
-- `Ethics.json` - Ethical conduct requirements
-- `Tally_Definition.json` - What a tally is and how it works
-
-### Composite Documents
-- `Tally_Contract.json` - Top-level agreement that includes 9 sub-documents by reference
-
-## CID Notes
-
-**Important:** The `source` CIDs in `Tally_Contract.json` are the **original legacy RIDs** (base64url SHA-256 hashes). These are NOT Stroc CIDs (which are IPFS CIDv1, DAG-JSON codec, starting with `baguqeera`).
-
-To generate proper Stroc CIDs:
-1. Load each document in the editor
-2. Click "Save & Validate"
-3. Copy the displayed CID
-4. Update the `source` field in referencing documents
-
-Alternatively, use the `/cid` endpoint:
-```bash
-curl -X POST http://localhost:3000/cid \
-  -H "Content-Type: application/json" \
-  -d @Ethics.json
+```
+yarn stroc lint contracts/*.yaml     # check every document
+yarn stroc cid contracts/*.yaml      # print each document's CID
 ```
 
-## Usage
+In the editor (`yarn dev`, then `http://localhost:3000`), File → Open accepts these files directly.
 
-To open in the Stroc editor:
-1. Start the server: `yarn dev`
-2. Visit http://localhost:3000/
-3. Click "Import" (when implemented)
-4. Load one of these JSON files
-
-Or manually paste the JSON into the editor by inspecting the browser console and setting:
-```javascript
-document.querySelector('stroc-editor').doc = <paste JSON here>
-```
-
-## Future Work
-
-- Import/export functionality to load these files via UI
-- Auto-resolution of included documents by CID
-- Regenerate all CIDs using Stroc format
-- Create a script to batch-convert all MyCHIPs YAML contracts
-
+If you edit a clause, its CID changes and every document that includes it must be updated; the
+test in `packages/yaml/test/corpus.test.ts` fails until they are. Until `stroc update` exists
+(STATUS, Stage 2), update the `source` links by hand using `stroc cid`.

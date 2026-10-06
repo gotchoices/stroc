@@ -1,0 +1,72 @@
+# Converted from MyCHIPs contract/Duties_Rights.yaml (published 2020-04-01).
+# Sample content for Stroc; not a legal document in force.
+stroc: '0.1'
+language: en
+title: Duties of the Parties to Each Other
+author: mychips.org
+published: '2020-04-01'
+text: >-
+  Each Party has certain duties under this Agreement, and these duties create corresponding rights for the other Party as follows:
+sections:
+  - title: Cooperation
+    text: >-
+      The Parties enter into this Tally to exchange credit for the purpose of facilitating cooperative commerce and trade with each other as well as others within their trusted networks.
+  - title: Good Faith
+    text: >-
+      Each Party shall behave honestly and with integrity in the transactions facilitated by the Tally.
+      Neither Party shall use the Tally to intentionally cheat, defraud, or steal value from the other Party or any third parties.
+  - title: Competency
+    text: >-
+      Each Party shall take reasonable care to ensure that the other Party is mentally competent to enter into this Agreement and its associated transactions including avoiding the receipt of Pledges of Value from parties who are too young, too old, or otherwise unable to fully understand the obligations they are entering into.
+  - title: Disclosure
+    text: >-
+      Each Party shall honestly inform the other Party of information relevant to its decision to execute this Tally and/or its associated Pledges of Value.
+      This includes disclosures about any known dangers or deficiences regarding the Product purchased by way of the Tally, and information about one's ability or past performance in fulfilling Pledges of Value made to other parties.
+  - title: Consent
+    text: >-
+      Each Party shall take reasonable care to ensure that the other Party has entered into this Agreement of the other Party's own free will and choice.
+  - title: Identity
+    text: >-
+      Each Party shall honestly represent the Party's identity to the other Party and shall furnish accurate information adequate for further enforcement of any obligation incurred under the Tally.
+  - title: Privacy
+    text: >-
+      Each Party shall take reasonable measures to keep private any information not already generally available by other means, and which is revealed or discovered in connection with the execution of the Tally, except as otherwise set forth in this Agreement.
+  - title: Lift Transaction
+    text: >-
+      A Credit Lift is a distributed transaction by which parties can effectively exchange amounts of indebtedness with other users on the network.
+      Such transaction can be used to clear credit balances among a group of users.
+      It can also be used to transmit value through the network to a party one is not directly connected to.
+  - title: Lift Execution
+    text: >-
+      Each Party shall make reasonable efforts to use software which faithfully executes the MyCHIPs protocol, as published by MyCHIPs.org, in good faith.
+      Each Party's server, having completed the conditional phase of a Lift transaction, shall then make every effort to commit the final phase of that lift in accordance with the agreed upon terms.
+      Use of a current, unmodified, official release of the MyCHIPs software as distributed by MyCHIPs.org satisfies the requirements of this section.
+  - title: Resolution by Other Means
+    text: >-
+      Should a Party fail, within the applicable Call Terms, to provide or maintain suitable connections and contributions to satisfy one or more outstanding Pledges of Value by way of Credit Lifts, it shall provide payment upon demand in some other medium satisfactory to the Receiver.
+      This may include payment of a sound government currency in common use by the Receiver such as Dollars or Euros, for example.
+      It may include payment in gold, silver or other precious commodities acceptable to the Receiver.
+      It may also include Product furnished by the Issuer and satisfactory to the Receiver.
+      The Receiver shall not unreasonably refuse a good faith payment offered by such other means.
+  - title: Lift Authority
+    text: >-
+      Each Party authorizes its agent host system to sign Chits associated with Credit Lifts, on behalf of that Party, using the agent's own private/public key.
+      All such lifts executed and signed by the Party's agent shall be binding upon the Party so long as they conform to the Trading Variables established and signed by the Party and attached to the Tally.
+      Each Party shall hold its system operator(s) harmless for unintentional errors or losses incurred while using a current, unmodified official release of the MyCHIPs software as distributed by MyCHIPs.org.
+  - title: Notice of Default
+    text: >-
+      Should one Party find the other Party in Default of this Agreement, it shall give written notice to the Defaulting Party by email, text message or certified mail according to the contact information contained in the Tally.
+      Such notice may be as simple as to state the act or circumstance deemed to be a breach, and to request the problem be resolved.
+  - title: Cure of Default
+    text: >-
+      Upon receiving a notice of Default, a Party must make a timely, good faith effort to satisfy the complaint of the noticing Party within 10 days.
+  - title: Publication
+    text: >-
+      If a Default is not cured within 10 days of notice, the non-breaching Party is entitled to publish Tally Data regarding the identity of the breaching Party and information about the nature of the breach, notwithstanding any obligations regarding privacy.
+      Such publication shall be done with the sole intent to honestly inform others who might contemplate entering into a similar transaction with the breaching Party.
+      If a Party has previously published such information and the breaching Party subsequently and satisfactorily cures the breach, the publishing Party shall then also similarly publish additional information indicating that the breach has been cured.
+  - title: Collateral
+    text: >-
+      If collateral is offered to secure a debt incurred by an Issuer under this Tally, such shall be evidenced by an external agreement such as a deed of trust, lien or notice of interest.
+      A reference to this Tally may be included in that agreement by noting the Tally's UUID number.
+      If such agreement is duly executed by the Parties, the Recipient shall have all legal recourse to use the collateral to fully enforce the obligation incurred under this Agreement.
