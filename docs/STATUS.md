@@ -31,19 +31,19 @@ Stroc stays a general document library: it must not depend on Taleus or Sereus. 
 - **Legal rendering style**: formal, numbered, suitable for an enforceable contract.
 - **Render-time data is wanted**: party names, dates and similar values shown in the rendered
   document but not hashed with it (see Q5).
+- **Q1 settled: section ids.** Any section may carry an `id`, unique within its document (not
+  globally) and hashed. An include section's `id` is required and replaces the `as` alias.
+  References are id paths: `<ref:cure>`, `<ref:ethics/good-faith>`. Titles carry no identity.
+  Hash-based and position-based references were rejected: sections have no hash, mutually
+  referring sections could not be written, and every edit would cascade. Spec 0.6.
+- **Q6 settled: reference scope.** References point only within the document and what it
+  includes. Reusable clauses use defined terms for anything outside themselves. Spec 0.6.
 
 ## Blocking questions
 
-Each has a recommendation. Q1, Q2 and Q7 must be settled before golden-vector CIDs are recorded.
+Each has a recommendation. Q2 and Q7 must be settled before golden-vector CIDs are recorded.
 
-- [ ] **Q1. Cross-reference targets.** Today a reference is a title path (`<ref:Ethics/Competency>`).
-  Renaming a title breaks it, and untitled paragraphs cannot be referenced at all.
-  - *Option A*: keep title paths.
-  - *Option B (recommended)*: an optional `id` on any section (strdoc's `name`, returned as an
-    anchor only): a short slug, hashed, unique within its document. References are `<ref:id>` for
-    the current document and `<ref:alias/id>` into an included one, and render as "Section 3.2".
-    Titles can then be reworded freely and any paragraph can be a target. The sibling-title
-    uniqueness rule could be dropped.
+- [x] **Q1. Cross-reference targets.** Settled: section ids (see Decisions).
 - [ ] **Q2. How an include is encoded.** `source` as a plain CID string, or as an IPLD link
   (`{"/": "baguqeera…"}`). They hash differently.
   - A link makes a composed contract one IPLD DAG: IPFS tools can pin, fetch and walk the whole
@@ -76,10 +76,7 @@ Each has a recommendation. Q1, Q2 and Q7 must be settled before golden-vector CI
   out cheap (they parse like references). No conditional text. The renderer also accepts arbitrary
   caller-supplied blocks (signatures, tally id, QR codes) that it places but never interprets.
   Is this the shape you want?
-- [ ] **Q6. References that leave a clause.** A standalone clause cannot be validated if it refers
-  to a sibling clause it does not include. *Recommended*: references resolve only within the
-  document and what it includes; a clause that needs to mention something outside itself uses a
-  defined term instead.
+- [x] **Q6. References that leave a clause.** Settled: document and its includes only (see Decisions).
 - [ ] **Q7. Strictness of the canonical form.** *Recommended*:
   - Unknown fields are rejected. Today they are silently dropped, so a document gets the CID of a
     different, smaller document.
@@ -115,7 +112,8 @@ Specification and decisions
 - [x] `host`, `name`, `version`, `rid` removed; `author` optional
 - [x] Text normalization rules (entities, control characters with bidi preserved, NFC, whitespace)
 - [x] Inline markup `<b>`, `<i>`, `<u>` defined, with canonical nesting order (spec only)
-- [x] Include by CID with `as` alias (spec only)
+- [x] Include by CID (spec only)
+- [x] Section ids and reference rules (spec 0.6)
 - [x] Multilingual wrapper-document pattern
 - [x] Spec prose aligned with the paragraph-string model; CID prefix and version corrected (2026-10-06)
 
@@ -142,7 +140,7 @@ Specification and decisions
 
 - [ ] Vitest in `@stroc/core`, wired to `yarn test`
 - [ ] Unit tests for normalization and validation, including malformed input
-- [ ] Golden-vector CID tests (after Q1, Q2, Q7)
+- [ ] Golden-vector CID tests (after Q2, Q7)
 - [ ] Malformed input returns errors instead of throwing (D1)
 - [ ] Fix editor XSS (D2)
 - [ ] ESLint configured and passing
@@ -151,13 +149,15 @@ Specification and decisions
 ### Stage 1 — Document model
 
 Spec first (per [Workflow.md](Workflow.md)), then code.
-- [ ] Spec: reference targets (Q1), include encoding (Q2), strictness (Q7), include rendering (Q8),
-      parameter declarations (Q5), reference scope (Q6)
-- [ ] Validation completeness (D4): reject unknown fields, empty sections, `source` mixed with
-      `title`/`text`/`sections`, `source` that is not a CID, missing or duplicate `as`, ids not
-      unique, unknown `stroc` version, `published` not an ISO date, `language` not ISO 639-2
+- [x] Spec: reference targets (Q1) and reference scope (Q6), spec 0.6
+- [ ] Spec: include encoding (Q2), strictness (Q7), include rendering (Q8), parameter declarations (Q5)
+- [ ] Validation completeness (D4): reject unknown fields, empty sections, a reference section
+      with anything besides `source` and `id`, `source` that is not a CID, malformed or duplicate
+      ids, unknown `stroc` version, `published` not an ISO date, `language` not ISO 639-2
+- [ ] Replace `as` with `id` in types, normalization, validation, editor and sample documents;
+      drop the sibling-title uniqueness and reserved-character rules for titles
 - [ ] Markup: normalize and validate `<b>/<i>/<u>` (allowed tags only, balanced, canonical order) (D5)
-- [ ] References: parse, validate local targets (D6)
+- [ ] References: parse id paths, validate local targets and targets in included documents (D6)
 - [ ] `verifyDocument(bytes, cid)` that hashes exactly what was received
 - [ ] YAML and JSON import/export (Q4), in a package separate from core
 - [ ] Sample corpus: all 13 MyCHIPs documents converted to the new form, as test fixtures
@@ -187,7 +187,8 @@ Editor
 - [ ] Convert a section between written-out and included
 - [ ] Type directly in the rendered view; Enter splits the paragraph into a new sibling section
 - [ ] Edit-all / preview-all
-- [ ] Insert a reference by picking the target; shows its live number
+- [ ] Insert a reference by picking the target (proposes an id from its title); shows its live number
+- [ ] Renaming an id updates references within the document
 - [ ] Open/Save YAML as well as JSON; Save validates and writes the normalized document
 - [ ] Validation errors shown at the offending section
 - [ ] Build/publish a library from the editor (Q3)

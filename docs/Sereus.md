@@ -207,12 +207,11 @@ MyCHIPs `top: true` marker, which said only "this may be used directly".
 
 ### Composition
 
-36. **Inclusion by CID with a local alias** (`source` and `as`) stays as specified. It is what
-    makes clause libraries possible, and MyCHIPs' Tally Contract is already composed this way.
-37. **External cross-references are an open question.** Save-time reference validation blocks a
-    clause that refers to a sibling from being saved on its own, yet standalone clauses are what a
-    library is made of. Either restrict library clauses to internal references, or validate
-    external references when the composition is assembled.
+36. **Inclusion by CID with a local name** (`source` and `id`) stays. It is what makes clause
+    libraries possible, and MyCHIPs' Tally Contract was already composed this way. (The separate
+    `as` alias was folded into `id` on 2026-10-06; spec 0.6.)
+37. **References stay inside the document and its includes** (settled 2026-10-06). A reusable
+    clause refers to anything outside itself by defined terms, never by section reference.
 38. **Defined terms need a mechanism.** A template should declare the defined terms (such as
     "Product" or "Pledge of Value") that included clauses use without owning. MyCHIPs relied on
     every tally using the same composition, and a shared library breaks that assumption.

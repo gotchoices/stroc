@@ -1,7 +1,7 @@
 # Stroc Specification
 
 **Status**: Work in Progress  
-**Version**: 0.5 (Draft)
+**Version**: 0.6 (Draft)
 
 Items marked *pending* depend on open questions in [STATUS.md](STATUS.md#blocking-questions).
 
@@ -30,8 +30,8 @@ Stroc (Structured Documents) is a protocol for creating legal documents where co
   "published": "2024-01-15",
   "text": "The preamble paragraph. It may contain several sentences.",
   "sections": [
-    {"source": "abc123...", "as": "Recitals"},
-    {"source": "xyz789...", "as": "Ethics"},
+    {"source": "baguqeera...", "id": "recitals"},
+    {"source": "baguqeera...", "id": "ethics"},
     {"title": "Additional Terms", "text": "...", "sections": [{"text": "A second paragraph, as an untitled child section."}]}
   ]
 }
@@ -56,7 +56,7 @@ The document's CID is computed by hashing the entire document. It is not stored 
 | Field | Reason for Removal |
 |-------|-------------------|
 | `host` | Replaced by `author`; fetch location handled by CID/IPFS |
-| `name` | CID is the identifier; references use `as` alias |
+| `name` | CID is the document identifier; sections that are reference targets carry an `id` local to the document |
 | `version` | CID versions content; no anchor without `name` |
 | `cid`/`rid` | Now external, not stored in document |
 
@@ -80,23 +80,32 @@ Content defined directly within the document:
 
 Subsections may omit `title` if they are simple paragraphs within a parent section.
 
+| Field | Required | Description |
+|-------|----------|-------------|
+| `id` | No | Reference target (see [Section Ids](#section-ids)) |
+| `title` | No | Heading text |
+| `text` | No | One paragraph |
+| `sections` | No | Child sections |
+
+A section must have at least one of `title`, `text` or `sections`.
+
 #### Reference Section
 
 Content included by reference to another document's CID:
 
 ```json
 {
-  "source": "SgMhedRY-zj8MaPJkz_cz8Ajfmcg3JSvEq9vF3SuOss",
-  "as": "Ethics"
+  "source": "baguqeera...",
+  "id": "ethics"
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `source` | CID of the document to incorporate |
-| `as` | Local alias for cross-references within this document |
+| Field | Required | Description |
+|-------|----------|-------------|
+| `source` | Yes | CID of the document to incorporate |
+| `id` | Yes | Local name for the included document; the first segment of references into it |
 
-The included document's content becomes part of the composite document at this position.
+A reference section has exactly these two fields. The included document's content becomes part of the composite document at this position. (Earlier drafts used a separate `as` alias; it is replaced by `id`.)
 
 ### Document Resolution and Verification
 
@@ -138,9 +147,8 @@ GET /document/:cid
 #### Reference Validation
 
 When saving a document:
-- Validate that all `<ref:...>` paths resolve to valid sections within the document or its included documents
-- For local `<ref:./SectionTitle>` references, verify the section exists in the current document
-- For external `<ref:Alias/SectionTitle>` references, fetch the aliased document and verify the path exists
+- Validate that every `<ref:...>` resolves (see [Cross-References](#cross-references))
+- References into included documents require fetching them; a document with unresolved references must not be published
 - Block save if any reference is invalid
 
 This ensures all cross-references are valid at the time of document creation, and remain valid due to content-addressability (CIDs are immutable).
@@ -159,8 +167,8 @@ To include multiple language versions of a contract, create a **wrapper document
   "author": "MyCHIPs Foundation",
   "text": "This Agreement is presented in English and French. In case of any conflict between versions, the English version shall govern.",
   "sections": [
-    {"source": "abc123...", "as": "English"},
-    {"source": "xyz789...", "as": "French"}
+    {"source": "baguqeera...", "id": "english"},
+    {"source": "baguqeera...", "id": "french"}
   ]
 }
 ```
@@ -388,53 +396,61 @@ Inline markup is stored within paragraph strings and included in the hash:
 
 ## Cross-References
 
+### Section Ids
+
+Any section may carry an `id`, which makes it a reference target. Reference (include) sections
+must carry one.
+
+- Syntax: lowercase ASCII letters, digits and single hyphens, starting with a letter:
+  `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, at most 64 characters.
+- Unique across the whole document, at every depth. Ids need not be unique across documents:
+  a document's ids are only reachable from outside through the `id` of the section that includes it.
+- Hashed like any other content. Changing an id changes the document's CID.
+- Optional on inline sections. Sections that are never referenced need no id.
+- Titles carry no identity: they need not be unique and may be reworded without breaking any reference.
+
 ### Reference Syntax
 
-Cross-references use the `<ref:...>` tag within paragraph text:
-
-```json
-"See <ref:Ethics/Competency> for requirements."
-```
-
-*Pending*: reference targets may change from title paths to section ids (STATUS Q1), and references may be restricted to the document and what it includes (Q6).
-
-### Reference Paths
-
-References use the `as` alias (for included documents) or `title` (for inline sections):
+Cross-references use the `<ref:...>` tag within paragraph text. The path is one or more ids
+separated by `/`:
 
 ```
-<ref:Ethics>                    → "Section 3" (included doc with as="Ethics")
-<ref:Ethics/Competency>         → "Section 3.1" (subsection titled "Competency")
-<ref:./Additional Terms>        → Local section in current document
+<ref:cure>                      → a section in this document with id "cure"
+<ref:ethics>                    → the included document with id "ethics", as a whole
+<ref:ethics/good-faith>         → section "good-faith" inside that included document
+<ref:free/ethics/good-faith>    → through two levels of inclusion
 ```
 
-### Path Normalization and Uniqueness
+Resolution:
+1. The first segment names a section anywhere in the current document.
+2. If more segments follow, that section must be a reference section; the next segment is looked up
+   in the included document by the same rule, and so on.
+3. A section inside an included document can only be reached through the include's id.
+   `<ref:good-faith>` does not find a `good-faith` section inside `ethics`.
 
-- Section titles must be unique among siblings (save is blocked otherwise).
-- Path components are normalized before hashing:
-  - Trim leading/trailing whitespace
-  - Collapse internal whitespace to a single space
-  - Lowercase
-  - Replace spaces with underscores
-  - Disallow reserved characters: `/`, `#`, `?`, `%`, `\`, and control characters
-- Stored references use the normalized form.
-- Included documents must also satisfy the uniqueness rule; inclusion fails if they do not.
+Example: two clause documents may both use `good-faith`; a contract including them as `ethics` and
+`duties` refers to `<ref:ethics/good-faith>` and `<ref:duties/good-faith>`.
 
-### Resolution
+### Scope
 
-- References are resolved at **render time**
-- The reference path (e.g., `<ref:Ethics/Competency>`) is part of the hash
-- The rendered text ("Section 3.1") is computed based on document structure
-- References to included documents are stable because included docs are immutable (identified by CID)
+A reference may only point within the document and the documents it includes, directly or
+transitively. A document cannot refer to a sibling or a parent: it does not know where it will be
+included. Clauses intended for reuse refer to things outside themselves by defined terms
+("the Stock Holder", "this Agreement"), not by section reference.
+
+### Rendering
+
+- References are resolved at **render time**, against the composed document.
+- A reference renders as the target's number in the composed document, e.g. "Section 3.1". The
+  same clause included in two contracts may therefore render with different numbers.
+- The reference path is part of the hash; the rendered number is not.
 
 ### Validation
 
-References are validated at **save time**:
-- Invalid references block save (not just publish)
-- Included documents are CID-addressed and immutable, so a valid reference stays valid
-- Local references (`<ref:./Section>`) are checked against current document structure
-- Renaming a section changes the document content and therefore its CID; references to the old CID remain valid, but to use the renamed section you must include the new CID
-- No separate publish-time validation needed
+- References are validated at **save time**; an invalid reference blocks save.
+- Every segment must resolve as described above; every non-final segment must be a reference section.
+- Included documents are CID-addressed and immutable, so a reference that resolves once stays valid.
+- Renaming an id is a content change; editors should update references within the document.
 
 ---
 
@@ -460,7 +476,7 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 
 8. **Document identity fields**: Removed `name`, `version`, `host`. Added `author` (optional). CID is external.
 
-9. **Cross-references**: Use `as` alias for included documents, `title` for inline sections. Reference paths are hashed; rendered numbers are computed at render time.
+9. **Cross-references**: Targets are section `id`s, unique within a document; paths step into included documents through the include's `id`. Reference paths are hashed; rendered numbers are computed at render time. (Decided 2026-10-06, replacing title paths and the `as` alias.)
 
 10. **Multilingual documents**: Use a wrapper document that includes multiple language versions by reference, with explicit governing language clause.
 
@@ -468,7 +484,7 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 
 12. **Reference validation**: Validate at save time only. Invalid references block save. No publish-time check needed because CID-addressed documents are immutable.
 
-13. **Reference paths and titles**: Section titles must be unique among siblings; reference paths are normalized (trim, collapse spaces, lowercase, spaces→underscores, no `/`). Renaming a section changes the document (new CID); references to the old CID remain valid, new names require including the new CID.
+13. **Reference scope**: References point only within the document and what it includes. Reusable clauses use defined terms for anything outside themselves. (Decided 2026-10-06.)
 
 ---
 
@@ -481,3 +497,4 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 | 0.3 | Draft | Empty paragraph stripping; `Intl.Segmenter` for sentence detection; NFC Unicode normalization; serialization details |
 | 0.4 | Draft | IPLD DAG-JSON for IPFS-compatible CIDs; updated CID generation algorithm |
 | 0.5 | 2026-10-06 | Prose aligned with the one-paragraph-string model (no sentence arrays); CID prefix corrected to `baguqeera`; removed the nested-markup open question (already settled under Inline Markup); pending items marked |
+| 0.6 | 2026-10-06 | Section `id`s as reference targets, replacing title paths and `as`; ids unique within a document; reference scope limited to the document and its includes; title uniqueness and path normalization rules removed |
