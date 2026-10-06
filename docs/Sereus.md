@@ -143,6 +143,11 @@ natural), and editing (an editor can prevent invalid states as they happen).
 
 ### Templates and parameters
 
+> **Superseded in part (2026-10-06).** What was adopted is in [Specification: Parameters](Specification.md#parameters):
+> top-level declarations without types, values in a separate data object addressed by id path
+> (`terms/limit`, not `Credit_Terms.limit`), inline placeholders deferred. Principles below that
+> differ are historical.
+
 A document can be a template that a consumer completes with values: parties, dates, amounts,
 specific terms.
 
@@ -244,6 +249,8 @@ already approved. Stroc supplies the document side of that.
     support; nothing needs it.
 
 ### Rendering
+
+> The rendering library and layout are specified in [Rendering.md](Rendering.md).
 
 46. **The renderer is generic.** It renders a document and resolves placeholders from a supplied
     parameter object. Anything else an app wants on the page (parties, signatures, dates of

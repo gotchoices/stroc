@@ -59,46 +59,51 @@ Stroc stays a general document library: it must not depend on Taleus or Sereus. 
   document names the versions it supersedes. It is the checkable form of a version history, the
   tools use it to check revisions and rebuild their records, and it is advisory: it never transfers
   anyone's approval. Spec 0.8.
+- **Q7 settled (except markup grammar, Q7h): canonical form.** A document must already be
+  canonical; tools lint, never clean up silently. Unknown fields are an error; a `stroc` version
+  newer than the tool supports is rejected (upgrade the tool). Only ordinary single spaces, so no
+  no-break spaces (a markup token can add one later if needed). Zero-width space, word joiner, BOM
+  and soft hyphen are forbidden; ZWJ/ZWNJ and bidi marks are allowed. Text is literal: no entity
+  decoding. Markup only in `text`, balanced, canonical order. Verification hashes the received
+  bytes, which must be canonical DAG-JSON. Spec 0.9.
+- **Q7h settled: markup grammar.** Keep `<b>`-style tokens as a strict Stroc grammar, explicitly
+  not HTML. Tokens are exact, lowercase, with no spaces or options (arguments follow a colon:
+  `<ref:ethics/good-faith>`). Every `<` begins a token; a literal `<` is `\<`, a literal backslash
+  `\\`. One spelling per formatting (nesting order, no adjacent duplicates, no edge spaces).
+  Braces and backslash commands were rejected (braces break YAML at the start of a paragraph;
+  backslash commands are unfamiliar); Markdown has several spellings per meaning. Spec 0.10.
+- **Q5 settled: render-time data.** Documents use abstract roles ("Stock Holder"); apps
+  may supply blocks the renderer places but never interprets. A document may declare
+  `parameters` (`key`, `label`, optional `default`; no types) at its top level only, hashed. A
+  parameter without a default is required. Values come in a separate data object, not hashed by
+  Stroc, addressed across includes by id path like references (`terms/limit`). When rendered, all
+  parameters of the composed document are hoisted into one table near the top ("Particulars", a
+  renderer label), grouped by declaring document. Inline placeholders (`<param:…>`) are deferred
+  and described in the spec as a possible future feature. Spec 0.11.
+- **Q8 settled: included documents render as MyCHIPs rendered them.** The included document's
+  title becomes the numbered section heading with its CID in small type beside it; its text and
+  sections follow, numbered beneath; its author, date and language are not shown. Two-column
+  numbered layout, title on the number row and text below. Spec 0.11; layout in
+  [Rendering.md](Rendering.md).
+- **Q9 settled: no version label.** `replaces` records history. Renderers print the root CID in
+  small type in a page margin and may print it as a QR code at the end.
 - **Q6 settled: reference scope.** References point only within the document and what it
   includes. Reusable clauses use defined terms for anything outside themselves. Spec 0.6.
 
-## Blocking questions
+## Design questions
 
-Each has a recommendation. Q7 must be settled before golden-vector CIDs are recorded.
+All settled 2026-10-06; details under Decisions above, and in the spec and
+[Rendering.md](Rendering.md). Nothing blocks recording golden-vector CIDs.
 
-- [x] **Q1. Cross-reference targets.** Settled: section ids (see Decisions).
-- [x] **Q2. How an include is encoded.** Settled: IPLD link (see Decisions).
-- [x] **Q3. Maintaining a library of documents that include each other.** Settled: folder tools
-  separate from the editor, plus `replaces` (see Decisions).
-- [ ] **Q9. A `version` label.** Should a document be able to carry an optional, hashed `version`
-  string (e.g. `'3'`) so a rendered contract can print "Version 3"? `replaces` already gives a
-  checkable history; a label is only for readers. If adopted, the tools check that it increases
-  relative to the document named in `replaces`. *Recommended*: only if you want it on the page.
-- [x] **Q4. Source format.** Settled: YAML (see Decisions).
-- [ ] **Q5. Render-time data.** Two layers, not mutually exclusive:
-  - Documents are written in abstract roles ("Stock Holder", "Foil Holder"). Always works.
-  - A document may *declare* the data it expects, hashed as part of the document, e.g.
-    `parameters: [{key: stock.name, label: "Stock Holder"}, {key: date, label: "Effective
-    Date", type: date}]`. A separate data object, not hashed by Stroc, supplies values. The
-    renderer prints a schedule ("Parties and Particulars") and validates the data against the
-    declarations.
-  - Optionally, inline placeholders such as `<param:stock.name>` render the value (visibly marked)
-    or the label if no value is given.
-
-  *Recommended*: declarations + schedule first; inline placeholders in the same stage if they turn
-  out cheap (they parse like references). No conditional text. The renderer also accepts arbitrary
-  caller-supplied blocks (signatures, tally id, QR codes) that it places but never interprets.
-  Is this the shape you want?
-- [x] **Q6. References that leave a clause.** Settled: document and its includes only (see Decisions).
-- [ ] **Q7. Strictness of the canonical form.** *Recommended*:
-  - Unknown fields are rejected. Today they are silently dropped, so a document gets the CID of a
-    different, smaller document.
-  - Verification hashes what was received; it never normalizes first.
-  - In text, only exact `<b>`, `<i>`, `<u>`, `<ref:…>` (and `<param:…>` if adopted) are markup;
-    any other `<` is literal text. Entity-encoded tags (`&lt;b&gt;`) are not turned into markup.
-- [ ] **Q8. How an included document appears.** *Recommended*: its `title` becomes the section
-  heading, its `text` and sections follow, numbered in place; its author, date and language are not
-  shown, but its CID is printed in small type (as strdoc's PDF did with the RID).
+- [x] **Q1. Cross-reference targets**: section ids, unique within a document.
+- [x] **Q2. Include encoding**: IPLD link.
+- [x] **Q3. Maintaining a library**: folder tools separate from the editor, plus `replaces`.
+- [x] **Q4. Source format**: YAML; the YAML file is the document.
+- [x] **Q5. Render-time data**: top-level `parameters`, untyped, hoisted into one table.
+- [x] **Q6. Reference scope**: the document and what it includes.
+- [x] **Q7. Canonical form and markup grammar.**
+- [x] **Q8. How an included document appears**: MyCHIPs' layout, CID beside the heading.
+- [x] **Q9. Version label**: none.
 
 ## Other open questions
 
@@ -106,7 +111,8 @@ Each has a recommendation. Q7 must be settled before golden-vector CIDs are reco
   sections. Further candidates, please decide:
   - Rename it (e.g. `Principles.md`), since it is no longer about Sereus?
   - Instrument declaration (29–32): drop? Taleus decides who signs in its own schema.
-  - Templates (18–28): replace with whatever Q5 decides.
+  - Templates (18–28): superseded by spec Parameters; reduce to a pointer?
+  - Rendering (46–48): now covered by Rendering.md; reduce to a pointer?
   - Markdown (10–17): demote to "later", given Q4?
   - Lineage (33–35), review/diff (39–41), publisher signatures (49): keep as "later" or drop?
 - [ ] Delete [FeatureComparison.md](FeatureComparison.md)? The parity checklist below supersedes it.
@@ -153,7 +159,7 @@ Specification and decisions
 
 - [ ] Vitest in `@stroc/core`, wired to `yarn test`
 - [ ] Unit tests for normalization and validation, including malformed input
-- [ ] Golden-vector CID tests (after Q7)
+- [ ] Golden-vector CID tests
 - [ ] Malformed input returns errors instead of throwing (D1)
 - [ ] Fix editor XSS (D2)
 - [ ] ESLint configured and passing
@@ -165,13 +171,17 @@ Spec first (per [Workflow.md](Workflow.md)), then code.
 - [x] Spec: reference targets (Q1) and reference scope (Q6), spec 0.6
 - [x] Spec: include encoding (Q2) and YAML format (Q4), spec 0.7
 - [x] Spec: `replaces` field, spec 0.8
-- [ ] Spec: strictness (Q7), include rendering (Q8), parameter declarations (Q5), `version` label (Q9)
+- [x] Spec: canonical form and verification (Q7 except Q7h), spec 0.9
+- [x] Spec: markup grammar (Q7h), spec 0.10
+- [x] Spec: parameters (Q5) and composition (Q8), spec 0.11
+- [x] Rendering.md: rendering library and legal layout (draft)
 - [ ] Validation completeness (D4): reject unknown fields, empty sections, a reference section
       with anything besides `source` and `id`, `source` that is not a CID, malformed or duplicate
       ids, unknown `stroc` version, `published` not an ISO date, `language` not ISO 639-2
 - [ ] Replace `as` with `id` in types, normalization, validation, editor and sample documents;
       drop the sibling-title uniqueness and reserved-character rules for titles
-- [ ] Markup: normalize and validate `<b>/<i>/<u>` (allowed tags only, balanced, canonical order) (D5)
+- [ ] Markup: tokenizer and validator for the spec 0.10 grammar, with lint fixes (D5); shared by
+      validator, linter, editor and renderers
 - [ ] References: parse id paths, validate local targets and targets in included documents (D6)
 - [ ] `verifyDocument(bytes, cid)` that hashes exactly what was received
 - [ ] YAML read/write and lint (Q4), in a package separate from core: YAML 1.2 core schema;
@@ -191,16 +201,18 @@ Library and composition
   - [ ] `stroc update [files] [--all]`: update chosen sources, add `replaces` to each document that
         changes as a result, report the parents now out of date
   - [ ] Record file (format of the tool's choosing), rebuilt from the folder and `replaces` if lost
-  - [ ] Version label checks, if Q9 adopts it
 - [ ] Resolver interface: `get(cid)` from an app-supplied source, every fetch verified; folder and
       in-memory implementations
 - [ ] Compose: resolve includes into one numbered tree
 
 Rendering
-- [ ] Render model independent of any UI framework: numbered tree, references resolved to numbers
-- [ ] HTML renderer in legal style: numbered run-in bold titles, hanging indent (as strdoc)
-- [ ] PDF renderer (pdfmake), same style; page numbers
-- [ ] References display the target's section number
+Rendering (`@stroc/render`, per [Rendering.md](Rendering.md))
+- [ ] Verify pdfmake in React Native / NativeScript early; fall back to HTML in a web view
+- [ ] `layout`: framework-neutral model; numbering; two-column legal layout; references as
+      "Section 3.1"; included documents with CID beside the heading
+- [ ] `toHtml`: standalone, print-ready
+- [ ] `toPdf` (pdfmake): same layout; footer with root CID and page n / total; Letter or A4
+- [ ] Localizable label set (English default)
 
 Editor
 - [ ] Runs entirely in the browser: validation and CID via core, no server needed
@@ -218,12 +230,13 @@ Editor
 
 ### Stage 3 — Taleus readiness
 
-- [ ] Render-time data (Q5): declarations validated; data checked against declarations; schedule
-      rendered; placeholders if adopted
-- [ ] Caller-supplied blocks (signatures, identifiers, QR codes) placed by the renderer
+- [ ] `parameters` in types and validation (keys unique, id syntax, plain-text labels and defaults)
+- [ ] `checkData`: missing required values, unknown keys, non-string values; paths across includes
+- [ ] Particulars table in `layout`: hoisted, grouped by declaring document, values styled distinctly
+- [ ] App blocks (`heading`, `paragraph`, `table`, `qr`) placed after the document; QR drawn by
+      the renderer; closing root-CID QR option
 - [ ] `stroc publish`: export the set as a CAR file or upload to an IPFS node
 - [ ] Bundle as a CAR file: root CID → the document and everything it includes; every block verified offline
-- [ ] Document and section CIDs printed in rendered output
 - [ ] Package split so a reader app takes only what it needs: core (types, normalize, validate,
       CID), io (YAML/JSON), compose (resolver, bundle), render (HTML, PDF), ui, cli. Everything
       below ui runs in browser, Node and React Native / NativeScript.
@@ -262,8 +275,8 @@ Found or confirmed 2026-10-06. Numbers are referenced from the checklist.
 - **D7. Editor depends on the dev server** for validation and CID, and keeps the document in private
   state with no events, so it cannot be embedded or used offline.
 - **D8. Save writes the unnormalized document** without validating it.
-- **D9. Spec says zero-width characters are stripped**; code keeps U+200B. Decide during Q7 (stripping
-  ZWJ/ZWNJ would damage some scripts).
+- **D9. Code cleans text silently before hashing** (and keeps U+200B, collapses no-break spaces).
+  Under spec 0.9 it must instead reject non-canonical text and leave fixing to the linter.
 
 ## Running it
 
@@ -279,6 +292,7 @@ Editor at `http://localhost:3000`. `POST /cid` and `POST /validate` take a docum
 
 - [Sereus.md](Sereus.md): principles and the division of responsibility between Stroc and apps
 - [Specification.md](Specification.md): the protocol
+- [Rendering.md](Rendering.md): the rendering library and legal layout
 - [Legacy.md](Legacy.md): strdoc and MyCHIPs, the parity target
 - [Vision.md](Vision.md), [Implementation.md](Implementation.md): original goals and plan (dated)
 - [FeatureComparison.md](FeatureComparison.md): superseded by this checklist

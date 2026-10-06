@@ -1,7 +1,7 @@
 # Stroc Specification
 
 **Status**: Work in Progress  
-**Version**: 0.8 (Draft)
+**Version**: 0.11 (Draft)
 
 Items marked *pending* depend on open questions in [STATUS.md](STATUS.md#blocking-questions).
 
@@ -43,7 +43,7 @@ The document's CID is computed by hashing the entire document. It is not stored 
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `stroc` | string | Yes | Specification version (e.g., "1.0") |
+| `stroc` | string | Yes | Specification version (e.g., "1.0"). A tool rejects a document whose version is newer than it supports, rather than processing it partially. |
 | `language` | string | Yes | ISO 639-2 language code |
 | `title` | string | Yes | Human-readable document title |
 | `author` | string | No | Attribution (any string, e.g., "MyCHIPs Foundation") |
@@ -51,6 +51,7 @@ The document's CID is computed by hashing the entire document. It is not stored 
 | `text` | string | No | One paragraph (see Text Structure) |
 | `sections` | array | No | Child sections |
 | `replaces` | array | No | Links to earlier versions this document supersedes (see [Lineage](#lineage)) |
+| `parameters` | array | No | Values the document expects at render time (see [Parameters](#parameters)) |
 
 ### Lineage
 
@@ -65,6 +66,69 @@ CIDv1 DAG-JSON document, without duplicates. It is allowed on the top-level docu
   transfers approval or acceptance from the old version to the new one.
 - The replaced documents need not be available; a tool that cannot fetch one reports it, but the
   document remains valid.
+
+### Parameters
+
+A document may declare values it expects to be supplied when it is rendered: party names, an
+effective date, a credit limit. The declarations are hashed with the document; the values are not.
+One document (one CID) can therefore be used for any number of agreements.
+
+```yaml
+parameters:
+  - key: stock-name
+    label: Stock Holder
+  - key: foil-name
+    label: Foil Holder
+  - key: effective
+    label: Effective Date
+  - key: limit
+    label: Maximum Balance
+    default: '24'
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `key` | Yes | Same syntax as a section id; unique within the document's parameters |
+| `label` | Yes | Plain text shown beside the value |
+| `default` | No | Plain text used when no value is supplied. A parameter without a default is required. |
+
+- `parameters` is allowed on the top-level document only, not on inner sections. Order is the
+  order of presentation.
+- Parameters have no types. Values are plain text, presented as given; formatting dates or
+  amounts is the supplier's job.
+- The document's text should refer to these values by role ("the Stock Holder"), not repeat them.
+
+#### Supplying values
+
+Values are supplied in a **data object**, separate from the document: a map from parameter path to
+non-empty plain-text value. A path is the parameter's key, prefixed by the ids of the reference
+sections that lead to the declaring document, as in a cross-reference:
+
+```yaml
+stock-name: Acme Widgets LLC
+foil-name: Jane Doe
+effective: '2026-10-06'
+terms/limit: '2400'          # "limit" declared by the document included as "terms"
+```
+
+- Checking a data object against a composed document reports: a required parameter with no value,
+  a key that matches no declared parameter, and a value that is not a non-empty string.
+- If the same document is included twice, its parameters have two paths and take values separately.
+- Stroc does not hash, sign or store data objects. An app that needs to may compute a CID for one
+  with the same DAG-JSON encoding.
+- Values that change during the life of an agreement (a credit limit later revised) are not good
+  parameters: the rendered document would show only the value given at rendering. Apps present such
+  values separately.
+
+When rendered, the parameters of the whole composed document are presented together in one table
+near the top, grouped by the document that declares them (see [Rendering.md](Rendering.md)).
+
+#### Future: inline placeholders
+
+A later `stroc` version may add a placeholder token, for example `<param:stock-name>`, that
+renders a parameter's value inside a sentence, visibly marked as supplied data. It is not part of
+this version. If adopted: the token is hashed and the value is not; every placeholder must name a
+declared parameter; and there is no conditional text.
 
 ### Removed Fields (from Legacy)
 
@@ -120,7 +184,22 @@ Content included by reference to another document's CID:
 | `source` | Yes | IPLD link to the document to incorporate: a CIDv1 with the DAG-JSON codec, encoded `{"/": "baguqeera..."}` |
 | `id` | Yes | Local name for the included document; the first segment of references into it |
 
-A reference section has exactly these two fields. The included document's content becomes part of the composite document at this position. (Earlier drafts used a separate `as` alias; it is replaced by `id`.)
+A reference section has exactly these two fields. (Earlier drafts used a separate `as` alias; it is replaced by `id`.)
+
+#### Composition
+
+When a document is rendered, each reference section is replaced by the document it links to,
+recursively:
+
+- The included document's `title` becomes the heading of the section, numbered in place.
+- Its `text` and `sections` follow, numbered beneath that heading.
+- Its `parameters` join the composed document's parameters (see [Parameters](#parameters)).
+- Its `stroc`, `language`, `author`, `published` and `replaces` are not rendered as content. Its
+  CID is shown beside its heading so each part of a printed document can be checked.
+- An included document may be in a different language (see Multilingual Documents) and may use
+  any `stroc` version the tool supports.
+
+Layout details are in [Rendering.md](Rendering.md).
 
 ### Document Resolution and Verification
 
@@ -234,15 +313,30 @@ Rules:
 
 ## Normalization Rules
 
-### Text Normalization
+### Canonical Form
 
-When text is input, the following normalization rules are applied:
+A document is valid only if it is already canonical. Tools never transform a document before
+hashing it; a linter reports violations, and editors and fix commands may correct them.
 
-1. **Whitespace collapse**: Multiple spaces, tabs, and newlines become a single space
-2. **Trim**: Leading and trailing whitespace is removed from text
-3. **Empty text removal**: Empty text is stripped
-4. **Invisible/control stripping**: Remove zero-width and control characters (except standard space, tab, newline **and bidi controls** like LRM/RLM/LRE/RLE/PDF/LRI/RLI/FSI/PDI) before hashing
-5. **Entity decoding**: Decode HTML entities in text; store literal characters (no `&amp;`, `&nbsp;`, etc.)
+1. **Known fields only**: Every field must be defined by the document's `stroc` version. Unknown
+   fields are an error, never ignored.
+2. **Strings only**: Every value is a string, link, array or object as defined; no numbers,
+   booleans or nulls.
+3. **No empty values**: Empty strings, empty arrays and empty objects are omitted, not stored.
+4. **Unicode NFC** (Canonical Composition).
+5. **Whitespace**: Text contains only the ordinary space (U+0020) as whitespace, never two in a
+   row, never at the start or end. Tabs, line breaks and no-break spaces (U+00A0, U+202F) are not
+   allowed. (Spacing is presentation; renderers decide line breaking.)
+6. **Invisible characters**: Control characters (U+0000–U+001F, U+007F–U+009F), zero-width space
+   (U+200B), word joiner (U+2060), byte-order mark (U+FEFF) and soft hyphen (U+00AD) are not
+   allowed. Zero-width non-joiner and joiner (U+200C, U+200D) and the bidirectional marks and
+   isolates (U+200E, U+200F, U+202A–U+202E, U+2066–U+2069) are allowed, because removing them
+   changes how some scripts read.
+7. **Literal characters**: Text has no entity encoding. `&amp;` is five literal characters. A
+   linter warns about sequences that look like HTML entities. (Editors decode entities when the
+   author pastes HTML, before the text reaches the document.)
+8. **Markup** appears only in `text`, and only as defined in [Inline Markup](#inline-markup).
+   Titles, `author` and other fields are plain text.
 
 ### Paragraphs, Not Sentences
 
@@ -368,11 +462,14 @@ Example (the document above): `baguqeerahghdaba3xpdeymhpbrztpwst7ioctsjdoqxoos7h
 ### Verification
 
 To verify a document:
-1. Receive document content and claimed CID
-2. Parse the CID to extract codec and hash algorithm
-3. Encode document using DAG-JSON
-4. Compute hash using the specified algorithm
-5. Compare computed CID to claimed CID
+1. Receive the document's bytes and the claimed CID
+2. Parse the CID to extract codec and hash algorithm; the codec must be DAG-JSON
+3. Hash the bytes **exactly as received** and compare with the claimed CID
+4. Decode the bytes; re-encoding must reproduce them exactly (canonical DAG-JSON)
+5. Validate the decoded document
+
+No normalization or cleanup happens before the comparison, so a match always covers exactly the
+content that was received.
 
 ### IPFS Compatibility
 
@@ -389,23 +486,52 @@ Documents can be stored and retrieved directly via IPFS:
 
 Inline emphasis (bold, italic, underline) within **paragraph text** is legally meaningful and part of the content hash. Styling of **structural elements** (titles, headers, section numbers) is presentational and determined by the renderer.
 
-### Allowed Tags
+### Markup Grammar
 
-| Tag | Meaning | Context |
-|-----|---------|---------|
-| `<b>...</b>` | Bold emphasis | Paragraph text only |
-| `<i>...</i>` | Italic emphasis | Paragraph text only |
-| `<u>...</u>` | Underline emphasis | Paragraph text only |
+Stroc markup is its own small grammar. It borrows the look of HTML tags but **is not HTML**:
+renderers must parse it and generate their output, never pass text through as HTML.
 
-No other HTML or markup is allowed in content.
+```
+text    = { char | escape | token }
+escape  = "\<" | "\\"                       literal "<" and literal "\"
+token   = "<b>" | "</b>" | "<i>" | "</i>" | "<u>" | "</u>"
+        | "<ref:" path ">"
+path    = id { "/" id }                       ids as in Section Ids
+char    = any character allowed in text, except "<" and "\"
+```
 
-### Normalization and Nesting
+| Token | Meaning |
+|-------|---------|
+| `<b>...</b>` | Bold emphasis |
+| `<i>...</i>` | Italic emphasis |
+| `<u>...</u>` | Underline emphasis |
+| `<ref:path>` | Cross-reference (see [Cross-References](#cross-references)) |
 
-- Tags are limited to `<b>`, `<i>`, `<u>` (lowercase).
-- Attributes are not allowed; any attributes are stripped on save.
-- Nested emphasis is allowed; tags are normalized to lowercase on save.
-- Canonical nesting order when co-wrapping the same span: `<b><i><u>...text...</u></i></b>`.
-- The stored, normalized markup is hashed (emphasis is legally meaningful).
+Rules:
+- **Every `<` begins a token.** A `<` that does not begin one of the tokens above is an error; a
+  literal `<` is written `\<` ("if the balance is \< 0").
+- **A literal backslash is `\\`.** A backslash followed by anything other than `<` or `\` is an error.
+- `>` and `&` are always literal outside a token and need no escape.
+- Tokens are exact: lowercase, no spaces, no attributes or options. Anything a token needs follows
+  its colon. (`<b class="x">` is simply not a token, so it is an error.)
+- Markup is allowed only in `text`. Titles and other fields are plain text, where `<` and `\` are
+  ordinary characters.
+- Further tokens (for example `<param:…>` or `<nbsp>`) can be added only by a new `stroc` version.
+
+### Nesting and One Spelling
+
+Each piece of formatted text has exactly one valid spelling, so it has exactly one hash.
+
+- Emphasis tags must be balanced and properly nested, and must not be empty.
+- A tag must not be nested inside the same tag (`<b>a <b>b</b></b>` is an error).
+- When an emphasis element contains exactly one other emphasis element and nothing else, the outer
+  one must come first in the order `b`, `i`, `u`: `<b><i>x</i></b>`, not `<i><b>x</b></i>`.
+- Two identical emphasis elements must not be adjacent (`<b>a</b><b>b</b>` must be `<b>ab</b>`).
+- Emphasized content must not begin or end with a space (`<b>a </b>b` must be `<b>a</b> b`).
+- `<ref:…>` may appear inside emphasis.
+- The linter reports each violation and offers the single correct spelling.
+- In YAML, write paragraphs as plain, single-quoted or folded (`>-`) scalars. Inside double-quoted
+  YAML scalars, backslash is YAML's own escape and `\<` is a YAML error.
 
 ### Storage Model
 
@@ -551,3 +677,6 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 | 0.6 | 2026-10-06 | Section `id`s as reference targets, replacing title paths and `as`; ids unique within a document; reference scope limited to the document and its includes; title uniqueness and path normalization rules removed |
 | 0.7 | 2026-10-06 | `source` is an IPLD link; YAML authoring format defined (the YAML file is the document; no build step; lint instead of silent normalization) |
 | 0.8 | 2026-10-06 | `replaces` lineage field |
+| 0.9 | 2026-10-06 | Canonical form replaces input normalization (unknown fields rejected, whitespace, invisible characters, literal text); verification hashes received bytes; newer `stroc` versions rejected |
+| 0.10 | 2026-10-06 | Markup grammar: exact tokens, every `<` begins a token, backslash escapes `\<` and `\\`; one-spelling nesting rules; markup is not HTML |
+| 0.11 | 2026-10-06 | `parameters` declarations and data objects; composition of included documents; inline placeholders described as future |
