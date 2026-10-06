@@ -36,32 +36,39 @@ Stroc stays a general document library: it must not depend on Taleus or Sereus. 
   References are id paths: `<ref:cure>`, `<ref:ethics/good-faith>`. Titles carry no identity.
   Hash-based and position-based references were rejected: sections have no hash, mutually
   referring sections could not be written, and every edit would cascade. Spec 0.6.
+- **Q2 settled: includes are IPLD links.** In the hashed form `source` is a DAG-JSON link
+  (`{"/": "baguqeera…"}`) to a CIDv1 DAG-JSON document, so a composed contract is one IPLD DAG
+  that IPFS tools can pin, walk and export as a CAR file. Any future field naming another document
+  uses the same form. Spec 0.7.
+- **Q4 settled: YAML is the standard authoring format, and the YAML file is the document.** A
+  YAML file and its DAG-JSON encoding are two spellings of the same data; the CID is the hash of
+  the DAG-JSON spelling. No build or compile layer: what the author writes is what is hashed,
+  and a linter rejects anything not already canonical (with an automatic fix offered). A link is
+  written `source: {/: baguqeera…}`. Comments are allowed and are not content. JSON is accepted
+  as well. Markdown moves to "later". Spec 0.7.
 - **Q6 settled: reference scope.** References point only within the document and what it
   includes. Reusable clauses use defined terms for anything outside themselves. Spec 0.6.
 
 ## Blocking questions
 
-Each has a recommendation. Q2 and Q7 must be settled before golden-vector CIDs are recorded.
+Each has a recommendation. Q7 must be settled before golden-vector CIDs are recorded.
 
 - [x] **Q1. Cross-reference targets.** Settled: section ids (see Decisions).
-- [ ] **Q2. How an include is encoded.** `source` as a plain CID string, or as an IPLD link
-  (`{"/": "baguqeera…"}`). They hash differently.
-  - A link makes a composed contract one IPLD DAG: IPFS tools can pin, fetch and walk the whole
-    contract by its root CID. This is the IPFS-native choice and the main reason DAG-JSON was
-    picked.
-  - A string is simpler and opaque to IPFS.
-  - *Recommended*: link in the canonical form; YAML/JSON source files write a plain string and the
-    importer converts it. (This reverses Sereus.md principle 5.)
-- [ ] **Q3. Drafting a library by content address.** Editing a clause changes its CID, so every
-  document that includes it changes too, up to the top. strdoc handled this with `hash` and
-  `refcheck`. *Recommended*: published documents contain only CIDs. Drafts in a folder may
-  include each other by relative file path (`source: ./Ethics.yaml`); a `stroc build` step (CLI and
-  editor) computes CIDs bottom-up, substitutes them, and writes the published set plus a manifest
-  of file → CID. The manifest is a convenience, not hashed. Mutable "latest version" names (IPNS
+- [x] **Q2. How an include is encoded.** Settled: IPLD link (see Decisions).
+- [ ] **Q3. Maintaining a library of documents that include each other.** Editing a clause
+  changes its CID, so every document that includes it must change too, up to the top. Since the
+  YAML file is the real document (Q4), there is no build step and no drafting-only syntax: a
+  `source` always holds a real CID. *Recommended*: a library tool, the successor to strdoc's
+  `hash` and `refcheck`, that edits the files in place:
+  - `stroc check <folder>`: lints every file and reports each `source` whose CID is out of date.
+  - `stroc update <folder>`: rewrites out-of-date `source` CIDs bottom-up until everything is current.
+  - To know that an old CID meant `Ethics.yaml`, the tool keeps a manifest in the folder
+    (file → current and past CIDs). It is a tool file, never part of any document; it replaces
+    the job legacy `name` did for `refcheck`.
+
+  The editor does the same for a library opened in it. Mutable "latest version" names (IPNS
   style) are out of scope.
-- [ ] **Q4. Source format.** *Recommended*: YAML is the authoring format (comments, folded text that
-  can be written one sentence per line, readable diffs); JSON is accepted too; DAG-JSON is the only
-  hashed form. Comments and line breaks are not content. Markdown moves to "later".
+- [x] **Q4. Source format.** Settled: YAML (see Decisions).
 - [ ] **Q5. Render-time data.** Two layers, not mutually exclusive:
   - Documents are written in abstract roles ("Stock Holder", "Foil Holder"). Always works.
   - A document may *declare* the data it expects, hashed as part of the document, e.g.
@@ -140,7 +147,7 @@ Specification and decisions
 
 - [ ] Vitest in `@stroc/core`, wired to `yarn test`
 - [ ] Unit tests for normalization and validation, including malformed input
-- [ ] Golden-vector CID tests (after Q2, Q7)
+- [ ] Golden-vector CID tests (after Q7)
 - [ ] Malformed input returns errors instead of throwing (D1)
 - [ ] Fix editor XSS (D2)
 - [ ] ESLint configured and passing
@@ -150,7 +157,8 @@ Specification and decisions
 
 Spec first (per [Workflow.md](Workflow.md)), then code.
 - [x] Spec: reference targets (Q1) and reference scope (Q6), spec 0.6
-- [ ] Spec: include encoding (Q2), strictness (Q7), include rendering (Q8), parameter declarations (Q5)
+- [x] Spec: include encoding (Q2) and YAML format (Q4), spec 0.7
+- [ ] Spec: strictness (Q7), include rendering (Q8), parameter declarations (Q5)
 - [ ] Validation completeness (D4): reject unknown fields, empty sections, a reference section
       with anything besides `source` and `id`, `source` that is not a CID, malformed or duplicate
       ids, unknown `stroc` version, `published` not an ISO date, `language` not ISO 639-2
@@ -159,15 +167,17 @@ Spec first (per [Workflow.md](Workflow.md)), then code.
 - [ ] Markup: normalize and validate `<b>/<i>/<u>` (allowed tags only, balanced, canonical order) (D5)
 - [ ] References: parse id paths, validate local targets and targets in included documents (D6)
 - [ ] `verifyDocument(bytes, cid)` that hashes exactly what was received
-- [ ] YAML and JSON import/export (Q4), in a package separate from core
+- [ ] YAML read/write and lint (Q4), in a package separate from core: YAML 1.2 core schema;
+      reject non-canonical values (e.g. `stroc: 1.0` parses as a number) with a fix offered
+- [ ] `source` as a link: types, validation (must be a CIDv1 DAG-JSON link), editor, samples
 - [ ] Sample corpus: all 13 MyCHIPs documents converted to the new form, as test fixtures
       (replaces the 3 hand conversions in `contracts/`, which carry stale RIDs and small edits)
 
 ### Stage 2 — strdoc parity
 
 Library and composition
-- [ ] `stroc build`: folder of drafts → CIDs bottom-up → published set + manifest (Q3).
-      Replaces strdoc's `hash` and `refcheck`.
+- [ ] `stroc check` / `stroc update`: lint a library folder and bring `source` CIDs up to date
+      in place, with a manifest (Q3). Replaces strdoc's `hash` and `refcheck`.
 - [ ] Resolver interface: `get(cid)` from an app-supplied source, every fetch verified; folder and
       in-memory implementations
 - [ ] Compose: resolve includes into one numbered tree
@@ -189,16 +199,16 @@ Editor
 - [ ] Edit-all / preview-all
 - [ ] Insert a reference by picking the target (proposes an id from its title); shows its live number
 - [ ] Renaming an id updates references within the document
-- [ ] Open/Save YAML as well as JSON; Save validates and writes the normalized document
+- [ ] Open/Save YAML (standard) and JSON; Save validates and writes the canonical document
 - [ ] Validation errors shown at the offending section
-- [ ] Build/publish a library from the editor (Q3)
+- [ ] Update a library's `source` CIDs from the editor (Q3)
 
 ### Stage 3 — Taleus readiness
 
 - [ ] Render-time data (Q5): declarations validated; data checked against declarations; schedule
       rendered; placeholders if adopted
 - [ ] Caller-supplied blocks (signatures, identifiers, QR codes) placed by the renderer
-- [ ] Bundle: root CID → the document and everything it includes, in one object; verified offline
+- [ ] Bundle as a CAR file: root CID → the document and everything it includes; every block verified offline
 - [ ] Document and section CIDs printed in rendered output
 - [ ] Package split so a reader app takes only what it needs: core (types, normalize, validate,
       CID), io (YAML/JSON), compose (resolver, bundle), render (HTML, PDF), ui, cli. Everything

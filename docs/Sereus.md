@@ -86,9 +86,9 @@ taking more than they need.
 4. **Stroc CIDs begin `baguqeera`**, the base32 form of the DAG-JSON codec. Some existing docs
    show `bafy…`, which is the prefix for other codecs; those examples were wrong and the spec is
    now corrected.
-5. **A CID inside a JSON object is a plain string, not a DAG-JSON link** (`{"/": "…"}`). The two
-   hash differently. Strings are simpler for apps that store CIDs in database columns and sign
-   them.
+5. **A CID inside a document is a DAG-JSON link** (`{"/": "…"}`), not a plain string (decided
+   2026-10-06, reversing an earlier preference for strings). A composed contract is then one IPLD
+   DAG. Apps still store and sign the root CID as a plain string; that is outside the document.
 6. **The hashing pipeline is pinned by golden-vector tests.** A fixed set of documents with
    expected CIDs. Any change that alters a CID is a breaking change to every published document
    and must fail a test before it ships.

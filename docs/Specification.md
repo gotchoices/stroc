@@ -1,7 +1,7 @@
 # Stroc Specification
 
 **Status**: Work in Progress  
-**Version**: 0.6 (Draft)
+**Version**: 0.7 (Draft)
 
 Items marked *pending* depend on open questions in [STATUS.md](STATUS.md#blocking-questions).
 
@@ -13,7 +13,7 @@ Stroc (Structured Documents) is a protocol for creating legal documents where co
 
 1. **Content is canonical**: The hash is computed from normalized content only
 2. **Whitespace is not content**: Spacing variations do not affect document identity
-3. **Normalize on input**: Authors write freely; the system normalizes automatically
+3. **Normalize on input**: Editors normalize as the author types; a hand-written file is linted and must already be canonical (a fix is offered)
 4. **What you store is what hashes**: No hidden normalization at hash time
 5. **CID is external**: The content hash is not stored in the document; it's derived from the content
 
@@ -30,8 +30,8 @@ Stroc (Structured Documents) is a protocol for creating legal documents where co
   "published": "2024-01-15",
   "text": "The preamble paragraph. It may contain several sentences.",
   "sections": [
-    {"source": "baguqeera...", "id": "recitals"},
-    {"source": "baguqeera...", "id": "ethics"},
+    {"source": {"/": "baguqeera..."}, "id": "recitals"},
+    {"source": {"/": "baguqeera..."}, "id": "ethics"},
     {"title": "Additional Terms", "text": "...", "sections": [{"text": "A second paragraph, as an untitled child section."}]}
   ]
 }
@@ -95,14 +95,14 @@ Content included by reference to another document's CID:
 
 ```json
 {
-  "source": "baguqeera...",
+  "source": {"/": "baguqeera..."},
   "id": "ethics"
 }
 ```
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `source` | Yes | CID of the document to incorporate |
+| `source` | Yes | IPLD link to the document to incorporate: a CIDv1 with the DAG-JSON codec, encoded `{"/": "baguqeera..."}` |
 | `id` | Yes | Local name for the included document; the first segment of references into it |
 
 A reference section has exactly these two fields. The included document's content becomes part of the composite document at this position. (Earlier drafts used a separate `as` alias; it is replaced by `id`.)
@@ -167,8 +167,8 @@ To include multiple language versions of a contract, create a **wrapper document
   "author": "MyCHIPs Foundation",
   "text": "This Agreement is presented in English and French. In case of any conflict between versions, the English version shall govern.",
   "sections": [
-    {"source": "baguqeera...", "id": "english"},
-    {"source": "baguqeera...", "id": "french"}
+    {"source": {"/": "baguqeera..."}, "id": "english"},
+    {"source": {"/": "baguqeera..."}, "id": "french"}
   ]
 }
 ```
@@ -180,6 +180,42 @@ To include multiple language versions of a contract, create a **wrapper document
 - Each translation is a standalone single-language document
 
 ---
+
+## YAML Authoring Format
+
+YAML is the standard format for writing Stroc documents by hand. A YAML file **is** the
+document: it and the DAG-JSON encoding are two spellings of the same data, and the CID is the
+hash of the DAG-JSON spelling. There is no build or compile step between them.
+
+```yaml
+# Comments are allowed and are not content.
+stroc: '1.0'
+language: eng
+title: MyCHIPs Tally Agreement
+text: >-
+  This written Contract is part of an Agreement by and between the Parties.
+  A digital hash of this Contract has been incorporated into a Tally.
+sections:
+  - id: ethics
+    source: {/: baguqeeraoqsvkl57icpvp2tm52uhmryobrrof557ya5cpnq7isfstfgsxwoa}
+  - title: Additional Terms
+    text: >-
+      One sentence per line is a convenient style.
+      Folded text joins the lines with single spaces.
+```
+
+Rules:
+- YAML 1.2, core schema. Mappings, sequences and strings only; every value in a Stroc document is
+  a string, so values YAML would read as numbers or booleans must be quoted (`stroc: '1.0'`, not
+  `stroc: 1.0`, which is the number 1).
+- A link is written as a one-key mapping `{/: <cid>}`; standard YAML and DAG-JSON libraries turn it
+  into a link without Stroc-specific conversion.
+- Anchors, aliases, tags and merge keys are not allowed.
+- Comments, indentation, quoting style and line folding are presentation and do not affect the CID.
+- The parsed values must already be canonical (see [Normalization Rules](#normalization-rules)).
+  Tools never normalize silently before hashing; a linter reports anything non-canonical and may
+  offer to fix the file.
+- JSON documents are accepted on the same terms.
 
 ## Normalization Rules
 
@@ -269,7 +305,7 @@ DAG-JSON provides deterministic encoding:
 - No extraneous whitespace
 - Arrays maintain order
 - Undefined fields are omitted
-- Special encoding for CID links: `{"/": "baguqeera..."}` (whether `source` uses this form is *pending*)
+- Special encoding for CID links: `{"/": "baguqeera..."}`. Every reference to another document (`source`) uses this form, so a composed document is a single IPLD DAG.
 - Non-finite numbers (`NaN`, `Infinity`, `-Infinity`) are not allowed
 - Dates/times must be strings (e.g., ISO 8601), not native Date objects
 - Object keys must be unique; no functions/symbols; no cycles (pure DAG)
@@ -498,3 +534,4 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 | 0.4 | Draft | IPLD DAG-JSON for IPFS-compatible CIDs; updated CID generation algorithm |
 | 0.5 | 2026-10-06 | Prose aligned with the one-paragraph-string model (no sentence arrays); CID prefix corrected to `baguqeera`; removed the nested-markup open question (already settled under Inline Markup); pending items marked |
 | 0.6 | 2026-10-06 | Section `id`s as reference targets, replacing title paths and `as`; ids unique within a document; reference scope limited to the document and its includes; title uniqueness and path normalization rules removed |
+| 0.7 | 2026-10-06 | `source` is an IPLD link; YAML authoring format defined (the YAML file is the document; no build step; lint instead of silent normalization) |
