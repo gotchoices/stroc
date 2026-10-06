@@ -86,8 +86,10 @@ What Stroc provides for this:
   strand, a publisher's web server, IPFS.
 - **A local store helper** that keeps verified documents by CID, and a **missing check** that lists
   which included documents a store does not yet hold, so an app knows what to ask for.
-- **A publish format** for the folder tools: a directory of `<cid>` files plus CARs, with a matching
-  HTTP resolver, so a publisher needs only a static web server.
+- **A publish format** for the folder tools: a directory of `<cid>` files, CARs and a catalog, with
+  a matching HTTP resolver, so a publisher needs only a static web server.
+- **A provenance check**: given the publisher's base URL and a CID, report whether the publisher's
+  catalog lists it, and in what status.
 
 What stays with the app: which publishers to offer, how bundles travel within the strand, where
 they are stored, and how long they are kept.
@@ -117,6 +119,12 @@ These belong to the app, not to Stroc, but follow directly from how Stroc works:
   a notice address) should not be a document parameter, or the printed agreement would show only
   the value at signing. Record such values as the app's own signed entries and render them as app
   blocks.
+- **Record where a document came from.** Alongside the root CID, an offer can carry the base URL
+  of the publisher's set it came from, covered by the offerer's signature. The receiving app runs
+  Stroc's provenance check and shows the publisher's domain prominently (a lookalike domain passes
+  the same check) and the entry's status. It stores what it found ("listed as current by
+  sereus.org, checked 2026-10-06"), since the URL may not last. With no publisher, the honest
+  message is "custom contract: read it in full or have it reviewed", not a refusal.
 - **Store the full bundle with every agreement.** Do not rely on a publisher or a peer remaining
   available.
 - **Say what a match means in review screens.** When a party has seen a document's CID before, the

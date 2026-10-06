@@ -231,12 +231,14 @@ Editor
 - [ ] Particulars table in `layout`: hoisted, grouped by declaring document, values styled distinctly
 - [ ] App blocks (`heading`, `paragraph`, `table`, `qr`) placed after the document; QR drawn by
       the renderer; closing root-CID QR option
-- [ ] `stroc publish`: write a published set (static `<cid>` files of canonical bytes plus a CAR
-      per root document) for any web server; optionally upload to IPFS
+- [ ] `stroc publish`: write a published set (static `<cid>` files of canonical bytes, a CAR per
+      root document, and `catalog.json` with status and `replaces`) for any web server; mark
+      replaced entries superseded; optionally upload to IPFS
 - [ ] Bundle as a CAR file: root CID → the document and everything it includes; every block verified offline
 - [ ] Local store helper (verified documents by CID) and missing check (included documents a store
       does not hold)
 - [ ] HTTP resolver for published sets
+- [ ] Provenance check: base URL + CID → catalog entry (publisher, origin, status, date checked)
 - [ ] Package split so a reader app takes only what it needs: core (types, normalize, validate,
       CID), io (YAML/JSON), compose (resolver, bundle), render (HTML, PDF), ui, cli. Everything
       below ui runs in browser, Node and React Native / NativeScript.

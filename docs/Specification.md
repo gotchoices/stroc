@@ -1,7 +1,7 @@
 # Stroc Specification
 
 **Status**: Work in Progress  
-**Version**: 0.12 (Draft)
+**Version**: 0.13 (Draft)
 
 Items marked *pending* depend on open questions in [STATUS.md](STATUS.md#blocking-questions).
 
@@ -224,8 +224,58 @@ server, IPFS); Stroc defines how they are checked.
 - **Bundles**: a document and everything it includes can be exported as one CAR file (the standard
   IPLD archive format) and imported elsewhere, with every block verified on import. This is how a
   complete document travels between parties or is kept with an agreement.
-- **Published sets**: a publisher may serve documents as static files named by CID, each holding
-  the document's canonical DAG-JSON bytes, alongside CAR bundles. Any web server can host them.
+- **Published sets**: see below.
+
+#### Published Sets and Catalogs
+
+A publisher serves a set of documents as static files under one base URL. Any web server can host
+them; no Stroc software runs on the server.
+
+| Path | Content |
+|------|---------|
+| `<base>/<cid>` | The document's canonical DAG-JSON bytes |
+| `<base>/<cid>.car` | A CAR bundle: the document and everything it includes (for documents meant to be used whole) |
+| `<base>/catalog.json` | The publisher's catalog |
+
+The **catalog** is the publisher's statement about what it publishes. Serving a file proves only
+that the publisher has it; listing it in the catalog states that the publisher publishes it, and in
+what status.
+
+```json
+{
+  "stroc-catalog": "1.0",
+  "publisher": "Sereus Foundation",
+  "entries": [
+    {
+      "cid": "baguqeera...",
+      "title": "Tally Agreement",
+      "status": "current",
+      "published": "2026-10-06",
+      "replaces": ["baguqeera..."]
+    }
+  ]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `stroc-catalog` | Catalog format version |
+| `publisher` | Plain-text name of the publisher |
+| `entries[].cid` | A document CID (string) |
+| `entries[].title` | The document's title, copied by the publishing tool |
+| `entries[].status` | `current`, `superseded` (a newer version exists) or `withdrawn` (no longer recommended) |
+| `entries[].published` | ISO 8601 date first listed |
+| `entries[].replaces` | CIDs (strings) of earlier versions, copied from the document's `replaces` |
+
+- The catalog is ordinary JSON, not a Stroc document. It is not content-addressed and the publisher
+  may update it at any time (for example to mark an entry superseded).
+- Trust in a catalog comes from the web origin that serves it (HTTPS and its domain), not from
+  Stroc. A future version may add publisher signatures.
+- **Provenance check**: given a base URL and a CID, fetch `<base>/catalog.json`, find the entry, and
+  report the publisher, the origin, the status and the date checked. Fetching `<base>/<cid>` and
+  verifying it confirms the publisher serves exactly that content.
+- Applications that record where a document came from record the **base URL** of the published set
+  alongside the CID, outside the document. The document itself never contains a URL.
 
 #### Reference Validation
 
@@ -672,3 +722,4 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 | 0.10 | 2026-10-06 | Markup grammar: exact tokens, every `<` begins a token, backslash escapes `\<` and `\\`; one-spelling nesting rules; markup is not HTML |
 | 0.11 | 2026-10-06 | `parameters` declarations and data objects; composition of included documents; inline placeholders described as future |
 | 0.12 | 2026-10-06 | Resolution rewritten: app-supplied resolver, verified fetches, CAR bundles, static published sets, no addresses in documents; removed the HTTP endpoint and Sereus-node strategy; nesting-not-depth and document-level identity stated |
+| 0.13 | 2026-10-06 | Published sets: file layout under a base URL, `catalog.json` format with entry status, provenance check |
