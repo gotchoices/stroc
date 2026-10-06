@@ -1,7 +1,7 @@
 # Stroc Specification
 
 **Status**: Work in Progress  
-**Version**: 0.11 (Draft)
+**Version**: 0.12 (Draft)
 
 Items marked *pending* depend on open questions in [STATUS.md](STATUS.md#blocking-questions).
 
@@ -143,6 +143,13 @@ declared parameter; and there is no conditional text.
 
 Each section stores a **single paragraph string** in `text`. Additional paragraphs are represented as child sections (which may omit `title` if they are simple paragraphs within a parent section). There is no sentence-level storage.
 
+**Sections store nesting, not depth.** A section has no heading level or number of its own; both
+are computed when rendering, from where the section sits in the composed document. This is what
+lets a document written once be included at any depth.
+
+**Identity stops at the document.** A section inside a document has no CID of its own. Text that
+should be reusable, or reviewable separately, belongs in its own document, included by reference.
+
 ### Section Types
 
 #### Inline Section
@@ -203,40 +210,22 @@ Layout details are in [Rendering.md](Rendering.md).
 
 ### Document Resolution and Verification
 
-When a document includes a reference section with a `source` CID, implementations should:
+A document records only the CIDs of what it includes, never where to obtain them. Where documents
+come from is the concern of the application using Stroc (a local store, a peer, a publisher's web
+server, IPFS); Stroc defines how they are checked.
 
-1. **Fetch** the referenced document by CID
-2. **Verify** the fetched content matches the CID (recompute hash and compare)
-3. **Cache** verified documents to avoid redundant fetches
-4. **Reject** documents that fail verification (hash mismatch)
-
-#### Resolution Strategy
-
-Implementations may attempt resolution from multiple sources in order of preference:
-
-1. **Local cache** - Previously fetched and verified documents
-2. **Local storage** - Documents available locally (file system, database)
-3. **IPFS network** - Fetch via `ipfs dag get <cid>` from public or private nodes
-4. **Sereus nodes** - Fetch from trusted Sereus Fabric nodes
-
-#### API Endpoint (Reference Implementation)
-
-```
-GET /document/:cid
-→ 200 OK with document JSON if found and verified
-→ 404 Not Found if document cannot be located
-→ 500 Internal Server Error if hash verification fails
-```
-
-**Response format:**
-```json
-{
-  "cid": "baguqeera...",
-  "document": { /* Stroc document */ },
-  "verified": true,
-  "source": "cache|local|ipfs|sereus"
-}
-```
+- **Resolver**: an application supplies a function that returns a document's bytes for a CID.
+  Stroc places no requirement on where the bytes come from.
+- **Verify every fetch**: the bytes are hashed and compared with the CID as described under
+  [Verification](#verification). A mismatch is rejected; no source needs to be trusted.
+- **Composition** fetches the root and every document it includes, transitively, verifying each.
+  A document that cannot be obtained is reported by CID; rendering stops rather than showing a
+  partial document.
+- **Bundles**: a document and everything it includes can be exported as one CAR file (the standard
+  IPLD archive format) and imported elsewhere, with every block verified on import. This is how a
+  complete document travels between parties or is kept with an agreement.
+- **Published sets**: a publisher may serve documents as static files named by CID, each holding
+  the document's canonical DAG-JSON bytes, alongside CAR bundles. Any web server can host them.
 
 #### Reference Validation
 
@@ -473,10 +462,12 @@ content that was received.
 
 ### IPFS Compatibility
 
-Documents can be stored and retrieved directly via IPFS:
-- `ipfs dag put` to store
-- `ipfs dag get <cid>` to retrieve
-- Works with public IPFS network or private Sereus nodes
+Stroc documents are valid IPLD blocks, so IPFS can be used as one optional source among others:
+- `ipfs dag put` to store, `ipfs dag get <cid>` to retrieve
+- Because includes are links, pinning a root pins the whole composed document, and
+  `ipfs dag export` produces the same CAR bundle Stroc does
+
+Stroc does not require IPFS.
 
 ---
 
@@ -680,3 +671,4 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 | 0.9 | 2026-10-06 | Canonical form replaces input normalization (unknown fields rejected, whitespace, invisible characters, literal text); verification hashes received bytes; newer `stroc` versions rejected |
 | 0.10 | 2026-10-06 | Markup grammar: exact tokens, every `<` begins a token, backslash escapes `\<` and `\\`; one-spelling nesting rules; markup is not HTML |
 | 0.11 | 2026-10-06 | `parameters` declarations and data objects; composition of included documents; inline placeholders described as future |
+| 0.12 | 2026-10-06 | Resolution rewritten: app-supplied resolver, verified fetches, CAR bundles, static published sets, no addresses in documents; removed the HTTP endpoint and Sereus-node strategy; nesting-not-depth and document-level identity stated |

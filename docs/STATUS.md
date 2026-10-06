@@ -107,14 +107,10 @@ All settled 2026-10-06; details under Decisions above, and in the spec and
 
 ## Other open questions
 
-- [ ] **Trim [Sereus.md](Sereus.md).** Done so far: removed the app-guidance and "what Sereus provides"
-  sections. Further candidates, please decide:
-  - Rename it (e.g. `Principles.md`), since it is no longer about Sereus?
-  - Instrument declaration (29–32): drop? Taleus decides who signs in its own schema.
-  - Templates (18–28): superseded by spec Parameters; reduce to a pointer?
-  - Rendering (46–48): now covered by Rendering.md; reduce to a pointer?
-  - Markdown (10–17): demote to "later", given Q4?
-  - Lineage (33–35), review/diff (39–41), publisher signatures (49): keep as "later" or drop?
+- [x] **Trim [Sereus.md](Sereus.md).** Done 2026-10-06: now describes how Stroc serves Sereus apps
+  (the environment, division of responsibility, distributing documents, packaging, guidance for
+  apps, possible later features). Material now in the spec, Rendering.md or this file was removed;
+  the instrument declaration was set aside. The name is kept, since the file is about Sereus apps.
 - [ ] Delete [FeatureComparison.md](FeatureComparison.md)? The parity checklist below supersedes it.
 - [ ] Rewrite [Implementation.md](Implementation.md) and [Vision.md](Vision.md) once the package split
   is settled (both still describe sentence arrays, a server-backed editor, and "Sereus MyCHIPs").
@@ -235,8 +231,12 @@ Editor
 - [ ] Particulars table in `layout`: hoisted, grouped by declaring document, values styled distinctly
 - [ ] App blocks (`heading`, `paragraph`, `table`, `qr`) placed after the document; QR drawn by
       the renderer; closing root-CID QR option
-- [ ] `stroc publish`: export the set as a CAR file or upload to an IPFS node
+- [ ] `stroc publish`: write a published set (static `<cid>` files of canonical bytes plus a CAR
+      per root document) for any web server; optionally upload to IPFS
 - [ ] Bundle as a CAR file: root CID → the document and everything it includes; every block verified offline
+- [ ] Local store helper (verified documents by CID) and missing check (included documents a store
+      does not hold)
+- [ ] HTTP resolver for published sets
 - [ ] Package split so a reader app takes only what it needs: core (types, normalize, validate,
       CID), io (YAML/JSON), compose (resolver, bundle), render (HTML, PDF), ui, cli. Everything
       below ui runs in browser, Node and React Native / NativeScript.
@@ -245,7 +245,8 @@ Editor
 
 ### Later
 
-- [ ] Markdown import/export
+- [ ] Markdown import/export (lossless, round-trip to the same CID; see Sereus.md)
+- [ ] Defined terms declared by a document for its included clauses
 - [ ] Structural diff between two documents
 - [ ] `translates` lineage
 - [ ] IPFS transport adapter (`dag put/get`)
