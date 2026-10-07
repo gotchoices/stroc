@@ -45,9 +45,17 @@ layout(doc: Composed, input: {
   options?: RenderOptions
 }): Layout
 
-toHtml(layout: Layout, options?: HtmlOptions): string   // standalone, print-ready HTML
+toHtml(layout: Layout): string                              // standalone, print-ready HTML
+toPdfDefinition(layout: Layout, options?: PdfOptions): PdfDefinition   // plain pdfmake definition
+
+// @stroc/pdf (separate, so apps that only need HTML do not take pdfmake):
 toPdf(layout: Layout, options?: PdfOptions): Promise<Uint8Array>
 ```
+
+`toPdfDefinition` produces pdfmake's document definition as plain data, with no dependency on
+pdfmake. `@stroc/pdf` turns it into bytes in Node; an app can equally hand the definition to
+pdfmake's browser build. pdfmake is never allowed to fetch URLs or read files: the definition
+refers to no external resources and access policies deny them.
 
 `layout` does all the work of numbering, resolving references and grouping parameters, so HTML
 and PDF output are thin and always agree. An app with its own UI can draw from `Layout`
@@ -139,15 +147,19 @@ label set passed in options. English is the default. The document's own text is 
 - `compose`, `checkData` and `layout` are plain TypeScript with no DOM or Node APIs, so they run
   in browsers, Node and React Native.
 - `toHtml` returns a string; an app can show it in a web view on any platform.
-- `toPdf` uses pdfmake, which runs in browsers and Node. **Not yet verified in React Native or
-  NativeScript.** If it does not run there, a mobile app renders HTML in a web view and prints or
-  saves from that.
+- `toPdf` uses pdfmake, which runs in browsers and Node. pdfmake's browser build was checked
+  (2026-10-07) in a bare JavaScript context with no DOM and no Node APIs, and produced a PDF with
+  SVG, which strongly suggests it runs in React Native. **Not yet verified on a device (Hermes) or
+  in NativeScript.** If it does not run there, a mobile app renders HTML in a web view and prints
+  or saves from that.
 
 ## Open issues
 
-- **Fonts for non-Latin scripts.** MyCHIPs used pdfmake's built-in fonts (Helvetica, Times,
-  Courier), which cover Latin text only. Documents in other scripts need embedded fonts; how an app
-  supplies them is undecided.
-- **pdfmake on mobile**: verify early (see Platforms).
+- **Embedded fonts.** PDFs currently use the PDF standard fonts (Times, Courier), as MyCHIPs did.
+  They are not embedded, so each viewer substitutes its own (one test renderer showed no bold at
+  all), and they cover Latin text only. Recommended: embed a free font family (for example Noto
+  Serif, with Noto Sans Mono for CIDs) for consistent legal documents and non-Latin scripts; how an
+  app adds fonts for other scripts is to be decided.
+- **pdfmake on a device**: confirm on React Native (Hermes) and NativeScript (see Platforms).
 - **Right-to-left documents**: bidi marks are preserved in text; layout direction is not yet
   addressed.

@@ -179,7 +179,7 @@ Specification and decisions
 
 ### Stage 0 — Safety net
 
-- [x] Vitest in every package, wired to `yarn test` (164 tests)
+- [x] Vitest in every package, wired to `yarn test` (170 tests)
 - [x] Unit tests for text rules, ids, language tags, markup and validation, including malformed input
 - [x] Golden-vector CID tests (5 fixture documents in `packages/core/test/fixtures/`, including a
       contract that includes a clause by CID). Recorded for format `"0.1"`; re-recorded at freeze.
@@ -268,7 +268,9 @@ Document server (`stroc serve`, `@stroc/server`; replaced the old dev server)
 - [ ] `?format=car` bundles (with the CAR work in Stage 3; 406 until then)
 
 Rendering (`@stroc/render`, per [Rendering.md](Rendering.md))
-- [ ] Verify pdfmake in React Native / NativeScript early; fall back to HTML in a web view
+- [x] pdfmake browser build produces a PDF in a bare JS context (no DOM, no Node): good sign for
+      React Native
+- [ ] Confirm on a device (Hermes) and in NativeScript; fall back to HTML in a web view
 - [x] `layout`: framework-neutral model; numbering; two-column legal layout; references as
       "Section 3.1"; included documents with CID beside the heading; refuses to render with
       problems unless `draft`
@@ -276,8 +278,13 @@ Rendering (`@stroc/render`, per [Rendering.md](Rendering.md))
 - [x] Localizable label set (English default)
 - [x] `stroc render <file> [--data] [--draft] [--qr] [-o]` composes a file with its folder as the
       library and writes HTML
-- [ ] `toPdf` (pdfmake): same layout; footer with root CID and page n / total; Letter or A4
-- [ ] Print page numbers in HTML (CSS cannot do this reliably; PDF will)
+- [x] `toPdfDefinition` (in `@stroc/render`, no pdfmake dependency) and `toPdf` (`@stroc/pdf`):
+      same legal layout as HTML; footer with root CID and page n / total; Letter or A4; DRAFT
+      watermark; QR codes as SVG; PDF metadata carries the title and CID; no external access
+- [x] `stroc render ... -o file.pdf [--a4]`
+- [ ] Embed a free font family (Noto Serif) instead of the non-embedded standard fonts: consistent
+      rendering across viewers, and the way to non-Latin scripts
+- [ ] Export PDF in the editor (pdfmake browser build)
 - [ ] The editor loads `@stroc/render` in the browser (the QR library is CommonJS: bundle it)
 
 Editor
@@ -285,6 +292,9 @@ Editor
 - [ ] Validation and CID in the browser (Validate & Generate CID still calls the server)
 - [x] Sources list (File → Sources): user-controlled, ordered, remembered per browser
 - [x] Open File… and Open by CID… (also `?cid=` in the address, used by Open in new tab)
+- [x] Sources dialog shown over the page (was drawn inline, off-screen when scrolled)
+- [ ] Open by CID offers a list: query every source's catalog and show title, author, role, status
+      and source to choose from; pasting a CID remains for gateways
 - [ ] Embeddable: public `doc` property, `readonly` mode, change and save events
 - [x] Included documents fetched, verified, composed and shown in place, numbered; header shows
       verification, serving source, author check, source catalog role and status, problems inside;
@@ -347,6 +357,7 @@ yarn lint       # ESLint, all packages
 yarn stroc lint contracts/*.yaml                  # check documents (--fix to fix what can be fixed)
 yarn stroc cid contracts/*.yaml                   # print CIDs
 yarn stroc render contracts/Tally_Contract.yaml -o tally.html   # the composed contract as HTML
+yarn stroc render contracts/Tally_Contract.yaml -o tally.pdf    # ... or as PDF (--a4 for A4)
 yarn stroc serve <folder> [--port N] [--domain D] [--watch] [--editor]
 docker build -t stroc-server . && docker run -p 3000:3000 -v $PWD/contracts:/documents:ro stroc-server
 ```

@@ -423,12 +423,24 @@ export class StrocEditor extends LitElement {
     .status-from { font-size: 12px; color: #6c757d; margin-right: 8px; }
 
     /* Sources panel */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 200;
+    }
     .sources-panel {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(720px, calc(100vw - 32px));
+      z-index: 201;
       border: 1px solid #ced4da;
-      border-radius: 6px;
-      background: #f8f9fa;
-      padding: 12px 16px;
-      margin-bottom: 16px;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      padding: 16px 20px;
       font-size: 14px;
     }
     .sources-head { display: flex; gap: 12px; align-items: baseline; }
@@ -1065,7 +1077,8 @@ export class StrocEditor extends LitElement {
       input.value = ''
     }
     return html`
-      <div class="sources-panel">
+      <div class="modal-backdrop" @click=${() => { this.showSources = false }}></div>
+      <div class="sources-panel" role="dialog" aria-label="Document sources">
         <div class="sources-head">
           <b>Document sources</b>
           <span class="muted">Tried in order when fetching a document by CID. Everything fetched is verified against its CID.</span>

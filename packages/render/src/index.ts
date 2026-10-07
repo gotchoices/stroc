@@ -310,3 +310,144 @@ ${body.join('\n')}
 </html>
 `
 }
+
+// ---------------------------------------------------------------------------------------------
+// PDF document definition
+//
+// A plain pdfmake document definition (no pdfmake dependency here): the same layout as the HTML,
+// modeled on MyCHIPs' buildpdf.js. @stroc/pdf turns it into PDF bytes.
+
+export interface PdfOptions {
+  pageSize?: 'LETTER' | 'A4'
+  font?: string            // a font name the PDF writer knows; default "Times"
+}
+
+// pdfmake's document definition is loosely typed; keep it as plain data.
+export type PdfContent = Record<string, unknown> | string | PdfContent[]
+export interface PdfDefinition {
+  info: Record<string, string>
+  pageSize: string
+  pageMargins: [number, number, number, number]
+  defaultStyle: Record<string, unknown>
+  styles: Record<string, Record<string, unknown>>
+  content: PdfContent[]
+  footer: (currentPage: number, pageCount: number) => PdfContent
+  watermark?: Record<string, unknown>
+}
+
+const PT = { indent: 18, numberWidth: 22, numberStep: 8 }
+
+function pdfRuns(list: Run[]): PdfContent[] {
+  return list.map(r => {
+    const t: Record<string, unknown> = { text: r.text }
+    if (r.bold) t.bold = true
+    if (r.italic) t.italics = true
+    if (r.underline) t.decoration = 'underline'
+    if (r.unresolved) t.color = '#b00000'
+    return t
+  })
+}
+
+export function toPdfDefinition(l: Layout, options: PdfOptions = {}): PdfDefinition {
+  const content: PdfContent[] = []
+  for (const b of l.blocks) {
+    switch (b.kind) {
+      case 'title':
+        content.push({ text: b.text, style: 'title' })
+        break
+      case 'particulars': {
+        const body: PdfContent[] = []
+        for (const g of b.groups) {
+          if (g.heading) body.push([{ text: g.heading, style: 'groupHeading', colSpan: 2 }, ''])
+          for (const r of g.rows) {
+            body.push([
+              { text: r.label, style: 'label' },
+              r.supplied ? { text: r.value, style: 'supplied' } : { text: r.value },
+            ])
+          }
+        }
+        content.push({ text: b.heading, style: 'particularsHeading' })
+        content.push({ table: { widths: ['auto', '*'], body }, layout: 'noBorders', margin: [0, 0, 0, 12] })
+        break
+      }
+      case 'preamble':
+        content.push({ text: pdfRuns(b.runs), style: 'preamble' })
+        break
+      case 'section': {
+        const numberWidth = PT.numberWidth + PT.numberStep * b.depth
+        const head: PdfContent[] = []
+        if (b.title || b.cid) {
+          head.push({
+            columns: [
+              { text: b.title ?? '', bold: true, width: '*' },
+              ...(b.cid ? [{ text: b.cid, style: 'cid', width: 'auto', alignment: 'right' }] : []),
+            ],
+            columnGap: 8,
+          })
+        }
+        const body: PdfContent[] = [...head, ...(b.runs ? [{ text: pdfRuns(b.runs), style: 'paragraph', margin: [0, head.length ? 2 : 0, 0, 0] }] : [])]
+        content.push({
+          columns: [
+            { text: b.number, bold: true, width: numberWidth },
+            { stack: body, width: '*' },
+          ],
+          columnGap: 4,
+          margin: [PT.indent * (b.depth - 1), 0, 0, 6],
+        })
+        break
+      }
+      case 'app-heading':
+        content.push({ text: b.text, style: 'appHeading' })
+        break
+      case 'app-paragraph':
+        content.push({ text: b.text, style: 'appText' })
+        break
+      case 'app-table':
+        if (b.title) content.push({ text: b.title, style: 'appHeading' })
+        content.push({
+          table: { widths: ['auto', '*'], body: b.rows.map(([k, v]) => [{ text: k, style: 'appText' }, { text: v, style: 'appText' }]) },
+          layout: 'noBorders',
+          margin: [0, 0, 0, 10],
+        })
+        break
+      case 'qr':
+        content.push({
+          stack: [
+            { svg: qrSvg(b.modules, 100), width: 100 },
+            ...(b.caption ? [{ text: b.caption, style: 'cid', margin: [0, 2, 0, 0] }] : []),
+          ],
+          width: 120,
+          margin: [0, 10, 0, 0],
+          unbreakable: true,
+        })
+        break
+    }
+  }
+  return {
+    info: { title: l.title, subject: `Stroc document ${l.cid}`, keywords: l.cid, creator: 'Stroc' },
+    pageSize: options.pageSize ?? 'LETTER',
+    pageMargins: [60, 54, 60, 60],
+    defaultStyle: { font: options.font ?? 'Times', fontSize: 10.5, lineHeight: 1.15 },
+    styles: {
+      title: { fontSize: 16, bold: true, alignment: 'center', margin: [0, 0, 0, 14] },
+      particularsHeading: { bold: true, margin: [0, 0, 0, 4] },
+      groupHeading: { italics: true, margin: [0, 4, 0, 1] },
+      label: { color: '#555555' },
+      supplied: { bold: true, color: '#0b4f8a' },
+      preamble: { alignment: 'justify', margin: [0, 0, 0, 10], leadingIndent: 24 },
+      paragraph: { alignment: 'justify' },
+      cid: { font: 'Courier', fontSize: 5.5, color: '#666666' },
+      appHeading: { fontSize: 12, bold: true, margin: [0, 14, 0, 6] },
+      appText: { fontSize: 9 },
+    },
+    content,
+    footer: (currentPage: number, pageCount: number) => ({
+      columns: [
+        { text: `${l.labels.documentId} ${l.cid}`, style: 'cid', width: '*' },
+        { text: `${currentPage} / ${pageCount}`, fontSize: 8, alignment: 'right', width: 'auto' },
+      ],
+      margin: [60, 24, 60, 0],
+    }),
+    ...(l.draft ? { watermark: { text: 'DRAFT', opacity: 0.08, bold: true } } : {}),
+  }
+}

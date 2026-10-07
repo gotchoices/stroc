@@ -305,6 +305,10 @@ that the server has it; the catalog states what the server claims about it.
 
 - The catalog is ordinary JSON, not a Stroc document. It is not content-addressed, and the domain
   may update it at any time (for example to mark an entry superseded or withdrawn).
+- A server's catalog lists **every** document it serves (with role `mirror` where it makes no
+  claim), so the catalog is also the index of what is available there. Clients use it to offer a
+  list of documents to choose from. (IPFS gateways have no catalog; documents there are found by
+  CID only.)
 - **Confirming an author**: for a document whose `author` is a domain, fetch
   `https://<domain>/.well-known/stroc/catalog.json` and find the document's CID. The claim is
   confirmed if the entry's role is `author`; report the status and the date checked. An entry with

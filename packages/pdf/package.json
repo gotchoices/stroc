@@ -1,0 +1,32 @@
+{
+  "name": "@stroc/pdf",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist/src"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@stroc/render": "workspace:*",
+    "pdfmake": "^0.3"
+  },
+  "devDependencies": {
+    "@stroc/compose": "workspace:*",
+    "@stroc/core": "workspace:*",
+    "@stroc/yaml": "workspace:*",
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.0",
+    "vitest": "^3"
+  }
+}

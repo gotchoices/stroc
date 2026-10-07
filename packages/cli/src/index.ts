@@ -10,15 +10,17 @@ import { documentCid } from '@stroc/core'
 import { lintYaml, fixYaml, parseYaml, type LocatedProblem } from '@stroc/yaml'
 import { MemoryStore, compose } from '@stroc/compose'
 import { layout, toHtml } from '@stroc/render'
+import { toPdf } from '@stroc/pdf'
 import { startServer, parseServeArgs, SERVE_USAGE } from '@stroc/server'
 
 const USAGE = `usage:
   stroc lint [--fix] <files...>   check YAML or JSON documents
   stroc cid <files...>            print each valid document's CID
-  stroc render <file> [--library <dir>] [--data <file>] [--draft] [--qr] [-o <out.html>]
+  stroc render <file> [--library <dir>] [--data <file>] [--draft] [--qr] [--a4] [-o <out>]
                                   compose <file> with the documents it includes (found among the
                                   documents in --library, default: the file's folder) and write
-                                  HTML to <out.html> or standard output
+                                  PDF if <out> ends in .pdf, otherwise HTML (to <out> or standard
+                                  output)
   stroc serve ${SERVE_USAGE}
                                   serve the folder's documents at /ipfs/<cid>, with a catalog
                                   and index; --watch reloads on change, --editor hosts the editor`
@@ -100,13 +102,15 @@ async function render(args: string[]): Promise<number> {
     console.error('not rendered (use --draft to render anyway)')
     return 1
   }
-  const html = toHtml(result.layout)
   const out = option(args, '-o')
+  const output = out?.toLowerCase().endsWith('.pdf')
+    ? await toPdf(result.layout, { pageSize: args.includes('--a4') ? 'A4' : 'LETTER' })
+    : toHtml(result.layout)
   if (out) {
-    writeFileSync(out, html)
+    writeFileSync(out, output)
     console.error(`${root}  ${file} -> ${out}`)
   } else {
-    process.stdout.write(html)
+    process.stdout.write(output)
   }
   return 0
 }

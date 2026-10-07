@@ -14,6 +14,7 @@
   "dependencies": {
     "@stroc/compose": "workspace:*",
     "@stroc/core": "workspace:*",
+    "@stroc/pdf": "workspace:*",
     "@stroc/render": "workspace:*",
     "@stroc/server": "workspace:*",
     "@stroc/yaml": "workspace:*"
