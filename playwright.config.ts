@@ -13,6 +13,7 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
+    testIdAttribute: 'data-test',   // tests find controls by stable ids, not by styling or wording
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },

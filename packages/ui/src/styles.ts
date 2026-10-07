@@ -63,8 +63,11 @@ stroc-editor {
   .para .ref.unresolved, .ref.unresolved { color: var(--bad); text-decoration: underline wavy; }
 
   /* Preview: the document as readers see it */
-  &[preview] .grip, &[preview] .sec-problems, &[preview] .inc-info button,
-  &[preview] .problems, &[preview] .doc-meta button { display: none; }
+  &[preview] .sec-problems, &[preview] .problems, &[preview] .doc-meta button,
+  &[preview] .inc-title .inc-id, &[preview] .inc-info > :not(.cid-line) { display: none; }
+  &[preview] .grip { visibility: hidden; overflow: hidden; }   /* keep its grid column, or the layout collapses */
+  &[preview] .row { grid-template-columns: 0 56px 1fr; }
+  &[preview] .inc-body { margin-left: 56px; }
   &[preview] .sec.active > .row { background: none; box-shadow: none; }
   &[preview] .sec.include > .row { background: none; box-shadow: none; }
   &[preview] .title-input { cursor: default; }

@@ -133,6 +133,7 @@ export class StrocParagraph extends LitElement {
   firstUpdated() {
     const box = document.createElement('div')
     box.className = 'para'
+    box.dataset.test = 'text'
     box.addEventListener('input', () => this.scheduleChange())
     box.addEventListener('blur', () => { this.saveSelection(); this.flush() })
     box.addEventListener('keydown', e => this.onKey(e))

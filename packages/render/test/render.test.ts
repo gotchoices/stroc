@@ -158,4 +158,21 @@ describe('the sample Tally Contract', () => {
     const html = toHtml(layout(c).layout!)
     expect(html.match(/class="section"/g)?.length).toBe(94)
   })
+
+  // REGRESSION: the semantic outline of the rendered sample contract. A change here means
+  // composition, numbering, titles or include CIDs changed; review the diff and, if intended,
+  // update with `yarn workspace @stroc/render test -u`. Styling changes cannot affect it.
+  it('lays out the same outline as before', async () => {
+    const dir = new URL('../../../contracts/', import.meta.url)
+    const store = new MemoryStore()
+    for (const f of readdirSync(dir).filter(f => f.endsWith('.yaml') && !f.startsWith('.'))) {
+      await store.putDocument(lintYaml(readFileSync(new URL(f, dir), 'utf8')).value)
+    }
+    const c = await compose('baguqeera56bfnrqnf54kmd3c6ovga3mbinfdkwrdqwks6mntqpez22cjszea', store)
+    const outline = layout(c, { options: { cidQr: true } }).layout!.blocks.map(b =>
+      b.kind === 'section' ? `${b.number} ${b.title ?? '¶'}${b.cid ? ` [${b.cid}]` : ''}${b.runs?.some(r => r.ref) ? ' (refs)' : ''}`
+      : b.kind === 'qr' ? `qr ${b.value}`
+      : b.kind)
+    expect(outline).toMatchSnapshot()
+  })
 })

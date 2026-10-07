@@ -700,14 +700,15 @@ export class StrocEditor extends LitElement {
     `
   }
 
-  private menuItem(label: string, action: () => void, shortcut = '', disabled = false) {
-    return html`<button class="menu-item" ?disabled=${disabled} @click=${() => { this.menu = undefined; action() }}>
+  // Every command carries a stable data-test id, so tests do not depend on wording or styling.
+  private menuItem(test: string, label: string, action: () => void, shortcut = '', disabled = false) {
+    return html`<button class="menu-item" data-test=${`cmd-${test}`} ?disabled=${disabled} @click=${() => { this.menu = undefined; action() }}>
       <span>${label}</span>${shortcut ? html`<span class="shortcut">${shortcut}</span>` : nothing}</button>`
   }
 
   private renderMenu(id: string, label: string, items: TemplateResult) {
     return html`<div class="menu ${this.menu === id ? 'open' : ''}">
-      <button class="menu-label" @click=${() => { this.menu = this.menu === id ? undefined : id }}>${label}</button>
+      <button class="menu-label" data-test=${`menu-${id}`} @click=${() => { this.menu = this.menu === id ? undefined : id }}>${label}</button>
       <div class="menu-dropdown">${items}</div></div>`
   }
 
@@ -717,44 +718,44 @@ export class StrocEditor extends LitElement {
     return html`
       <div class="menubar">
         ${this.renderMenu('file', 'File', html`
-          ${this.menuItem('New', () => this.newDocument())}
-          ${this.menuItem('Open File…', () => void this.openFile(), '⌘O')}
-          ${this.menuItem('Open from Sources…', () => this.showOpen('open'))}
+          ${this.menuItem('new', 'New', () => this.newDocument())}
+          ${this.menuItem('open-file', 'Open File…', () => void this.openFile(), '⌘O')}
+          ${this.menuItem('open-sources', 'Open from Sources…', () => this.showOpen('open'))}
           <div class="menu-sep"></div>
-          ${this.menuItem('Save', () => void this.save(), '⌘S')}
-          ${this.menuItem('Save As…', () => void this.saveAs(), '⇧⌘S')}
-          ${this.menuItem('Save As JSON…', () => void this.saveAs('json'))}
+          ${this.menuItem('save', 'Save', () => void this.save(), '⌘S')}
+          ${this.menuItem('save-as', 'Save As…', () => void this.saveAs(), '⇧⌘S')}
+          ${this.menuItem('save-json', 'Save As JSON…', () => void this.saveAs('json'))}
           <div class="menu-sep"></div>
-          ${this.menuItem('Export PDF (Letter)…', () => void this.exportPdf('LETTER'))}
-          ${this.menuItem('Export PDF (A4)…', () => void this.exportPdf('A4'))}
+          ${this.menuItem('pdf-letter', 'Export PDF (Letter)…', () => void this.exportPdf('LETTER'))}
+          ${this.menuItem('pdf-a4', 'Export PDF (A4)…', () => void this.exportPdf('A4'))}
           <div class="menu-sep"></div>
-          ${this.menuItem('Sources…', () => { this.dialog = 'sources' })}
+          ${this.menuItem('sources', 'Sources…', () => { this.dialog = 'sources' })}
         `)}
         ${this.renderMenu('edit', 'Edit', html`
-          ${this.menuItem('Undo', () => this.undo(), '⌘Z', this.historyAt <= 0)}
-          ${this.menuItem('Redo', () => this.redo(), '⇧⌘Z', this.historyAt >= this.history.length - 1)}
+          ${this.menuItem('undo', 'Undo', () => this.undo(), '⌘Z', this.historyAt <= 0)}
+          ${this.menuItem('redo', 'Redo', () => this.redo(), '⇧⌘Z', this.historyAt >= this.history.length - 1)}
           <div class="menu-sep"></div>
-          ${this.menuItem('Document Properties…', () => { this.dialog = 'properties' })}
+          ${this.menuItem('properties', 'Document Properties…', () => { this.dialog = 'properties' })}
         `)}
         ${this.renderMenu('view', 'View', html`
-          ${this.menuItem(this.preview ? '✓ Preview (no editing)' : 'Preview (no editing)', () => { this.preview = !this.preview }, '⌘E')}
-          ${this.menuItem(this.checkSpelling ? '✓ Spell Check' : 'Spell Check', () => { this.checkSpelling = !this.checkSpelling; this.version++ })}
+          ${this.menuItem('preview', this.preview ? '✓ Preview (no editing)' : 'Preview (no editing)', () => { this.preview = !this.preview }, '⌘E')}
+          ${this.menuItem('spellcheck', this.checkSpelling ? '✓ Spell Check' : 'Spell Check', () => { this.checkSpelling = !this.checkSpelling; this.version++ })}
         `)}
         ${this.renderMenu('insert', 'Insert', html`
-          ${this.menuItem('Section at End', () => this.addSection('end'))}
-          ${this.menuItem('Section After Current', () => this.addSection('after'), '', !this.activeKey)}
-          ${this.menuItem('Subsection', () => this.addSection('child'), '', !this.activeKey)}
-          ${this.menuItem('Included Document…', () => this.showOpen('include'))}
-          ${this.menuItem('Reference…', () => this.showReferences(), '⌘K')}
+          ${this.menuItem('section-end', 'Section at End', () => this.addSection('end'))}
+          ${this.menuItem('section-after', 'Section After Current', () => this.addSection('after'), '', !this.activeKey)}
+          ${this.menuItem('subsection', 'Subsection', () => this.addSection('child'), '', !this.activeKey)}
+          ${this.menuItem('include', 'Included Document…', () => this.showOpen('include'))}
+          ${this.menuItem('reference', 'Reference…', () => this.showReferences(), '⌘K')}
         `)}
-        <div class="status">
+        <div class="status" data-test="status">
           ${this.notice ? html`<span>${this.notice}</span>` : nothing}
           <span class="file" title=${where}>${where}</span>
           ${this.dirty ? html`<span class="dirty" title="Unsaved changes">●</span>` : nothing}
           ${v.count
-            ? html`<span class="badge bad" title="Problems are shown at the sections they concern">${v.count} problem${v.count === 1 ? '' : 's'}</span>`
-            : html`<span class="badge good">Valid</span>`}
-          ${this.cid ? html`<span class="cid" title=${this.cid}>${this.cid}</span>
+            ? html`<span class="badge bad" data-test="problem-count" title="Problems are shown at the sections they concern">${v.count} problem${v.count === 1 ? '' : 's'}</span>`
+            : html`<span class="badge good" data-test="valid">Valid</span>`}
+          ${this.cid ? html`<span class="cid" data-test="cid" title=${this.cid}>${this.cid}</span>
             <button class="badge" title="Copy the CID" @click=${() => { void navigator.clipboard?.writeText(this.cid!); this.say('CID copied') }}>Copy</button>` : nothing}
         </div>
       </div>`
@@ -763,7 +764,7 @@ export class StrocEditor extends LitElement {
   private renderFormatbar() {
     const keep = (e: Event) => e.preventDefault()   // keep the selection in the paragraph
     return html`
-      <div class="formatbar">
+      <div class="formatbar" data-test="formatbar">
         <button title="Bold (⌘B)" @mousedown=${keep} @click=${() => this.format('bold')}><b>B</b></button>
         <button title="Italic (⌘I)" @mousedown=${keep} @click=${() => this.format('italic')}><i>I</i></button>
         <button title="Underline (⌘U)" @mousedown=${keep} @click=${() => this.format('underline')}><u>U</u></button>
@@ -776,7 +777,7 @@ export class StrocEditor extends LitElement {
   private renderHeader() {
     const d = this.doc
     return html`
-      <input class="doc-title" .value=${d.title} placeholder="Document title" ?readonly=${this.preview}
+      <input class="doc-title" data-test="doc-title" .value=${d.title} placeholder="Document title" ?readonly=${this.preview}
         @input=${(e: InputEvent) => { d.title = (e.target as HTMLInputElement).value; this.changed(true, 'title:doc') }} />
       <div class="doc-meta">
         <span><b>Author</b> ${d.author ?? html`<span class="muted">none</span>`}</span>
@@ -807,7 +808,7 @@ export class StrocEditor extends LitElement {
     return html`
       <div class="sec ${active ? 'active' : ''} ${this.dropClass(s)}" data-sec=${s.key}
         @dragover=${(e: DragEvent) => this.onDragOver(e, s)} @drop=${(e: DragEvent) => this.onDropSection(e)}>
-        <div class="row">
+        <div class="row" data-test="section-row">
           ${this.grip(s)}
           <span class="num">${number}.</span>
           <div>
@@ -823,7 +824,7 @@ export class StrocEditor extends LitElement {
   }
 
   private grip(s: M.EditSection) {
-    return html`<span class="grip" draggable="true" title="Drag to move (Shift or Alt to copy)"
+    return html`<span class="grip" data-test="grip" draggable="true" title="Drag to move (Shift or Alt to copy)"
       @dragstart=${(e: DragEvent) => this.onDragStart(e, s.key)} @dragend=${() => this.onDragEnd()}>⋮⋮</span>`
   }
 
@@ -859,7 +860,7 @@ export class StrocEditor extends LitElement {
     return html`
       <div class="sec include ${active ? 'active' : ''} ${this.dropClass(s)}" data-sec=${s.key} tabindex="-1"
         @dragover=${(e: DragEvent) => this.onDragOver(e, s)} @drop=${(e: DragEvent) => this.onDropSection(e)}>
-        <div class="row">
+        <div class="row" data-test="section-row">
           ${this.grip(s)}
           <span class="num">${number}.</span>
           <div>
@@ -880,7 +881,7 @@ export class StrocEditor extends LitElement {
     if (!info || info.state === 'loading') return html`<div class="inc-info muted">Loading from ${this.sources.length} source${this.sources.length === 1 ? '' : 's'}…</div>`
     if (info.state !== 'ok') {
       const what = info.state === 'missing' ? 'Not found in any source' : info.state === 'bad-cid' ? 'Not a valid CID' : 'Failed verification'
-      return html`<div class="inc-info"><span class="badge bad">✗ ${what}</span>
+      return html`<div class="inc-info"><span class="badge bad" data-test="include-failed">✗ ${what}</span>
         <button @click=${() => { this.dialog = 'sources' }}>Sources…</button>
         <div class="cid-line">${cid}</div></div>`
     }
@@ -890,7 +891,7 @@ export class StrocEditor extends LitElement {
     const entry = info.sourceEntry?.entry
     return html`
       <div class="inc-info">
-        <span class="badge good" title="The content matches its CID">✓ Verified</span>
+        <span class="badge good" data-test="include-verified" title="The content matches its CID">✓ Verified</span>
         <span class="muted">from ${host}</span>
         ${!a || a.status === 'not-a-domain'
           ? html`<span>${a?.author ? html`Author ${a.author} <span class="muted">(a name; not verifiable)</span>` : html`<span class="muted">No author</span>`}</span>`
@@ -941,7 +942,7 @@ export class StrocEditor extends LitElement {
       this.dialog === 'properties' ? this.renderPropertiesDialog(close) :
       this.dialog === 'reference' ? this.renderReferenceDialog(close) :
       this.renderCatalogDialog(close)
-    return html`<div class="backdrop" @click=${close}></div><div class="dialog" role="dialog">${body}</div>`
+    return html`<div class="backdrop" @click=${close}></div><div class="dialog" role="dialog" data-test=${`dialog-${this.dialog}`}>${body}</div>`
   }
 
   private renderReferenceDialog(close: () => void) {
@@ -958,7 +959,7 @@ export class StrocEditor extends LitElement {
         <thead><tr><th>Section</th><th>Title</th><th>Reference</th></tr></thead>
         <tbody>${targets.map(t => {
           const usable = t.path || t.section
-          return html`<tr class=${usable ? 'pick' : ''} @click=${() => usable && this.pickReference(t)}>
+          return html`<tr class=${usable ? 'pick' : ''} data-test="ref-row" data-label=${t.label} data-path=${t.path?.join('/') ?? ''} @click=${() => usable && this.pickReference(t)}>
             <td style="padding-left:${(t.depth - 1) * 12}px">${t.number}</td>
             <td>${t.label}${t.included ? html` <span class="muted">(included)</span>` : nothing}</td>
             <td>${t.path ? html`<code>${t.path.join('/')}</code>` : t.section ? html`<span class="muted">will get an id</span>` : html`<span class="muted">no id: cannot be referenced</span>`}</td></tr>`
@@ -1042,7 +1043,7 @@ export class StrocEditor extends LitElement {
       ${!rows ? html`<p class="muted">Loading catalogs…</p>` : !rows.length ? html`<p class="muted">No catalogs found in your sources.</p>` : html`
         <table>
           <thead><tr><th>Title</th><th>Source</th><th>Its claim</th><th>Status</th></tr></thead>
-          <tbody>${rows.map(r => html`<tr class="pick" title=${r.entry.cid} @click=${() => pick(r)}>
+          <tbody>${rows.map(r => html`<tr class="pick" data-test="catalog-row" data-cid=${r.entry.cid} title=${r.entry.cid} @click=${() => pick(r)}>
             <td>${r.entry.title ?? r.entry.cid}</td><td>${r.host}</td><td>${r.entry.role}</td>
             <td>${r.entry.status === 'current' ? r.entry.status : html`<span class="badge warn">${r.entry.status}</span>`}</td></tr>`)}</tbody>
         </table>`}

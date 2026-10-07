@@ -6,7 +6,7 @@ const TALLY = 'baguqeera56bfnrqnf54kmd3c6ovga3mbinfdkwrdqwks6mntqpez22cjszea'
 // Read state from the editor component.
 const doc = (page: Page) => page.evaluate(() => (document.querySelector('stroc-editor') as unknown as { doc: { text?: string, sections: { key: string, id?: string, title?: string, text?: string, sections: unknown[] }[] } }).doc)
 const cid = (page: Page) => page.evaluate(() => (document.querySelector('stroc-editor') as unknown as { cid?: string }).cid)
-const para = (page: Page, key: string) => page.locator(`stroc-paragraph[data-key="${key}"] .para`)
+const para = (page: Page, key: string) => page.locator(`stroc-paragraph[data-key="${key}"] [data-test="text"]`)
 
 // Put the caret in a paragraph (then type with the real keyboard).
 async function caret(page: Page, key: string, where: 'start' | 'end') {
@@ -31,8 +31,8 @@ test.describe('the editor', () => {
   test('opens a document by CID, with its includes verified', async ({ page }) => {
     await page.goto(`/editor/?cid=${TALLY}`)
     await expect.poll(() => cid(page)).toBe(TALLY)
-    await expect(page.locator('.inc-info .badge.good', { hasText: 'Verified' })).toHaveCount(9)
-    await expect(page.locator('.status')).toContainText('Valid')
+    await expect(page.getByTestId('include-verified')).toHaveCount(9)
+    await expect(page.getByTestId('valid')).toBeVisible()
   })
 
   test('typing, Enter and Backspace edit the text and the CID follows', async ({ page }) => {
@@ -60,7 +60,7 @@ test.describe('the editor', () => {
     await seed(page, [{ key: 't1', title: 'Terms', text: 'Pay within ten days.' }])
     await para(page, 't1').click()
     await page.evaluate(() => {
-      const box = document.querySelector('stroc-paragraph[data-key="t1"] .para')!
+      const box = document.querySelector('stroc-paragraph[data-key="t1"] [data-test="text"]')!
       const range = document.createRange()
       range.setStart(box.firstChild!, 11)
       range.setEnd(box.firstChild!, 19)
@@ -87,8 +87,8 @@ test.describe('the editor', () => {
     await page.goto('/editor/')
     await seed(page, [{ key: 'a', title: 'A', text: 'Alpha.' }, { key: 'b', title: 'B', text: 'Beta.' }, { key: 'c', title: 'C', text: 'Gamma.' }])
     await para(page, 'c').click()       // makes c active, so its grip is the one being dragged
-    const grip = page.locator('[data-sec="c"] .grip')
-    const target = page.locator('[data-sec="a"] .row')
+    const grip = page.locator('[data-sec="c"]').getByTestId('grip')
+    const target = page.locator('[data-sec="a"]').getByTestId('section-row')
     const box = (await target.boundingBox())!
     await grip.dragTo(target, { targetPosition: { x: 40, y: 3 } })    // upper third: before A
     await expect.poll(async () => (await doc(page)).sections.map(s => s.key)).toEqual(['c', 'a', 'b'])
@@ -100,8 +100,8 @@ test.describe('the editor', () => {
     await seed(page, [{ key: 't1', title: 'Terms', text: 'Pay promptly.' }, { key: 't2', text: 'As stated in' }])
     await caret(page, 't2', 'end')
     await page.keyboard.press('ControlOrMeta+k')
-    await expect(page.locator('.dialog h2')).toContainText('Insert a reference')
-    await page.locator('.dialog tbody tr', { has: page.locator('td', { hasText: /^Terms$/ }) }).click()
+    await expect(page.getByTestId('dialog-reference')).toBeVisible()
+    await page.locator('[data-test="ref-row"][data-label="Terms"]').click()
     await expect.poll(async () => (await doc(page)).sections[1].text).toBe('As stated in <ref:terms>')
     expect((await doc(page)).sections[0].id).toBe('terms')
     await expect(para(page, 't2')).toContainText('Section 1')
@@ -162,10 +162,10 @@ test.describe('the editor', () => {
 
   test('exports the composed document as PDF', async ({ page }) => {
     await page.goto(`/editor/?cid=${TALLY}`)
-    await expect(page.locator('.inc-info .badge.good', { hasText: 'Verified' })).toHaveCount(9)
-    await page.locator('.menu-label', { hasText: 'File' }).click()
+    await expect(page.getByTestId('include-verified')).toHaveCount(9)
+    await page.getByTestId('menu-file').click()
     const download = page.waitForEvent('download')
-    await page.locator('.menu-item', { hasText: 'Export PDF (A4)' }).click()
+    await page.getByTestId('cmd-pdf-a4').click()
     const file = await download
     expect(file.suggestedFilename()).toBe('MyCHIPS_Tally_Agreement.pdf')
     const pdf = readFileSync((await file.path())!).toString('latin1')
@@ -180,17 +180,20 @@ test.describe('the editor', () => {
     await seed(page, [{ key: 'a', title: 'A', text: 'Alpha.' }])
     await page.keyboard.press('ControlOrMeta+e')
     await expect(page.locator('stroc-editor')).toHaveAttribute('preview', '')
-    await expect(page.locator('.formatbar')).toHaveCount(0)
+    await expect(page.getByTestId('formatbar')).toHaveCount(0)
     await expect(para(page, 'a')).toHaveAttribute('contenteditable', 'false')
+    // The layout keeps its width: the paragraph spans most of the document column.
+    const width = (l: ReturnType<Page['locator']>) => l.first().evaluate(el => el.getBoundingClientRect().width)
+    expect(await width(para(page, 'a'))).toBeGreaterThan(0.8 * await width(page.getByTestId('doc-title')))
   })
 
   test('Open from Sources lists the catalog and opens a document', async ({ page }) => {
     await page.goto('/editor/')
-    await page.locator('.menu-label', { hasText: 'File' }).click()
-    await page.locator('.menu-item', { hasText: 'Open from Sources' }).click()
-    await expect(page.locator('.dialog tbody tr')).toHaveCount(13)
-    await page.locator('.dialog tbody tr', { hasText: 'Ethical Conduct' }).click()
-    await expect(page.locator('.doc-title')).toHaveValue('Ethical Conduct')
+    await page.getByTestId('menu-file').click()
+    await page.getByTestId('cmd-open-sources').click()
+    await expect(page.getByTestId('catalog-row')).toHaveCount(13)
+    await page.getByTestId('catalog-row').filter({ hasText: 'Ethical Conduct' }).click()
+    await expect(page.getByTestId('doc-title')).toHaveValue('Ethical Conduct')
     expect(new URL(page.url()).searchParams.get('cid')).toMatch(/^baguqeera/)
   })
 })

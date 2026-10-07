@@ -136,6 +136,20 @@ All settled 2026-10-06; details under Decisions above, and in the spec and
 
 ## Other open questions
 
+- [ ] **Several apps on one domain** ([Deploying.md](Deploying.md)). Recommended: one shared set per
+  domain with an optional `collections` field on catalog entries and `stroc serve` serving one
+  folder per collection; a subdomain per app when it is a separate publisher. Decide before
+  publishing the Taleus set on sereus.org.
+- [ ] **`stroc link`** for modularizing: let drafts write `source: {/: ./clause.yaml}` (invalid, so
+  lint flags it) and have the tool replace each with the file's CID, bottom-up. Makes AI-assisted
+  splitting of a document into clauses a one-command step. Overlaps `stroc update`.
+
+- [ ] **Inline placeholders, revisited.** An AI test of [Authoring.md](Authoring.md) (2026-10-07)
+  showed the cost of deferring them: a blank amount or date ("a weekly rent of $______") cannot keep
+  its wording and becomes "the weekly rent stated in the Particulars". `<param:weekly-rent>` would
+  render the value in place. Decide whether to add it to the format (a new token and `stroc`
+  version, as described under Future in the spec).
+
 - [x] **Trim [Sereus.md](Sereus.md).** Done 2026-10-06: now describes how Stroc serves Sereus apps
   (the environment, division of responsibility, distributing documents, packaging, guidance for
   apps, possible later features). Material now in the spec, Rendering.md or this file was removed;
@@ -408,4 +422,7 @@ alone), and add the others under File → Sources.
 - [Legacy.md](Legacy.md): strdoc and MyCHIPs, the parity target
 - [Vision.md](Vision.md), [Implementation.md](Implementation.md): original goals and plan (dated)
 - [Editor.md](Editor.md): editor platform and behavior
+- [Authoring.md](Authoring.md): writing Stroc documents, by hand or with an AI assistant
+- [Deploying.md](Deploying.md): preparing and publishing a document set on a domain
+- [Testing.md](Testing.md): test layers and rules
 - [Workflow.md](Workflow.md): change process
