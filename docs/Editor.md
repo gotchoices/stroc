@@ -10,10 +10,12 @@ documents (for example Taleus users) never need the editor.
 
 - **Lit web component** (`<stroc-editor>`, package `@stroc/ui`), so it can be embedded in any page
   or framework (plain HTML, Vue, Svelte, React), and used on its own as a standalone page.
-- **Runs entirely in the browser.** Validation, linting and CIDs come from `@stroc/core`; no server
-  is needed. The development server only hosts the page.
+- **Runs entirely in the browser.** The editor is bundled (esbuild) with `@stroc/core` and
+  `@stroc/compose`; it fetches and verifies documents itself. (Validate & Generate CID still calls
+  the hosting server until the rewrite.) `stroc serve --editor` hosts it at `/editor/`.
 - **Rewritten** in Stage 2 as a set of small components, replacing the current single-file
-  prototype. Until then the prototype receives only safety fixes.
+  prototype. Until then new capabilities go into separate modules (`sources.ts`, `includes.ts`)
+  that the prototype uses and the rewrite will reuse.
 
 ## Scope
 
@@ -21,6 +23,34 @@ The editor handles **one document at a time**: open, edit, validate, save, and s
 reads the documents a file includes (to show them in place and check references into them), but it
 does not track revisions or update other files. Library housekeeping belongs to the folder tools
 (`stroc lint`, `status`, `update`, `publish`); see [STATUS.md](STATUS.md).
+
+## Sources and opening documents
+
+- **Sources**: an ordered list of servers (`stroc serve`, static hosts, IPFS gateways), edited
+  under File → Sources and remembered by the browser. It starts as the server hosting the editor.
+  Documents are fetched by CID from the first source that has them and always verified.
+- **Open File…** opens a YAML or JSON file from the computer. **Open by CID…** fetches a document
+  from the sources. The editor's address carries `?cid=<cid>` for a document opened by CID, so a
+  link opens it directly.
+- Several folders can be served at once (`stroc serve a --port 3001`, `stroc serve b --port 3002`)
+  and added as sources to one editor (`stroc serve --editor` with no folder hosts only the editor).
+
+## Included documents
+
+Each include is fetched, verified and composed (with everything it includes) and shown in place,
+read-only, numbered within the document. Its header shows:
+- its title (from the included document) and the include's id;
+- **Verified**, **Not found in any source** or **Failed verification**;
+- which source served it;
+- its author: a name (not verifiable), or a domain with the result of the author check against
+  that domain's catalog (confirmed, not confirmed and why);
+- what the serving source's catalog says about it (role and status; superseded or withdrawn are
+  highlighted);
+- the number of problems inside it (missing nested documents, unresolved references);
+- **Open** (in this tab) and **Open in new tab** (an ordinary link).
+
+References show live section numbers, including references into included documents; references
+that do not resolve are marked.
 
 ## Files
 
@@ -44,8 +74,8 @@ The legacy strdoc editor is the baseline; see [Legacy.md](Legacy.md) for what it
   canonical spelling (nesting order, no empty or adjacent duplicate spans).
 - **References**: insert by picking the target section; the editor proposes an id from the target's
   title and shows the live number. Renaming an id updates references within the document.
-- **Includes**: shown in place, read-only, via a resolver; a section can be converted between
-  written-out and included.
+- **Includes**: shown in place as described above; a section can be converted between
+  written-out and included (to do).
 - **Validation errors** are shown at the offending section, as you type where possible.
 - **Spell check**: the browser's own, with a toggle.
 - **Undo/redo**: later.

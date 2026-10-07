@@ -10,12 +10,14 @@ import { CID } from 'multiformats/cid'
 import { fromPlain, documentCid } from '@stroc/core'
 import { CATALOG_PATH } from '@stroc/compose'
 import { loadLibrary, buildCatalog, type Library, type FolderConfig } from './library.js'
+
+const emptyLibrary = (): Library => ({ folder: '', config: {}, documents: new Map(), skipped: [], loaded: new Date() })
 import { indexPage } from './index-page.js'
 
 const require = createRequire(import.meta.url)
 
 export interface ServerOptions {
-  folder: string
+  folder?: string          // optional only with editor: an editor host that serves no documents
   domain?: string          // overrides .stroc.yaml
   watch?: boolean          // reload when the folder changes (development)
   editor?: boolean         // also host the editor at /editor (development)
@@ -34,13 +36,16 @@ const IMMUTABLE = 'public, max-age=31536000, immutable'
 export async function createDocumentServer(options: ServerOptions): Promise<DocumentServer> {
   const log = options.log ?? (() => undefined)
   const overrides: FolderConfig = { domain: options.domain }
-  let lib = await loadLibrary(options.folder, overrides)
+  if (!options.folder && !options.editor) throw new Error('a folder to serve is required (or --editor alone to host only the editor)')
+  const load = () => options.folder ? loadLibrary(options.folder, overrides) : Promise.resolve(emptyLibrary())
+  let lib = await load()
   const report = () => {
+    if (!options.folder) { log('editor only: no documents served'); return }
     log(`${lib.documents.size} documents from ${lib.folder}` + (lib.config.domain ? ` for ${lib.config.domain}` : ''))
     for (const s of lib.skipped) log(`  skipped ${s.file}: ${s.problems[0]?.message ?? 'invalid'}${s.problems.length > 1 ? ` (+${s.problems.length - 1} more)` : ''}`)
   }
   report()
-  const reload = async () => { lib = await loadLibrary(options.folder, overrides); report() }
+  const reload = async () => { lib = await load(); report() }
 
   const app = express()
   app.disable('x-powered-by')
@@ -79,6 +84,7 @@ export async function createDocumentServer(options: ServerOptions): Promise<Docu
   })
 
   app.get('/', (_req, res) => {
+    if (!options.folder) { res.redirect('/editor/'); return }
     res.set('Cache-Control', 'no-cache')
     res.type('html').send(indexPage(lib, buildCatalog(lib), options.editor ?? false))
   })
@@ -88,9 +94,9 @@ export async function createDocumentServer(options: ServerOptions): Promise<Docu
   app.use((_req, res) => { res.status(404).type('text/plain').send('not found\n') })
 
   let watcher: FSWatcher | undefined
-  if (options.watch) {
+  if (options.watch && options.folder) {
     let timer: ReturnType<typeof setTimeout> | undefined
-    watcher = watch(options.folder, () => {
+    watcher = watch(options.folder!, () => {
       clearTimeout(timer)
       timer = setTimeout(() => { reload().catch(err => log(`reload failed: ${err.message}`)) }, 200)
     })
@@ -107,13 +113,7 @@ function mountEditor(app: express.Express) {
   const uiRoot = path.dirname(require.resolve('@stroc/ui/package.json'))
   app.get(/^\/editor$/, (_req, res) => res.redirect('/editor/'))
   app.use('/editor/', express.static(path.join(serverRoot, 'public'), noCache))
-  app.use('/static/ui', express.static(path.join(uiRoot, 'dist/src'), noCache))
-  const libs: [string, string][] = [
-    ['/static/lit', 'lit'], ['/static/lit-html', 'lit-html'], ['/static/reactive-element', '@lit/reactive-element'],
-    ['/static/lit-element', 'lit-element'], ['/static/ssr-shim', '@lit-labs/ssr-dom-shim'],
-  ]
-  for (const [mount, pkg] of libs) app.use(mount, express.static(path.dirname(require.resolve(pkg))))
-  app.use('/static/yaml', express.static(path.resolve(path.dirname(require.resolve('yaml')), '../browser')))
+  app.use('/editor/', express.static(path.join(uiRoot, 'dist'), noCache))
 
   app.post(['/validate', '/cid'], express.json({ limit: '1mb' }), async (req, res) => {
     const plain = fromPlain(req.body)
@@ -139,12 +139,18 @@ export async function startServer(options: ServerOptions & { port?: number, host
   const server = await createDocumentServer(options)
   const port = options.port ?? 3000
   const host = options.host ?? 'localhost'
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const http = server.app.listen(port, host, () => {
       const address = http.address()
       const url = `http://${host}:${typeof address === 'object' && address ? address.port : port}`
       options.log?.(`serving on ${url}` + (options.editor ? ` (editor at ${url}/editor/)` : ''))
       resolve({ ...server, url, close: () => { server.close(); http.close() } })
+    })
+    http.on('error', (err: NodeJS.ErrnoException) => {
+      server.close()
+      reject(err.code === 'EADDRINUSE'
+        ? new Error(`port ${port} is already in use (another stroc serve or yarn dev?); choose another with --port`)
+        : err)
     })
   })
 }

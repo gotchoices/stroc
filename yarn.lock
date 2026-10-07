@@ -615,8 +615,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@stroc/ui@workspace:packages/ui"
   dependencies:
+    "@stroc/compose": "workspace:*"
+    "@stroc/core": "workspace:*"
+    esbuild: "npm:^0.28"
     lit: "npm:^3.1.4"
     typescript: "npm:^5.4.0"
+    vitest: "npm:^3"
     yaml: "npm:^2"
   languageName: unknown
   linkType: soft
@@ -1420,7 +1424,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"esbuild@npm:^0.27.0 || ^0.28.0":
+"esbuild@npm:^0.27.0 || ^0.28.0, esbuild@npm:^0.28":
   version: 0.28.2
   resolution: "esbuild@npm:0.28.2"
   dependencies:

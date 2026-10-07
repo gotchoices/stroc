@@ -7,13 +7,21 @@
   "types": "dist/src/index.d.ts",
   "module": "dist/src/index.js",
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b && esbuild src/index.ts --bundle --format=esm --target=es2022 --sourcemap --outfile=dist/stroc-editor.js --log-level=warning",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@stroc/compose": "workspace:*",
+    "@stroc/core": "workspace:*",
     "lit": "^3.1.4",
     "yaml": "^2"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "esbuild": "^0.28",
+    "typescript": "^5.4.0",
+    "vitest": "^3"
+  },
+  "exports": {
+    "./package.json": "./package.json"
   }
 }

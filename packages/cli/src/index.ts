@@ -116,8 +116,8 @@ async function main(argv: string[]): Promise<number> {
   if (command === 'render') return render(rest)
   if (command === 'serve') {
     const opts = parseServeArgs(rest, process.env)
-    if (!opts.folder) { console.error(USAGE); return 2 }
-    await startServer({ ...opts, folder: opts.folder, log: m => console.log(m) })
+    if (!opts.folder && !opts.editor) { console.error(USAGE); return 2 }
+    await startServer({ ...opts, log: m => console.log(m) })
     return await new Promise<number>(() => undefined)   // runs until interrupted
   }
   const fix = rest.includes('--fix')

@@ -3,8 +3,22 @@
   "compilerOptions": {
     "outDir": "dist",
     "experimentalDecorators": true,
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ]
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ],
+  "references": [
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../compose"
+    }
+  ]
 }
-

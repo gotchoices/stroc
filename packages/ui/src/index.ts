@@ -1,6 +1,11 @@
 import { LitElement, html, css } from 'lit'
 import { state } from 'lit/decorators.js'
 import { parse as parseYaml } from 'yaml'
+import { CID } from 'multiformats/cid'
+import { verifyDocument, toPlain } from '@stroc/core'
+import type { ComposedInline, ComposedSection } from '@stroc/compose'
+import { loadInclude, numberWithin, joinNumber, type IncludeInfo } from './includes.js'
+import { loadSources, saveSources, normalizeSource, SourcesResolver, forgetCatalogs } from './sources.js'
 
 type Section = {
   id?: string
@@ -344,8 +349,94 @@ export class StrocEditor extends LitElement {
 
     .ref {
       color: #0d6efd;
-      text-decoration: underline;
     }
+
+    .ref.unresolved {
+      color: #dc3545;
+      text-decoration: underline wavy;
+    }
+
+    /* Included documents */
+    .include-view {
+      background: #f6f8fb;
+      border-left: 4px solid #6c8ebf;
+    }
+
+    .include-id {
+      font-family: monospace;
+      font-size: 12px;
+      color: #6c757d;
+      margin-left: auto;
+    }
+
+    .include-info {
+      margin-left: 72px;
+      font-size: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      align-items: center;
+    }
+
+    .include-info.bad { color: #842029; }
+
+    .include-cid {
+      font-family: monospace;
+      font-size: 11px;
+      color: #6c757d;
+      width: 100%;
+    }
+
+    .section-header .include-cid { width: auto; margin-left: auto; }
+
+    .include-problems { width: 100%; }
+
+    .include-actions { display: inline-flex; gap: 8px; align-items: center; }
+    .include-actions button, .include-actions a { font-size: 12px; }
+
+    .badge {
+      border-radius: 10px;
+      padding: 1px 8px;
+      background: #e9ecef;
+    }
+    .badge.good { background: #d1e7dd; color: #0f5132; }
+    .badge.warn { background: #fff3cd; color: #664d03; }
+    .badge.bad { background: #f8d7da; color: #842029; }
+    .muted { color: #6c757d; }
+
+    .include-body {
+      margin-left: 40px;
+      color: #343a40;
+      border-left: 1px dashed #ced4da;
+      padding-left: 12px;
+    }
+
+    .composed { margin: 6px 0; font-size: 15px; line-height: 1.55; }
+    .composed .crow { display: grid; grid-template-columns: 56px 1fr; }
+    .composed .cnum { color: #6c757d; font-weight: 600; }
+    .composed .chead { display: flex; gap: 12px; align-items: baseline; }
+    .composed .ctitle { font-weight: 600; }
+    .composed .chead .include-cid { margin-left: auto; width: auto; }
+    .composed .csub { margin-left: 32px; }
+    .include-body > .section-text { margin-left: 0; margin-bottom: 8px; }
+
+    .status-from { font-size: 12px; color: #6c757d; margin-right: 8px; }
+
+    /* Sources panel */
+    .sources-panel {
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      background: #f8f9fa;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .sources-head { display: flex; gap: 12px; align-items: baseline; }
+    .sources-head button { margin-left: auto; }
+    .sources-panel li { display: flex; gap: 6px; align-items: center; margin: 4px 0; }
+    .sources-panel li code { flex: 1; }
+    .sources-panel form { display: flex; gap: 6px; }
+    .sources-panel input { flex: 1; padding: 4px 8px; }
 
     .section-text u {
       text-decoration: underline;
@@ -449,6 +540,13 @@ export class StrocEditor extends LitElement {
   @state() private dirty = false
   @state() private openMenus: Set<string> = new Set()
   @state() private dragOver = false
+  @state() private sources: string[] = loadSources()
+  @state() private showSources = false
+  @state() private openedFrom: string | null = null
+  // Included documents by CID: fetched, verified and checked once per session (content never changes).
+  private includes = new Map<string, IncludeInfo>()
+  // Section numbers of this document's own ids, recomputed on every render.
+  private numbering = new Map<string, { number: string, section: Section }>()
   private currentTextArea: HTMLTextAreaElement | null = null
   private savedDocJson: string = JSON.stringify(defaultDoc)
 
@@ -456,6 +554,22 @@ export class StrocEditor extends LitElement {
     super.connectedCallback()
     window.addEventListener('beforeunload', this.handleBeforeUnload)
     document.addEventListener('click', this.handleGlobalClick)
+    const cid = new URLSearchParams(location.search).get('cid')
+    if (cid) void this.openByCid(cid)
+  }
+
+  // Start loading any included document not yet known.
+  updated() {
+    const walk = (secs?: Section[]) => secs?.forEach(sec => {
+      if (sec.source) {
+        if (!this.includes.has(sec.source)) {
+          const cid = sec.source
+          this.includes.set(cid, { cid, state: 'loading', problems: [] })
+          loadInclude(cid, this.sources).then(info => { this.includes.set(cid, info); this.requestUpdate() })
+        }
+      } else walk(sec.sections)
+    })
+    walk(this.doc.sections)
   }
 
   disconnectedCallback() {
@@ -528,8 +642,11 @@ export class StrocEditor extends LitElement {
               <span class="menu-shortcut">⌘N</span>
             </button>
             <button class="menu-item" @click=${(e: Event) => this.handleMenuItemClick(() => this.onOpen(), e)}>
-              <span>Open...</span>
+              <span>Open File...</span>
               <span class="menu-shortcut">⌘O</span>
+            </button>
+            <button class="menu-item" @click=${(e: Event) => this.handleMenuItemClick(() => this.onOpenByCid(), e)}>
+              <span>Open by CID...</span>
             </button>
             <button class="menu-item" @click=${(e: Event) => this.handleMenuItemClick(() => this.onSave(), e)}>
               <span>Save</span>
@@ -540,6 +657,9 @@ export class StrocEditor extends LitElement {
             </button>
             <button class="menu-item" @click=${(e: Event) => this.handleMenuItemClick(() => this.onValidate(), e)}>
               <span>Validate & Generate CID</span>
+            </button>
+            <button class="menu-item" @click=${(e: Event) => this.handleMenuItemClick(() => { this.showSources = true }, e)}>
+              <span>Sources...</span>
             </button>
           </div>
         </div>
@@ -569,6 +689,7 @@ export class StrocEditor extends LitElement {
 
         <!-- Status bar -->
         <div class="status-bar">
+          ${this.openedFrom ? html`<span class="status-from" title="Opened by CID ${this.openedFrom}">from ${this.openedFrom.slice(0, 16)}…</span>` : null}
           ${this.dirty ? html`<span class="status-dirty" title="Document has unsaved changes">●</span>` : null}
           ${this.cid ? html`<div class="status-cid" title="${this.cid}">CID: ${this.cid}</div>` : null}
         </div>
@@ -582,12 +703,14 @@ export class StrocEditor extends LitElement {
         @dragleave=${this.handleDragLeave}
         @drop=${this.handleDrop}
       >
+        ${this.showSources ? this.renderSources() : null}
         ${this.errors.length ? html`<div class="errors">${this.errors.join('; ')}</div>` : null}
 
         <!-- Document header -->
         ${this.renderDocHeader()}
 
         <!-- Sections -->
+        ${this.computeNumbering()}
         ${this.doc.sections?.map((sec, idx) => this.renderSection(sec, `${idx + 1}`, this.doc.sections!))}
 
         <!-- Add root section -->
@@ -754,18 +877,23 @@ export class StrocEditor extends LitElement {
     }
 
     if (isReference) {
-      // View mode for reference section
+      const info = this.includes.get(sec.source!)
+      const doc = info?.composed
       return html`
-        <div class="section">
-          <div class="section-view" @click=${() => this.toggleEditSection(sec)} style="background: #fff3cd; border-left: 4px solid #ffc107;">
+        <div class="section include">
+          <div class="section-view include-view" @click=${() => this.toggleEditSection(sec)}>
             <div class="section-header">
               <span class="section-number">${number}.</span>
-              <div class="section-title">${sec.id ?? 'Included Document'}</div>
+              <div class="section-title">${doc?.title ?? 'Included document'}</div>
+              <span class="include-id" title="Id of this include, used in references">${sec.id}</span>
             </div>
-            <div class="section-text" style="font-size: 13px; color: #6c757d; font-family: monospace;">
-              📄 CID: ${sec.source}
-            </div>
+            ${this.renderIncludeInfo(info, sec.source!)}
           </div>
+          ${doc ? html`
+            <div class="include-body">
+              ${doc.text ? html`<div class="section-text">${this.renderComposedInline(doc.text, number)}</div>` : null}
+              ${doc.sections.map(child => this.renderComposedSection(child, number))}
+            </div>` : null}
         </div>
       `
     }
@@ -804,8 +932,160 @@ export class StrocEditor extends LitElement {
       (_m, lit, slash, tag, ref) =>
         lit !== undefined ? lit :
         tag !== undefined ? `<${slash}${tag}>` :
-        `<span class="ref">→${ref}</span>`)
+        this.refHtml(ref.split('/')))
     return html`<span .innerHTML=${rendered}></span>`
+  }
+
+  // A reference rendered as its live number. Path segments are id characters only (the regex
+  // above guarantees it), so they are safe inside the title attribute.
+  private refHtml(path: string[]): string {
+    const n = this.resolveRef(path)
+    return n
+      ? `<span class="ref" title="ref:${path.join('/')}">Section ${n}</span>`
+      : `<span class="ref unresolved" title="Unresolved reference">→${path.join('/')}</span>`
+  }
+
+  // This document's own section numbers, by id.
+  private computeNumbering(): null {
+    this.numbering.clear()
+    const walk = (secs: Section[] | undefined, prefix: string) => secs?.forEach((sec, idx) => {
+      const number = prefix ? `${prefix}.${idx + 1}` : `${idx + 1}`
+      if (sec.id) this.numbering.set(sec.id, { number, section: sec })
+      if (!sec.source) walk(sec.sections, number)
+    })
+    walk(this.doc.sections, '')
+    return null
+  }
+
+  // The number a reference path points to, or undefined if it does not (yet) resolve.
+  private resolveRef(path: string[]): string | undefined {
+    const first = this.numbering.get(path[0])
+    if (!first) return undefined
+    if (path.length === 1) return first.number
+    const info = first.section.source ? this.includes.get(first.section.source) : undefined
+    if (!info?.composed) return undefined
+    const within = numberWithin(info.composed, path.slice(1))
+    return within ? joinNumber(first.number, within) : undefined
+  }
+
+  // Inline content of an included document; its references are numbered within the composition.
+  private renderComposedInline(nodes: ComposedInline[], prefix: string): unknown {
+    return nodes.map(n => {
+      if (n.type === 'text') return n.value
+      if (n.type === 'ref') {
+        return n.target
+          ? html`<span class="ref" title="ref:${n.path.join('/')}">Section ${joinNumber(prefix, n.target)}</span>`
+          : html`<span class="ref unresolved">→${n.path.join('/')}</span>`
+      }
+      const inner = this.renderComposedInline(n.children, prefix)
+      return n.tag === 'b' ? html`<b>${inner}</b>` : n.tag === 'i' ? html`<i>${inner}</i>` : html`<u>${inner}</u>`
+    })
+  }
+
+  private renderComposedSection(sec: ComposedSection, prefix: string): unknown {
+    const number = joinNumber(prefix, sec.number)
+    return html`
+      <div class="composed">
+        <div class="crow">
+          <span class="cnum">${number}.</span>
+          <div>
+            ${sec.title || sec.include ? html`
+              <div class="chead">
+                ${sec.title ? html`<span class="ctitle">${sec.title}</span>` : null}
+                ${sec.include ? html`<span class="include-cid">${sec.include.cid.toString()}</span>` : null}
+              </div>` : null}
+            ${sec.text ? html`<div class="ctext">${this.renderComposedInline(sec.text, prefix)}</div>` : null}
+          </div>
+        </div>
+        ${sec.sections.length ? html`<div class="csub">${sec.sections.map(c => this.renderComposedSection(c, prefix))}</div>` : null}
+      </div>`
+  }
+
+  // What is known about an included document, and how to open it.
+  private renderIncludeInfo(info: IncludeInfo | undefined, cid: string): unknown {
+    const stop = (e: Event) => e.stopPropagation()
+    const open = html`
+      <span class="include-actions" @click=${stop}>
+        <button @click=${() => this.openByCid(cid)} title="Open this document in the editor">Open</button>
+        <a href="?cid=${encodeURIComponent(cid)}" target="_blank" rel="noopener" title="Open in a new tab">Open in new tab ↗</a>
+      </span>`
+    if (!info || info.state === 'loading') {
+      return html`<div class="include-info">Loading ${cid.slice(0, 20)}… from ${this.sources.length} source${this.sources.length === 1 ? '' : 's'}</div>`
+    }
+    if (info.state !== 'ok') {
+      const what = info.state === 'missing' ? 'Not found in any source' : info.state === 'bad-cid' ? 'Not a valid CID' : 'Failed verification'
+      return html`
+        <div class="include-info bad">
+          <span class="badge bad">✗ ${what}</span>
+          <code>${cid}</code>
+          <span class="include-actions" @click=${stop}><button @click=${() => { this.showSources = true }}>Sources…</button></span>
+          ${info.problems.length ? html`<div class="include-problems">${info.problems[0]}</div>` : null}
+        </div>`
+    }
+    const a = info.author
+    const authorText =
+      !a || a.status === 'not-a-domain' ? (a?.author ? html`Author ${a.author} <span class="muted">(a name; not verifiable)</span>` : html`<span class="muted">No author</span>`) :
+      a.status === 'confirmed' ? html`<span class="badge good">✓ Author ${a.domain} confirmed</span>` :
+      html`<span class="badge warn" title=${a.reason ?? ''}>Author ${a.domain} not confirmed: ${a.status.replace('-', ' ')}</span>`
+    const entry = info.sourceEntry?.entry
+    const stale = entry && entry.status !== 'current'
+    let host = info.source ?? ''
+    try { host = new URL(info.source ?? '').host } catch { /* keep as is */ }
+    return html`
+      <div class="include-info">
+        <span class="badge good" title="The content matches its CID">✓ Verified</span>
+        <span class="muted">from ${host}</span>
+        ${authorText}
+        ${entry ? html`<span class="badge ${stale ? 'warn' : 'plain'}" title="What ${host} claims in its catalog for ${info.sourceEntry!.domain}">${host}: ${entry.role}, ${entry.status}</span>` : null}
+        ${info.problems.length ? html`<span class="badge warn" title=${info.problems.join('\n')}>${info.problems.length} problem${info.problems.length === 1 ? '' : 's'} inside</span>` : null}
+        ${open}
+        <div class="include-cid">${cid}</div>
+      </div>`
+  }
+
+  private renderSources(): unknown {
+    const update = (list: string[]) => {
+      this.sources = list
+      saveSources(list)
+      forgetCatalogs()
+      this.includes = new Map()   // refetch everything from the new list
+    }
+    const move = (i: number, d: number) => {
+      const list = [...this.sources]
+      const [x] = list.splice(i, 1)
+      list.splice(i + d, 0, x)
+      update(list)
+    }
+    const add = (e: Event) => {
+      e.preventDefault()
+      const input = (e.target as HTMLFormElement).elements.namedItem('source') as HTMLInputElement
+      const url = normalizeSource(input.value.trim())
+      if (!url) { alert('Not a valid URL'); return }
+      if (!this.sources.includes(url)) update([...this.sources, url])
+      input.value = ''
+    }
+    return html`
+      <div class="sources-panel">
+        <div class="sources-head">
+          <b>Document sources</b>
+          <span class="muted">Tried in order when fetching a document by CID. Everything fetched is verified against its CID.</span>
+          <button @click=${() => { this.showSources = false }}>Close</button>
+        </div>
+        <ol>
+          ${this.sources.map((src, i) => html`
+            <li>
+              <code>${src}</code>
+              <button ?disabled=${i === 0} @click=${() => move(i, -1)}>↑</button>
+              <button ?disabled=${i === this.sources.length - 1} @click=${() => move(i, 1)}>↓</button>
+              <button @click=${() => update(this.sources.filter((_, j) => j !== i))}>Remove</button>
+            </li>`)}
+        </ol>
+        <form @submit=${add}>
+          <input name="source" placeholder="http://localhost:3001 or https://example.org or an IPFS gateway" />
+          <button type="submit">Add</button>
+          <button type="button" @click=${() => update([location.origin])}>Reset</button>
+        </form>
+      </div>`
   }
 
   private toggleEditSection(sec: Section) {
@@ -965,6 +1245,7 @@ export class StrocEditor extends LitElement {
         return
       }
       this.doc = this.fromPlainDoc(data)
+      this.openedFrom = null
       this.cid = null
       this.errors = []
       this.markClean()
@@ -981,6 +1262,7 @@ export class StrocEditor extends LitElement {
     this.doc = structuredClone(defaultDoc)
     this.cid = null
     this.errors = []
+    this.openedFrom = null
     this.markClean()
   }
 
@@ -1053,6 +1335,31 @@ export class StrocEditor extends LitElement {
       return clean
     }
     return obj
+  }
+
+  private async onOpenByCid() {
+    const cid = prompt('CID of the document to open (fetched from your sources):')
+    if (cid && cid.trim()) await this.openByCid(cid.trim())
+  }
+
+  // Fetch a document by CID from the sources, verify it, and open it for editing.
+  private async openByCid(cidText: string) {
+    if (this.dirty && !confirm('You have unsaved changes. Opening another document will discard them. Continue?')) return
+    // Failures go to the error bar, not alert(): an alert blocks the page.
+    let cid: CID
+    try { cid = CID.parse(cidText) } catch { this.errors = [`Not a CID: ${cidText}`]; return }
+    const bytes = await new SourcesResolver(this.sources).get(cid)
+    if (!bytes) { this.errors = [`${cid} was not found in any source (${this.sources.join(', ')}). Add a source with File → Sources.`]; return }
+    const v = await verifyDocument(bytes, cid)
+    if (!v.ok || !v.document) { this.errors = [`${cid} failed verification: ${v.problems.map(p => p.message).join('; ')}`]; return }
+    this.doc = this.fromPlainDoc(toPlain(v.document))
+    this.openedFrom = cid.toString()
+    this.cid = cid.toString()
+    this.errors = []
+    this.markClean()
+    const url = new URL(location.href)
+    url.searchParams.set('cid', cid.toString())
+    history.replaceState(null, '', url)
   }
 
   private onOpen() {

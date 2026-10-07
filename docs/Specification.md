@@ -265,6 +265,9 @@ gateway, and verifies everything it receives.
 - A static host ignores the query string and serves the file, so publishing needs nothing but a web
   server. A client that does not receive a CAR fetches included documents one by one.
 - Responses for `/ipfs/<cid>` never change and may be cached indefinitely.
+- Servers send `Access-Control-Allow-Origin: *` on `/ipfs/` and catalog responses, so browser-based
+  editors and readers on other origins can fetch them. The data is public and is verified by the
+  client, so this is safe.
 - The catalog is at a fixed path under the domain (RFC 8615), so it can be found from an `author`
   domain alone. Documents may also be served from any other origin (a mirror or gateway); only
   the author domain's catalog confirms authorship.

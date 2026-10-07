@@ -1,5 +1,5 @@
 // Arguments shared by `stroc-server` and `stroc serve`.
-export const SERVE_USAGE = '<folder> [--port N] [--host H] [--domain D] [--watch] [--editor]'
+export const SERVE_USAGE = '[<folder>] [--port N] [--host H] [--domain D] [--watch] [--editor]'
 
 export function parseServeArgs(args: string[], env: Record<string, string | undefined> = {}) {
   const value = (name: string) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined }

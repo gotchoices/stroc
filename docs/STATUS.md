@@ -179,7 +179,7 @@ Specification and decisions
 
 ### Stage 0 — Safety net
 
-- [x] Vitest in every library package and the server, wired to `yarn test` (159 tests)
+- [x] Vitest in every package, wired to `yarn test` (164 tests)
 - [x] Unit tests for text rules, ids, language tags, markup and validation, including malformed input
 - [x] Golden-vector CID tests (5 fixture documents in `packages/core/test/fixtures/`, including a
       contract that includes a clause by CID). Recorded for format `"0.1"`; re-recorded at freeze.
@@ -261,7 +261,8 @@ Document server (`stroc serve`, `@stroc/server`; replaced the old dev server)
 - [x] Folder config `.stroc.yaml`: `domain`, `endorse`, `withdrawn`; roles from `author`,
       `superseded` from `replaces` (`contracts/.stroc.yaml` sets `mychips.org`)
 - [x] `--watch` reloads on change (development); `SIGHUP` reloads (production)
-- [x] `--editor` hosts the editor at `/editor/` with its validation endpoints (development)
+- [x] `--editor` hosts the editor at `/editor/` with its validation endpoints (development);
+      `--editor` with no folder hosts only the editor; a busy port gives a clear message
 - [x] `Dockerfile`: built and run against `contracts/` (2026-10-07); `stroc-server` entry point
       reads `PORT`, `HOST`, `STROC_DOMAIN`
 - [ ] `?format=car` bundles (with the CAR work in Stage 3; 406 until then)
@@ -280,10 +281,15 @@ Rendering (`@stroc/render`, per [Rendering.md](Rendering.md))
 - [ ] The editor loads `@stroc/render` in the browser (the QR library is CommonJS: bundle it)
 
 Editor
-- [ ] Runs entirely in the browser: validation and CID via core, no server needed
-- [ ] Fetch-site list: user-controlled, ordered, remembered; included documents fetched and verified
+- [x] Bundled with core and compose (esbuild); fetches and verifies documents in the browser
+- [ ] Validation and CID in the browser (Validate & Generate CID still calls the server)
+- [x] Sources list (File → Sources): user-controlled, ordered, remembered per browser
+- [x] Open File… and Open by CID… (also `?cid=` in the address, used by Open in new tab)
 - [ ] Embeddable: public `doc` property, `readonly` mode, change and save events
-- [ ] Included documents shown in place, read-only, via the resolver
+- [x] Included documents fetched, verified, composed and shown in place, numbered; header shows
+      verification, serving source, author check, source catalog role and status, problems inside;
+      Open and Open in new tab
+- [x] References show live numbers, including into included documents; unresolved marked
 - [ ] Indent/outdent; move a section to another parent; drag and drop before/after/into,
       Shift to copy
 - [ ] Convert a section between written-out and included
@@ -347,6 +353,10 @@ docker build -t stroc-server . && docker run -p 3000:3000 -v $PWD/contracts:/doc
 
 With `yarn dev`: the index of served documents is at `http://localhost:3000/`, the catalog at
 `/.well-known/stroc/catalog.json`, documents at `/ipfs/<cid>`, and the editor at `/editor/`.
+
+Several libraries at once: run `yarn stroc serve <folder> --port N` for each (every server needs its
+own port), open the editor from any of them (or `yarn stroc serve --editor --port N` for an editor
+alone), and add the others under File → Sources.
 
 ## Document references
 
