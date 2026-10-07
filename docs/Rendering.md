@@ -153,11 +153,14 @@ label set passed in options. English is the default. The document's own text is 
 - `compose`, `checkData` and `layout` are plain TypeScript with no DOM or Node APIs, so they run
   in browsers, Node and React Native.
 - `toHtml` returns a string; an app can show it in a web view on any platform.
-- `toPdf` uses pdfmake, which runs in browsers and Node. pdfmake's browser build was checked
-  (2026-10-07) in a bare JavaScript context with no DOM and no Node APIs, and produced a PDF with
-  SVG, which strongly suggests it runs in React Native. **Not yet verified on a device (Hermes) or
-  in NativeScript.** If it does not run there, a mobile app renders HTML in a web view and prints
-  or saves from that.
+- PDF: `@stroc/pdf` (Node) or pdfmake's browser build with `toPdfDefinition` (browsers, phones).
+  Checked 2026-10-07: in Chrome on an Android phone, and on the Hermes VM with the code transpiled
+  as React Native does (the whole pipeline: compose, verify, lay out, PDF with embedded fonts).
+  A React Native app must provide `TextEncoder` and `TextDecoder` (polyfills, if its React Native
+  version lacks them) and load the fonts into pdfmake's virtual file system
+  (`pdfMake.virtualfs.writeFileSync(name, base64, 'base64')`); React Native already provides the
+  `window` and `navigator` globals pdfmake reads. Not yet run inside an actual React Native app,
+  or in NativeScript.
 
 ## Open issues
 

@@ -43,6 +43,16 @@ stroc-editor {
   .formatbar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 6px; }
   .formatbar .hint { margin-left: auto; font-size: 12px; color: var(--muted); }
 
+  /* Narrow screens: the editor is a desktop tool, but must stay usable on a phone */
+  @media (max-width: 700px) {
+    .formatbar .hint, .status .file, .status .cid { display: none; }
+    .document-area { padding: 16px 12px 64px; }
+    .row { grid-template-columns: 16px 40px 1fr; }
+    .children, .inc-body { margin-left: 16px; }
+    .menu-label { padding: 8px 10px; }
+    .doc-title { font-size: 22px; }
+  }
+
   /* Document */
   .document-area { flex: 1; overflow-y: auto; padding: 32px 48px 96px; }
   .doc { max-width: 860px; margin: 0 auto; }

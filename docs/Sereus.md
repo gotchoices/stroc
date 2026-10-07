@@ -80,8 +80,9 @@ A typical flow, using Taleus as the example:
 4. **The receiving party** imports the bundle; Stroc verifies it against the CID in the offer and
    renders it for review. Nothing outside the strand is needed to read it. When online, the app
    also confirms each document's `author` domain and shows the result.
-5. **After acceptance**, each party keeps the bundle with the agreement, so it can be verified and
-   printed without any outside source.
+5. **After acceptance**, each party keeps every document of the agreement in its local store (once per
+   CID, shared by all agreements that use it), so it can be verified and printed without any
+   outside source.
 
 What Stroc provides for this:
 - **Bundles** as CAR files (the standard IPLD archive): export a root CID and everything it
@@ -108,7 +109,9 @@ and PDF output. Each takes only what it needs.
 - **Heavier capabilities are separate packages**: YAML reading and linting, composition and
   bundles, rendering, the folder tools, the editor. Core never pulls them in.
 - **Everything except the editor and the folder tools runs in browsers, Node and React Native.**
-  No Node-only APIs in any package a phone app would import.
+  No Node-only APIs in any package a phone app would import. Hashing is pure JavaScript, so no
+  WebCrypto is needed. A React Native app supplies `TextEncoder`/`TextDecoder` if its version lacks
+  them. (Checked on the Hermes VM, 2026-10-07; see Rendering.md.)
 - **The development server is not part of the library.** No app needs it.
 
 ## Guidance for apps
@@ -130,8 +133,12 @@ These belong to the app, not to Stroc, but follow directly from how Stroc works:
   sereus.org, checked 2026-10-07"), since a domain can lapse. A document whose author is a name,
   or whose domain does not confirm it, is unconfirmed; the honest message is "read it in full or
   have it reviewed", not a refusal.
-- **Store the full bundle with every agreement.** Do not rely on a publisher or a peer remaining
-  available.
+- **Refer to the contract by CID; keep the documents once.** The agreement records only the root
+  CID (as MyCHIPs did). Each party's app keeps every document it has signed or reviewed in a local
+  content-addressed store, so a contract used by a hundred tallies is stored once. Before signing,
+  the app makes sure it holds the whole composition (`findMissing`), fetching what is missing from
+  the counterparty or a publisher. Do not rely on a publisher or a peer remaining available later:
+  the signed CID proves nothing about the text unless someone can still produce the bytes.
 - **Say what a match means in review screens.** When a party has seen a document's CID before, the
   honest message is "you have read this text before", not "this text is safe": a clause's meaning
   depends on what surrounds it.

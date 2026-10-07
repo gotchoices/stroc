@@ -1,7 +1,7 @@
 // Canonical encoding, CIDs and verification (Specification: Content ID Generation, Verification)
 
 import { CID } from 'multiformats/cid'
-import { sha256 } from 'multiformats/hashes/sha2'
+import { sha256 } from './hash.js'
 import * as dagJson from '@ipld/dag-json'
 import type { Problem, StrocDocument } from './types.js'
 import { validateDocument, checkDocumentLink, type ValidationResult } from './validate.js'

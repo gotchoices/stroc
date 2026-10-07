@@ -41,6 +41,17 @@ update it with `yarn workspace @stroc/render test -u`.
 published document would get a new identity. Change an expected value only as a deliberate format
 change, together with the `stroc` version.
 
+## Device checks (manual)
+
+Not part of the automated suites, because they need hardware or tools outside the repository:
+- **Android Chrome**: `adb reverse tcp:<port> tcp:<port>` to reach a local `stroc serve`, open the
+  page on the phone, `adb forward tcp:9333 localabstract:chrome_devtools_remote`, then drive it with
+  Playwright's `chromium.connectOverCDP('http://localhost:9333')`. Use `adb exec-out screencap -p`
+  for screenshots (Playwright's are unreliable over this connection).
+- **Hermes**: bundle the pipeline with esbuild, transpile it with React Native's Babel preset, and
+  run it with the Hermes VM (`hermes-engine-cli`), with React Native's globals (`window`,
+  `navigator`) and a `TextEncoder`/`TextDecoder` stand-in.
+
 ## Running everything
 
 ```

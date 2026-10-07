@@ -2,7 +2,7 @@
 
 import { CID } from 'multiformats/cid'
 import * as dagJson from '@ipld/dag-json'
-import { sha256 } from 'multiformats/hashes/sha2'
+import { sha256 } from './hash.js'
 import type { Problem } from './types.js'
 import { checkText, findEntityLike } from './text.js'
 import { isValidId, MAX_ID_LENGTH, looksLikeDomain } from './ids.js'

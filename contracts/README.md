@@ -1,7 +1,10 @@
 # Sample Library
 
-The 13 MyCHIPs contract documents, converted to Stroc format `0.1` YAML. They are sample content
-for developing and testing Stroc, not legal documents in force. Stroc does not support the legacy
+**A reference example, not a live document set.** The 13 MyCHIPs contract documents, converted to
+Stroc YAML, used to develop and test Stroc (the tests depend on them) and to show what a real set
+looks like. They are not legal documents in force. Taleus's own contracts will be drafted, kept and
+published elsewhere, following [Authoring.md](../docs/Authoring.md) and
+[Deploying.md](../docs/Deploying.md); they are not expected to live in this repository. Stroc does not support the legacy
 MyCHIPs format; these were converted once, and the converter is not part of Stroc.
 
 ## What the conversion did

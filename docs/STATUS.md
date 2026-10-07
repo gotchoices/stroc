@@ -288,7 +288,16 @@ Document server (`stroc serve`, `@stroc/server`; replaced the old dev server)
 Rendering (`@stroc/render`, per [Rendering.md](Rendering.md))
 - [x] pdfmake browser build produces a PDF in a bare JS context (no DOM, no Node): good sign for
       React Native
-- [ ] Confirm on a device (Hermes) and in NativeScript; fall back to HTML in a web view
+- [x] Real phone (Galaxy S7, Android 8, Chrome 138, 2026-10-07): the readable contract page fits
+      the screen; the editor opens, verifies all includes, computes CIDs and edits; pdfmake makes a
+      PDF with the embedded fonts in under a second. Small-screen editor layout fixed after this
+- [x] Hermes (2026-10-07): the full pipeline, transpiled as React Native does, runs on the Hermes VM:
+      compose and verify the Tally Contract, lay it out, and make the PDF with embedded fonts (93 KB,
+      under 3 s). This required pure-JS SHA-256 in core (`@noble/hashes`; Hermes has no WebCrypto;
+      CIDs unchanged). A React Native app must provide `TextEncoder`/`TextDecoder` (DAG-JSON needs
+      them) and load fonts into pdfmake's virtual file system
+- [ ] Confirm inside an actual React Native app on a device, and in NativeScript, when Taleus's app
+      framework is chosen
 - [x] `layout`: framework-neutral model; numbering; two-column legal layout; references as
       "Section 3.1"; included documents with CID beside the heading; refuses to render with
       problems unless `draft`
@@ -368,11 +377,15 @@ Editor
       the renderer; closing root-CID QR option
 - [ ] `stroc publish`: write what `stroc serve` would serve, as static files (`ipfs/<cid>`, CARs,
       `.well-known/stroc/catalog.json`, `index.html`); optionally upload to IPFS
-- [ ] Bundle as a CAR file: root CID → the document and everything it includes; every block verified offline
+- [ ] Bundle as a CAR file (optional, demoted 2026-10-07): agreements refer to the contract by CID
+      and apps keep documents once in a content-addressed store; a CAR is only a convenient way to
+      ship or archive a whole composition in one file (for a counterparty, a lawyer, a backup)
 - [x] Local store helper (`MemoryStore`) and missing check (`findMissing`), in `@stroc/compose`
 - [x] Packages per the layout decision (core, yaml, compose, render, pdf, ui, cli, server); core,
       yaml, compose and render are free of Node APIs; `@stroc/pdf` is the Node writer (browsers and
       phones use pdfmake's browser build with `toPdfDefinition`).
+- [x] The Taleus contracts themselves are drafted and published outside this repository;
+      `contracts/` stays a reference example (noted in its README, 2026-10-07)
 - [ ] Example tally-style contract written in abstract roles with parameter declarations,
       rendered with sample data
 
