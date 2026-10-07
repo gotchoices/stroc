@@ -12,7 +12,9 @@
     "build": "tsc -b && chmod +x dist/src/index.js"
   },
   "dependencies": {
+    "@stroc/compose": "workspace:*",
     "@stroc/core": "workspace:*",
+    "@stroc/render": "workspace:*",
     "@stroc/yaml": "workspace:*"
   },
   "devDependencies": {

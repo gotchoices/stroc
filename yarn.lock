@@ -577,12 +577,25 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@stroc/cli@workspace:packages/cli"
   dependencies:
+    "@stroc/compose": "workspace:*"
     "@stroc/core": "workspace:*"
+    "@stroc/render": "workspace:*"
     "@stroc/yaml": "workspace:*"
     "@types/node": "npm:^20.12.12"
     typescript: "npm:^5.4.0"
   bin:
     stroc: dist/src/index.js
+  languageName: unknown
+  linkType: soft
+
+"@stroc/compose@workspace:*, @stroc/compose@workspace:packages/compose":
+  version: 0.0.0-use.local
+  resolution: "@stroc/compose@workspace:packages/compose"
+  dependencies:
+    "@stroc/core": "workspace:*"
+    multiformats: "npm:^11.0.2"
+    typescript: "npm:^5.4.0"
+    vitest: "npm:^3"
   languageName: unknown
   linkType: soft
 
@@ -592,6 +605,19 @@ __metadata:
   dependencies:
     "@ipld/dag-json": "npm:^10.2.0"
     multiformats: "npm:^11.0.2"
+    typescript: "npm:^5.4.0"
+    vitest: "npm:^3"
+  languageName: unknown
+  linkType: soft
+
+"@stroc/render@workspace:*, @stroc/render@workspace:packages/render":
+  version: 0.0.0-use.local
+  resolution: "@stroc/render@workspace:packages/render"
+  dependencies:
+    "@stroc/compose": "workspace:*"
+    "@stroc/core": "workspace:*"
+    "@stroc/yaml": "workspace:*"
+    qrcode-generator: "npm:^1"
     typescript: "npm:^5.4.0"
     vitest: "npm:^3"
   languageName: unknown
@@ -2557,6 +2583,13 @@ __metadata:
   version: 2.3.1
   resolution: "punycode@npm:2.3.1"
   checksum: 10c0/14f76a8206bc3464f794fb2e3d3cc665ae416c01893ad7a02b23766eb07159144ee612ad67af5e84fa4479ccfe67678c4feb126b0485651b302babf66f04f9e9
+  languageName: node
+  linkType: hard
+
+"qrcode-generator@npm:^1":
+  version: 1.5.2
+  resolution: "qrcode-generator@npm:1.5.2"
+  checksum: 10c0/4e0a43ba1c0212cf8ec39654cc7a5bebda96ee00453dc5732e98af4cf681c6786d2c189d4657d8d4fa6486f07573c1edb85fbb7af5e78972f843b7db8457a9b7
   languageName: node
   linkType: hard
 

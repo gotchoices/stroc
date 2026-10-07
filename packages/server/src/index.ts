@@ -26,8 +26,10 @@ const uiRoot = path.dirname(require.resolve('@stroc/ui/package.json'))
 const app = express()
 app.use(express.json({ limit: '1mb' }))
 
-app.use(express.static(path.join(serverRoot, 'public')))
-app.use('/static/ui', express.static(path.join(uiRoot, 'dist/src')))
+// The page and the editor change constantly during development; never let a browser cache them.
+const noCache = { etag: false, lastModified: false, setHeaders: (res: express.Response) => res.set('Cache-Control', 'no-store') }
+app.use(express.static(path.join(serverRoot, 'public'), noCache))
+app.use('/static/ui', express.static(path.join(uiRoot, 'dist/src'), noCache))
 
 // Lit and its dependencies, served from their real paths for the import map in index.html.
 const litPackages: [string, string][] = [

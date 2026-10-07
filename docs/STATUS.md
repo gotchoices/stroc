@@ -163,7 +163,7 @@ Specification and decisions
 
 ### Stage 0 — Safety net
 
-- [x] Vitest in `@stroc/core` and `@stroc/yaml`, wired to `yarn test` (122 tests)
+- [x] Vitest in every library package, wired to `yarn test` (141 tests)
 - [x] Unit tests for text rules, ids, language tags, markup and validation, including malformed input
 - [x] Golden-vector CID tests (5 fixture documents in `packages/core/test/fixtures/`, including a
       contract that includes a clause by CID). Recorded for format `"0.1"`; re-recorded at freeze.
@@ -225,18 +225,25 @@ Library and composition
   - [ ] `stroc update [files] [--all]`: update chosen sources, add `replaces` to each document that
         changes as a result, report the parents now out of date
   - [ ] Record file (format of the tool's choosing), rebuilt from the folder and `replaces` if lost
-- [ ] Resolver interface: `get(cid)` from an app-supplied source, every fetch verified; folder and
-      in-memory implementations
-- [ ] Compose: resolve includes into one numbered tree
+- [x] `@stroc/compose`: `Resolver` interface (`get(cid)`), `MemoryStore`, `firstOf`, `findMissing`;
+      every fetch verified against its CID
+- [x] `compose(root, resolver)`: includes resolved into one numbered tree; references resolved
+      to numbers in every document's scope, including paths into includes; parameters gathered
+      with their paths; never throws (missing, invalid, unresolved reported)
+- [ ] Folder resolver for Node (today the CLI loads a folder into a `MemoryStore`)
 
-Rendering
 Rendering (`@stroc/render`, per [Rendering.md](Rendering.md))
 - [ ] Verify pdfmake in React Native / NativeScript early; fall back to HTML in a web view
-- [ ] `layout`: framework-neutral model; numbering; two-column legal layout; references as
-      "Section 3.1"; included documents with CID beside the heading
-- [ ] `toHtml`: standalone, print-ready
+- [x] `layout`: framework-neutral model; numbering; two-column legal layout; references as
+      "Section 3.1"; included documents with CID beside the heading; refuses to render with
+      problems unless `draft`
+- [x] `toHtml`: standalone, print-ready, everything escaped; root CID in the footer
+- [x] Localizable label set (English default)
+- [x] `stroc render <file> [--data] [--draft] [--qr] [-o]` composes a file with its folder as the
+      library and writes HTML
 - [ ] `toPdf` (pdfmake): same layout; footer with root CID and page n / total; Letter or A4
-- [ ] Localizable label set (English default)
+- [ ] Print page numbers in HTML (CSS cannot do this reliably; PDF will)
+- [ ] The editor loads `@stroc/render` in the browser (the QR library is CommonJS: bundle it)
 
 Editor
 - [ ] Runs entirely in the browser: validation and CID via core, no server needed
@@ -254,9 +261,9 @@ Editor
 
 ### Stage 3 — Taleus readiness
 
-- [ ] `checkData`: missing required values, unknown keys, non-string values; paths across includes
-- [ ] Particulars table in `layout`: hoisted, grouped by declaring document, values styled distinctly
-- [ ] App blocks (`heading`, `paragraph`, `table`, `qr`) placed after the document; QR drawn by
+- [x] `checkData`: missing required values, unknown keys, non-string values; paths across includes
+- [x] Particulars table in `layout`: hoisted, grouped by declaring document, values styled distinctly
+- [x] App blocks (`heading`, `paragraph`, `table`, `qr`) placed after the document; QR drawn by
       the renderer; closing root-CID QR option
 - [ ] `stroc publish`: write a published set (static `<cid>` files of canonical bytes, a CAR per
       root document, and `catalog.json` with status and `replaces`) for any web server; mark
@@ -284,10 +291,8 @@ Editor
 
 ## Known defects
 
-Found 2026-10-06. D1–D6 and D9 fixed 2026-10-06 (Stage 0 and the core rewrite).
+Found 2026-10-06. D1–D6, D9 and D10 fixed 2026-10-06.
 
-- **D6 (remaining part).** References into included documents are only checked when a document is
-  composed; composition does not exist yet (Stage 2).
 - **D7. Editor depends on the dev server** for validation and CID, and keeps the document in private
   state with no events, so it cannot be embedded or used offline. (Rewrite, Stage 2.)
 - **D8. Editor Save does not validate before writing.** Since 2026-10-06 it does write the same
@@ -307,6 +312,7 @@ yarn test       # unit tests, golden vectors, sample library consistency
 yarn lint       # ESLint, all packages
 yarn stroc lint contracts/*.yaml     # check documents (--fix to fix what can be fixed)
 yarn stroc cid contracts/*.yaml      # print CIDs
+yarn stroc render contracts/Tally_Contract.yaml -o tally.html   # the composed contract as HTML
 yarn start      # build, then run the compiled server
 ```
 

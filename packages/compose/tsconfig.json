@@ -1,7 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist"
+    "outDir": "dist",
+    "lib": [
+      "ES2022"
+    ],
+    "types": []
   },
   "include": [
     "src/**/*"
@@ -9,15 +13,6 @@
   "references": [
     {
       "path": "../core"
-    },
-    {
-      "path": "../yaml"
-    },
-    {
-      "path": "../compose"
-    },
-    {
-      "path": "../render"
     }
   ]
 }
