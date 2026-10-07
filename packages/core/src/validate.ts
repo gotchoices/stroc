@@ -5,7 +5,7 @@ import * as dagJson from '@ipld/dag-json'
 import { sha256 } from 'multiformats/hashes/sha2'
 import type { Problem } from './types.js'
 import { checkText, findEntityLike } from './text.js'
-import { isValidId, MAX_ID_LENGTH } from './ids.js'
+import { isValidId, MAX_ID_LENGTH, looksLikeDomain } from './ids.js'
 import { canonicalLanguageTag, isCanonicalLanguageTag } from './language.js'
 import { parseMarkup, findReferences } from './markup.js'
 
@@ -254,7 +254,12 @@ export function validateDocument(doc: unknown): ValidationResult {
   checkLanguage(ctx, doc.language)
   if (doc.title === undefined) problem(ctx, ['title'], 'missing', 'missing title')
   else checkString(ctx, doc.title, ['title'])
-  if (doc.author !== undefined) checkString(ctx, doc.author, ['author'])
+  if (doc.author !== undefined) {
+    const author = checkString(ctx, doc.author, ['author'])
+    if (author !== undefined && looksLikeDomain(author)) {
+      ctx.warnings.push({ path: ['author'], code: 'author-domain-case', message: `"${author}" looks like a domain; write it "${author.toLowerCase()}" if it should be verifiable, otherwise it is treated as a name` })
+    }
+  }
   if (doc.published !== undefined) checkPublished(ctx, doc.published)
   if (doc.text !== undefined) checkParagraph(ctx, doc.text, ['text'])
   if (doc.sections !== undefined) checkSections(ctx, doc.sections, ['sections'])

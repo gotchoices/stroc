@@ -112,7 +112,7 @@ describe('the sample Tally Contract', () => {
   it('composes and renders with all nine includes', async () => {
     const dir = new URL('../../../contracts/', import.meta.url)
     const store = new MemoryStore()
-    for (const f of readdirSync(dir).filter(f => f.endsWith('.yaml'))) {
+    for (const f of readdirSync(dir).filter(f => f.endsWith('.yaml') && !f.startsWith('.'))) {
       await store.putDocument(lintYaml(readFileSync(new URL(f, dir), 'utf8')).value)
     }
     const root = await store.putDocument(lintYaml(readFileSync(new URL('Tally_Contract.yaml', dir), 'utf8')).value)

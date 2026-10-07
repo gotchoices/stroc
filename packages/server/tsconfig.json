@@ -2,11 +2,23 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "types": ["node", "express"]
+    "types": [
+      "node",
+      "express"
+    ]
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*"
+  ],
   "references": [
-    { "path": "../core" }
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../yaml"
+    },
+    {
+      "path": "../compose"
+    }
   ]
 }
-

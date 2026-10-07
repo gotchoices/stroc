@@ -43,7 +43,11 @@ yarn stroc lint contracts/*.yaml     # check every document
 yarn stroc cid contracts/*.yaml      # print each document's CID
 ```
 
-In the editor (`yarn dev`, then `http://localhost:3000`), File → Open accepts these files directly.
+`yarn stroc serve contracts` serves them over HTTP (index at `/`, documents at `/ipfs/<cid>`,
+catalog at `/.well-known/stroc/catalog.json`). `.stroc.yaml` in this folder says they are served for
+`mychips.org`, so the catalog lists them with role `author`.
+
+In the editor (`yarn dev`, then `http://localhost:3000/editor/`), File → Open accepts these files.
 
 If you edit a clause, its CID changes and every document that includes it must be updated; the
 test in `packages/yaml/test/corpus.test.ts` fails until they are. Until `stroc update` exists

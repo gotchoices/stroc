@@ -1,0 +1,5 @@
+# Folder configuration for the Stroc tools (stroc serve, and later status/update/publish).
+# These sample documents name mychips.org as their author. Serving this folder "for mychips.org"
+# makes the catalog list them with role "author"; the claim only confirms anything when the
+# catalog is actually served from https://mychips.org.
+domain: mychips.org

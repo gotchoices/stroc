@@ -62,20 +62,24 @@ belongs in the app.
 
 A document is identified only by its CID. **Documents contain no web addresses**, unlike MyCHIPs,
 which recorded a host for each contract. Where to get a document is the app's knowledge, and
-since every copy is verified against its CID, no source needs to be trusted.
+since every copy is verified against its CID, no source needs to be trusted. Who issues a
+document is in the document: an `author` written as a domain (`sereus.org`) can be confirmed
+against that domain's catalog over HTTPS.
 
 A typical flow, using Taleus as the example:
 
 1. **A publisher** (for example sereus.org or mychips.org) maintains a library of documents with
-   the Stroc folder tools and publishes it: a static set of files named by CID, and a bundle per
-   contract. Any web server can host it; IPFS is optional.
+   the Stroc folder tools, each with its domain as `author`, and serves it with `stroc serve` or
+   as static files from `stroc publish`, in the IPFS trustless-gateway layout (`/ipfs/<cid>`) with a
+   catalog at `/.well-known/stroc/catalog.json`. IPFS itself is optional.
 2. **The offering party** chooses a contract from a publisher, fetches its bundle, and Stroc
    verifies every document in it against its CID. The app stores the bundle locally.
 3. **The offer** carries only the root CID (Taleus: `TallyContractProposal.ContractCid`). The app
    also makes the bundle available to the other party within the strand, for example by writing
    it into a strand table or answering requests for it.
 4. **The receiving party** imports the bundle; Stroc verifies it against the CID in the offer and
-   renders it for review. Nothing outside the strand is needed.
+   renders it for review. Nothing outside the strand is needed to read it. When online, the app
+   also confirms each document's `author` domain and shows the result.
 5. **After acceptance**, each party keeps the bundle with the agreement, so it can be verified and
    printed without any outside source.
 
@@ -86,10 +90,11 @@ What Stroc provides for this:
   strand, a publisher's web server, IPFS.
 - **A local store helper** that keeps verified documents by CID, and a **missing check** that lists
   which included documents a store does not yet hold, so an app knows what to ask for.
-- **A publish format** for the folder tools: a directory of `<cid>` files, CARs and a catalog, with
-  a matching HTTP resolver, so a publisher needs only a static web server.
-- **A provenance check**: given the publisher's base URL and a CID, report whether the publisher's
-  catalog lists it, and in what status.
+- **A server and a publish format**: `stroc serve` (development and production) and `stroc
+  publish` (static files) produce the same layout, and one HTTP resolver reads it, or any IPFS
+  gateway.
+- **An author check**: for a document whose `author` is a domain, report whether that domain's
+  catalog lists it as its own, and in what status.
 
 What stays with the app: which publishers to offer, how bundles travel within the strand, where
 they are stored, and how long they are kept.
@@ -119,12 +124,12 @@ These belong to the app, not to Stroc, but follow directly from how Stroc works:
   a notice address) should not be a document parameter, or the printed agreement would show only
   the value at signing. Record such values as the app's own signed entries and render them as app
   blocks.
-- **Record where a document came from.** Alongside the root CID, an offer can carry the base URL
-  of the publisher's set it came from, covered by the offerer's signature. The receiving app runs
-  Stroc's provenance check and shows the publisher's domain prominently (a lookalike domain passes
-  the same check) and the entry's status. It stores what it found ("listed as current by
-  sereus.org, checked 2026-10-06"), since the URL may not last. With no publisher, the honest
-  message is "custom contract: read it in full or have it reviewed", not a refusal.
+- **Confirm and show who issued each document.** For every document in a contract whose `author`
+  is a domain, run Stroc's author check and show the domain prominently (a lookalike domain passes
+  the same check) with the entry's status. Store what was found ("listed as current by
+  sereus.org, checked 2026-10-07"), since a domain can lapse. A document whose author is a name,
+  or whose domain does not confirm it, is unconfirmed; the honest message is "read it in full or
+  have it reviewed", not a refusal.
 - **Store the full bundle with every agreement.** Do not rely on a publisher or a peer remaining
   available.
 - **Say what a match means in review screens.** When a party has seen a document's CID before, the

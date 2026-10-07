@@ -6,7 +6,7 @@ import { documentCid, type StrocSection } from '@stroc/core'
 import { lintYaml } from '../src/index.js'
 
 const dir = new URL('../../../contracts/', import.meta.url)
-const files = readdirSync(dir).filter(f => f.endsWith('.yaml')).sort()
+const files = readdirSync(dir).filter(f => f.endsWith('.yaml') && !f.startsWith('.')).sort()
 
 describe('sample library (contracts/)', () => {
   it('has the converted MyCHIPs documents', () => {

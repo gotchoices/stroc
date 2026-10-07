@@ -95,6 +95,12 @@ describe('document fields', () => {
   it('checks markup in text', () => {
     expect(at({ ...base, text: 'if a < b' })).toEqual(['text:bad-tag'])
   })
+  it('warns about an author domain in the wrong case', () => {
+    const r = validateDocument({ ...base, author: 'MyCHIPs.org' })
+    expect(r.valid).toBe(true)
+    expect(r.warnings.map(w => w.code)).toEqual(['author-domain-case'])
+    expect(validateDocument({ ...base, author: 'mychips.org' }).warnings).toEqual([])
+  })
   it('warns about entity-like text', () => {
     const r = validateDocument({ ...base, text: 'Tom &amp; Jerry' })
     expect(r.valid).toBe(true)

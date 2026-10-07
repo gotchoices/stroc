@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { checkText, canonicalizeText, findEntityLike, isValidId, suggestId, isCanonicalLanguageTag, canonicalLanguageTag } from '../src/index.js'
+import { checkText, canonicalizeText, findEntityLike, isValidId, suggestId, isCanonicalLanguageTag, canonicalLanguageTag, isDomain, looksLikeDomain } from '../src/index.js'
 
 const codes = (s: string) => checkText(s).map(i => i.code)
 
@@ -78,5 +78,19 @@ describe('language tags', () => {
     expect(canonicalLanguageTag('EN-us')).toBe('en-US')
     expect(canonicalLanguageTag('sr_latn')).toBe('sr-Latn')
     expect(canonicalLanguageTag('english!')).toBeUndefined()
+  })
+})
+
+describe('author domains', () => {
+  it('recognizes lowercase domains', () => {
+    for (const ok of ['sereus.org', 'contracts.mychips.org', 'a-b.co.uk', 'xn--bcher-kva.example', 'localhost.test']) expect(isDomain(ok)).toBe(true)
+  })
+  it('treats everything else as a name', () => {
+    for (const name of ['Bob Anderson', 'MyCHIPs.org', 'sereus', 'sereus.org.', '-a.org', 'a..org', 'mychips.org/contracts', 'https://sereus.org']) expect(isDomain(name)).toBe(false)
+  })
+  it('spots domains written in the wrong case', () => {
+    expect(looksLikeDomain('MyCHIPs.org')).toBe(true)
+    expect(looksLikeDomain('mychips.org')).toBe(false)
+    expect(looksLikeDomain('Bob Anderson')).toBe(false)
   })
 })

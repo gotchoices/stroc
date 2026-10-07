@@ -20,3 +20,16 @@ export function suggestId(title: string): string {
     .replace(/-+$/, '')
   return base || 'section'
 }
+
+// A domain `author` (Specification: Author): lowercase ASCII labels separated by dots, at least
+// one dot, the last label alphabetic or an IDNA (xn--) label.
+const DOMAIN_PATTERN = /^(?=.{4,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+([a-z]{2,63}|xn--[a-z0-9-]{1,59})$/
+
+export function isDomain(value: string): boolean {
+  return DOMAIN_PATTERN.test(value)
+}
+
+// True when the value would be a domain if written in lowercase (for lint advice).
+export function looksLikeDomain(value: string): boolean {
+  return !isDomain(value) && isDomain(value.toLowerCase())
+}

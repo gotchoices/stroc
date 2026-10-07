@@ -1,7 +1,7 @@
 # Stroc Specification
 
 **Status**: Work in Progress  
-**Version**: 0.14 (Draft)
+**Version**: 0.15 (Draft)
 
 The document format is not yet frozen. Until it is, documents carry `stroc: "0.1"`; the first
 frozen version will be `"1.0"`, and tools for it will reject `"0.1"` documents.
@@ -29,7 +29,7 @@ Stroc (Structured Documents) is a protocol for creating legal documents where co
   "stroc": "0.1",
   "language": "en",
   "title": "Standard MyCHIPs Tally Contract",
-  "author": "MyCHIPs Foundation",
+  "author": "mychips.org",
   "published": "2024-01-15",
   "text": "The preamble paragraph. It may contain several sentences.",
   "sections": [
@@ -49,12 +49,32 @@ The document's CID is computed by hashing the entire document. It is not stored 
 | `stroc` | string | Yes | Format version (`"0.1"` until frozen). A tool rejects a document whose version is newer than it supports, rather than processing it partially. |
 | `language` | string | Yes | BCP 47 language tag (e.g. `en`, `en-US`, `sr-Latn`), in its canonical case |
 | `title` | string | Yes | Human-readable document title |
-| `author` | string | No | Attribution (any string, e.g., "MyCHIPs Foundation") |
+| `author` | string | No | Who issues the document: a domain (verifiable) or a name (see [Author](#author)) |
 | `published` | string | No | ISO 8601 date of publication |
 | `text` | string | No | One paragraph (see Text Structure) |
 | `sections` | array | No | Child sections |
 | `replaces` | array | No | Links to earlier versions this document supersedes (see [Lineage](#lineage)) |
 | `parameters` | array | No | Values the document expects at render time (see [Parameters](#parameters)) |
+
+### Author
+
+`author` says who issues the document and stands behind it. It takes one of two forms:
+
+- **A domain**, such as `sereus.org` or `contracts.mychips.org`: lowercase ASCII DNS labels
+  separated by dots, with at least one dot. This is a **verifiable claim**: the domain's catalog
+  must list the document (see [Published Sets and Catalogs](#published-sets-and-catalogs)).
+- **A name**, such as `Bob Anderson`: anything else. It is shown as written and is not verifiable.
+
+A value is a domain only if it is written in lowercase; a linter warns about values that look like
+a domain in another case (`MyCHIPs.org`). Internationalized domains are written in their ASCII
+(`xn--`) form. A drafter who wants to be credited by name can be named in the text.
+
+What a confirmed domain proves, and its limits:
+- The holder of the domain, reached over HTTPS, lists this exact CID in its catalog. HTTPS proves
+  control of the domain, not real-world identity; the reader must recognize the domain.
+- A domain can lapse and pass to someone else, who then controls its catalog. Applications record
+  what they confirmed and when ("listed by sereus.org, 2026-10-07"). Publisher signatures (a
+  possible later feature) would remove this dependence on the domain.
 
 ### Lineage
 
@@ -231,27 +251,36 @@ server, IPFS); Stroc defines how they are checked.
 
 #### Published Sets and Catalogs
 
-A publisher serves a set of documents as static files under one base URL. Any web server can host
-them; no Stroc software runs on the server.
+Documents are served over HTTP using the path convention of the IPFS **trustless gateway**, so the
+same client can fetch from a Stroc server, a static web host, a local IPFS node or a public IPFS
+gateway, and verifies everything it receives.
 
-| Path | Content |
-|------|---------|
-| `<base>/<cid>` | The document's canonical DAG-JSON bytes |
-| `<base>/<cid>.car` | A CAR bundle: the document and everything it includes (for documents meant to be used whole) |
-| `<base>/catalog.json` | The publisher's catalog |
+| Request | Response |
+|---------|----------|
+| `GET /ipfs/<cid>` (clients add `?format=raw` and `Accept: application/vnd.ipld.raw`) | The document's canonical DAG-JSON bytes |
+| `GET /ipfs/<cid>?format=car` (optional) | A CAR bundle of the document and everything it includes |
+| `GET /.well-known/stroc/catalog.json` | The catalog |
+| `GET /` (optional) | A human-readable index of the catalog |
 
-The **catalog** is the publisher's statement about what it publishes. Serving a file proves only
-that the publisher has it; listing it in the catalog states that the publisher publishes it, and in
-what status.
+- A static host ignores the query string and serves the file, so publishing needs nothing but a web
+  server. A client that does not receive a CAR fetches included documents one by one.
+- Responses for `/ipfs/<cid>` never change and may be cached indefinitely.
+- The catalog is at a fixed path under the domain (RFC 8615), so it can be found from an `author`
+  domain alone. Documents may also be served from any other origin (a mirror or gateway); only
+  the author domain's catalog confirms authorship.
+
+The **catalog** is the server's statement about the documents it serves. Serving a file proves only
+that the server has it; the catalog states what the server claims about it.
 
 ```json
 {
   "stroc-catalog": "0.1",
-  "publisher": "Sereus Foundation",
+  "domain": "sereus.org",
   "entries": [
     {
       "cid": "baguqeera...",
       "title": "Tally Agreement",
+      "role": "author",
       "status": "current",
       "published": "2026-10-06",
       "replaces": ["baguqeera..."]
@@ -263,22 +292,24 @@ what status.
 | Field | Description |
 |-------|-------------|
 | `stroc-catalog` | Catalog format version |
-| `publisher` | Plain-text name of the publisher |
+| `domain` | The domain the catalog speaks for |
 | `entries[].cid` | A document CID (string) |
-| `entries[].title` | The document's title, copied by the publishing tool |
+| `entries[].title` | The document's title, copied by the serving tool |
+| `entries[].role` | `author` (we issue it), `endorse` (someone else issues it; we recommend it) or `mirror` (we only host it; no claim) |
 | `entries[].status` | `current`, `superseded` (a newer version exists) or `withdrawn` (no longer recommended) |
 | `entries[].published` | ISO 8601 date first listed |
 | `entries[].replaces` | CIDs (strings) of earlier versions, copied from the document's `replaces` |
 
-- The catalog is ordinary JSON, not a Stroc document. It is not content-addressed and the publisher
-  may update it at any time (for example to mark an entry superseded).
-- Trust in a catalog comes from the web origin that serves it (HTTPS and its domain), not from
-  Stroc. A future version may add publisher signatures.
-- **Provenance check**: given a base URL and a CID, fetch `<base>/catalog.json`, find the entry, and
-  report the publisher, the origin, the status and the date checked. Fetching `<base>/<cid>` and
-  verifying it confirms the publisher serves exactly that content.
-- Applications that record where a document came from record the **base URL** of the published set
-  alongside the CID, outside the document. The document itself never contains a URL.
+- The catalog is ordinary JSON, not a Stroc document. It is not content-addressed, and the domain
+  may update it at any time (for example to mark an entry superseded or withdrawn).
+- **Confirming an author**: for a document whose `author` is a domain, fetch
+  `https://<domain>/.well-known/stroc/catalog.json` and find the document's CID. The claim is
+  confirmed if the entry's role is `author`; report the status and the date checked. An entry with
+  role `endorse` or `mirror`, or no entry, does not confirm authorship.
+- **Endorsements**: any domain's catalog can be consulted for entries with role `endorse`, for
+  example to show "recommended by sereus.org" for a clause another domain wrote.
+- Documents never contain URLs. Where to fetch a document is the application's knowledge; who
+  issues it is the document's `author`.
 
 #### Reference Validation
 
@@ -300,7 +331,7 @@ To include multiple language versions of a contract, create a **wrapper document
   "stroc": "0.1",
   "language": "en",
   "title": "Tally Agreement (Multilingual)",
-  "author": "MyCHIPs Foundation",
+  "author": "mychips.org",
   "text": "This Agreement is presented in English and French. In case of any conflict between versions, the English version shall govern.",
   "sections": [
     {"source": {"/": "baguqeera..."}, "id": "english"},
@@ -696,3 +727,4 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 | 0.12 | 2026-10-06 | Resolution rewritten: app-supplied resolver, verified fetches, CAR bundles, static published sets, no addresses in documents; removed the HTTP endpoint and Sereus-node strategy; nesting-not-depth and document-level identity stated |
 | 0.13 | 2026-10-06 | Published sets: file layout under a base URL, `catalog.json` format with entry status, provenance check |
 | 0.14 | 2026-10-06 | `language` is a BCP 47 tag; documents carry `stroc: "0.1"` until the format is frozen; editor behavior moved to Editor.md |
+| 0.15 | 2026-10-07 | `author` is a verifiable domain or a plain name; published sets use the IPFS trustless-gateway path `/ipfs/<cid>`; catalog at `/.well-known/stroc/catalog.json` with `domain` and per-entry `role` |

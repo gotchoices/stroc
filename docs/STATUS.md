@@ -100,6 +100,22 @@ Stroc stays a general document library: it must not depend on Taleus or Sereus. 
 - **Editor rewritten on Lit** in Stage 2 as small components, running entirely in the browser; the
   prototype gets only safety fixes until then. Browser spell check in the parity stage; undo later.
   See [Editor.md](Editor.md).
+- **Author is a verifiable domain or a name** (2026-10-07). One field: `author: sereus.org` is a
+  claim confirmed against that domain's catalog; `author: Bob Anderson` is shown as written,
+  unverifiable. A separate publisher field was considered and rejected: only the domain can be
+  checked, and two fields invite contradictory pairs. Documents never contain URLs. Spec 0.15.
+- **HTTP layout follows the IPFS trustless gateway** (2026-10-07): `/ipfs/<cid>`, catalog at
+  `/.well-known/stroc/catalog.json` with a `domain` and a per-entry `role` (author, endorse,
+  mirror), optional `index.html` and CAR bundles. One resolver reads Stroc servers, static hosts
+  and IPFS gateways. Spec 0.15.
+- **One document server for development and production** (2026-10-07): `stroc serve <folder>` is
+  read-only, serves only valid documents on strict paths, caches CID paths forever, watches the
+  folder in development, and runs directly or in Docker behind an HTTPS proxy. A folder config
+  supplies the domain, `endorse`/`withdrawn` entries; roles default from `author`, `superseded`
+  from `replaces`. The current dev server folds into it (`--editor`). `stroc publish` writes the
+  same layout as static files.
+- **The editor keeps a user-controlled list of fetch sites** (2026-10-07), tried in order and
+  verified, typically starting with a local `stroc serve`.
 - **Q6 settled: reference scope.** References point only within the document and what it
   includes. Reusable clauses use defined terms for anything outside themselves. Spec 0.6.
 
@@ -163,7 +179,7 @@ Specification and decisions
 
 ### Stage 0 — Safety net
 
-- [x] Vitest in every library package, wired to `yarn test` (141 tests)
+- [x] Vitest in every library package and the server, wired to `yarn test` (159 tests)
 - [x] Unit tests for text rules, ids, language tags, markup and validation, including malformed input
 - [x] Golden-vector CID tests (5 fixture documents in `packages/core/test/fixtures/`, including a
       contract that includes a clause by CID). Recorded for format `"0.1"`; re-recorded at freeze.
@@ -231,6 +247,24 @@ Library and composition
       to numbers in every document's scope, including paths into includes; parameters gathered
       with their paths; never throws (missing, invalid, unresolved reported)
 - [ ] Folder resolver for Node (today the CLI loads a folder into a `MemoryStore`)
+- [x] `HttpResolver`: `/ipfs/<cid>?format=raw` with the raw Accept header (standard `fetch`, so
+      browser, Node and React Native); works with `stroc serve`, static hosts and IPFS gateways
+- [x] `AuthorChecker`: `author` domain → `/.well-known/stroc/catalog.json` → confirmed, endorsed,
+      mirrored, not listed, unreachable, or not a domain; with entry status and timestamp; one
+      catalog fetch per domain; catalog URL overridable for development
+- [x] Core: `isDomain`; lint warning for a domain-like `author` not in lowercase
+
+Document server (`stroc serve`, `@stroc/server`; replaced the old dev server)
+- [x] Serves a folder: `/ipfs/<cid>` (immutable caching, any CID spelling), catalog, generated
+      index page; strict paths (anything else 404), read-only, only valid documents (invalid files
+      skipped and logged); CORS on public data
+- [x] Folder config `.stroc.yaml`: `domain`, `endorse`, `withdrawn`; roles from `author`,
+      `superseded` from `replaces` (`contracts/.stroc.yaml` sets `mychips.org`)
+- [x] `--watch` reloads on change (development); `SIGHUP` reloads (production)
+- [x] `--editor` hosts the editor at `/editor/` with its validation endpoints (development)
+- [x] `Dockerfile`: built and run against `contracts/` (2026-10-07); `stroc-server` entry point
+      reads `PORT`, `HOST`, `STROC_DOMAIN`
+- [ ] `?format=car` bundles (with the CAR work in Stage 3; 406 until then)
 
 Rendering (`@stroc/render`, per [Rendering.md](Rendering.md))
 - [ ] Verify pdfmake in React Native / NativeScript early; fall back to HTML in a web view
@@ -247,6 +281,7 @@ Rendering (`@stroc/render`, per [Rendering.md](Rendering.md))
 
 Editor
 - [ ] Runs entirely in the browser: validation and CID via core, no server needed
+- [ ] Fetch-site list: user-controlled, ordered, remembered; included documents fetched and verified
 - [ ] Embeddable: public `doc` property, `readonly` mode, change and save events
 - [ ] Included documents shown in place, read-only, via the resolver
 - [ ] Indent/outdent; move a section to another parent; drag and drop before/after/into,
@@ -265,14 +300,10 @@ Editor
 - [x] Particulars table in `layout`: hoisted, grouped by declaring document, values styled distinctly
 - [x] App blocks (`heading`, `paragraph`, `table`, `qr`) placed after the document; QR drawn by
       the renderer; closing root-CID QR option
-- [ ] `stroc publish`: write a published set (static `<cid>` files of canonical bytes, a CAR per
-      root document, and `catalog.json` with status and `replaces`) for any web server; mark
-      replaced entries superseded; optionally upload to IPFS
+- [ ] `stroc publish`: write what `stroc serve` would serve, as static files (`ipfs/<cid>`, CARs,
+      `.well-known/stroc/catalog.json`, `index.html`); optionally upload to IPFS
 - [ ] Bundle as a CAR file: root CID → the document and everything it includes; every block verified offline
-- [ ] Local store helper (verified documents by CID) and missing check (included documents a store
-      does not hold)
-- [ ] HTTP resolver for published sets
-- [ ] Provenance check: base URL + CID → catalog entry (publisher, origin, status, date checked)
+- [x] Local store helper (`MemoryStore`) and missing check (`findMissing`), in `@stroc/compose`
 - [ ] Packages per the layout decision; everything except ui and cli runs in browser, Node and
       React Native / NativeScript
 - [ ] Example tally-style contract written in abstract roles with parameter declarations,
@@ -303,21 +334,19 @@ Found 2026-10-06. D1–D6, D9 and D10 fixed 2026-10-06.
 ## Running it
 
 ```
-yarn dev        # builds core and ui, then serves the editor and API on :3000 (PORT overrides)
-yarn build      # compiles all packages
-```
-
-```
-yarn test       # unit tests, golden vectors, sample library consistency
+yarn dev        # build, then serve contracts/ with --watch --editor on :3000 (PORT overrides)
+yarn start      # build, then serve contracts/ (no editor)
+yarn test       # unit tests, golden vectors, sample library, server
 yarn lint       # ESLint, all packages
-yarn stroc lint contracts/*.yaml     # check documents (--fix to fix what can be fixed)
-yarn stroc cid contracts/*.yaml      # print CIDs
+yarn stroc lint contracts/*.yaml                  # check documents (--fix to fix what can be fixed)
+yarn stroc cid contracts/*.yaml                   # print CIDs
 yarn stroc render contracts/Tally_Contract.yaml -o tally.html   # the composed contract as HTML
-yarn start      # build, then run the compiled server
+yarn stroc serve <folder> [--port N] [--domain D] [--watch] [--editor]
+docker build -t stroc-server . && docker run -p 3000:3000 -v $PWD/contracts:/documents:ro stroc-server
 ```
 
-Editor at `http://localhost:3000`. `POST /cid` (or `/validate`) takes a document as plain JSON,
-links written `{"/": "<cid>"}`, and returns `{ valid, cid?, problems, warnings }`.
+With `yarn dev`: the index of served documents is at `http://localhost:3000/`, the catalog at
+`/.well-known/stroc/catalog.json`, documents at `/ipfs/<cid>`, and the editor at `/editor/`.
 
 ## Document references
 

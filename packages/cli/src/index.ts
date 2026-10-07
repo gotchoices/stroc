@@ -3,12 +3,14 @@
 //   stroc lint [--fix] <files...>   check documents; --fix rewrites what can be fixed mechanically
 //   stroc cid <files...>            print the CID of each valid document
 //   stroc render <file> [options]   compose a document with its includes and write HTML
+//   stroc serve <folder> [options]  serve a folder of documents over HTTP
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { documentCid } from '@stroc/core'
 import { lintYaml, fixYaml, parseYaml, type LocatedProblem } from '@stroc/yaml'
 import { MemoryStore, compose } from '@stroc/compose'
 import { layout, toHtml } from '@stroc/render'
+import { startServer, parseServeArgs, SERVE_USAGE } from '@stroc/server'
 
 const USAGE = `usage:
   stroc lint [--fix] <files...>   check YAML or JSON documents
@@ -16,7 +18,10 @@ const USAGE = `usage:
   stroc render <file> [--library <dir>] [--data <file>] [--draft] [--qr] [-o <out.html>]
                                   compose <file> with the documents it includes (found among the
                                   documents in --library, default: the file's folder) and write
-                                  HTML to <out.html> or standard output`
+                                  HTML to <out.html> or standard output
+  stroc serve ${SERVE_USAGE}
+                                  serve the folder's documents at /ipfs/<cid>, with a catalog
+                                  and index; --watch reloads on change, --editor hosts the editor`
 
 function report(file: string, kind: 'error' | 'warning', p: LocatedProblem) {
   const where = p.line ? `${file}:${p.line}:${p.col}` : file
@@ -63,7 +68,7 @@ async function cid(files: string[]): Promise<number> {
 // Load every valid document in a folder into a store, keyed by CID.
 async function loadLibrary(dir: string): Promise<MemoryStore> {
   const store = new MemoryStore()
-  for (const name of readdirSync(dir).filter(n => /\.(ya?ml|json)$/i.test(n))) {
+  for (const name of readdirSync(dir).filter(n => /\.(ya?ml|json)$/i.test(n) && !n.startsWith('.'))) {
     const r = lintYaml(readFileSync(path.join(dir, name), 'utf8'))
     if (r.valid) await store.putDocument(r.value)
   }
@@ -109,6 +114,12 @@ async function render(args: string[]): Promise<number> {
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv
   if (command === 'render') return render(rest)
+  if (command === 'serve') {
+    const opts = parseServeArgs(rest, process.env)
+    if (!opts.folder) { console.error(USAGE); return 2 }
+    await startServer({ ...opts, folder: opts.folder, log: m => console.log(m) })
+    return await new Promise<number>(() => undefined)   // runs until interrupted
+  }
   const fix = rest.includes('--fix')
   const files = rest.filter(a => a !== '--fix')
   if (!files.length) { console.error(USAGE); return 2 }
