@@ -179,7 +179,8 @@ Specification and decisions
 
 ### Stage 0 — Safety net
 
-- [x] Vitest in every package, wired to `yarn test` (204 tests); `yarn test:browser` for the editor
+- [x] Vitest in every package, wired to `yarn test` (204 tests); `yarn test:e2e` (Playwright) for the
+      editor in three browser engines
 - [x] Unit tests for text rules, ids, language tags, markup and validation, including malformed input
 - [x] Golden-vector CID tests (5 fixture documents in `packages/core/test/fixtures/`, including a
       contract that includes a clause by CID). Recorded for format `"0.1"`; re-recorded at freeze.
@@ -294,7 +295,6 @@ Rendering (`@stroc/render`, per [Rendering.md](Rendering.md))
       `<qrBase>/ipfs/<cid>`, or the bare CID)
 - [x] Template view (`template`): the document as published, required values as blanks
 - [x] HTML is readable on phones (small-screen layout)
-- [ ] Export PDF in the editor (pdfmake browser build)
 - [ ] The editor loads `@stroc/render` in the browser (the QR library is CommonJS: bundle it)
 
 Editor
@@ -323,11 +323,16 @@ Editor
 - [x] Bold, italic, underline from the toolbar and ⌘B/⌘I/⌘U, saved as canonical markup
 - [x] Preview (View menu, ⌘E): the document as readers see it, no editing controls
 - [x] Spell-check toggle (View menu)
-- [x] Browser smoke test: `yarn test:browser` drives headless Chrome with real keyboard input
-      through opening, typing, splitting, joining, bold, indent, references, preview and Open
-- [ ] Undo/redo across the document
-- [ ] Pasting formatted text (reduced to Stroc markup)
-- [ ] Export PDF from the editor
+- [x] End-to-end tests with Playwright (`yarn test:e2e`) in Chromium, WebKit and Firefox: opening by
+      CID, typing, splitting, joining, bold, indent and outdent, mouse drag and drop, references,
+      preview, Open from Sources. They found that editing failed entirely in Safari (selection
+      inside shadow DOM): the editor now renders into the page's DOM with nested, scoped styles
+- [x] Undo/redo across the document (⌘Z, ⇧⌘Z or Ctrl+Y, Edit menu): snapshots of the model;
+      typing in one paragraph or title within 1.5 s is one step
+- [x] Paste keeps bold, italic and underline from HTML and drops everything else; several
+      paragraphs (HTML blocks or lines of plain text) become paragraph sections
+- [x] Export PDF from the editor (File → Export PDF, Letter or A4): composed with its includes,
+      template view, embedded Noto fonts, CID QR; pdfmake and fonts load on demand from `vendor/`
 - [ ] Usability pass against a real document
 - [x] Insert a reference by picking the target (toolbar, Insert menu, ⌘K): this document's sections
       and included documents' sections with ids, with live numbers and a filter; a section without
@@ -379,7 +384,7 @@ yarn dev        # build, then serve contracts/ with --watch --editor on :3000 (P
 yarn start      # build, then serve contracts/ (no editor)
 yarn test       # unit tests, golden vectors, sample library, server
 yarn lint       # ESLint, all packages
-yarn test:browser                 # editor smoke test in headless Chrome (after yarn build)
+yarn test:e2e                     # editor end-to-end in Chromium, WebKit, Firefox (Playwright)
 yarn stroc lint contracts/*.yaml                  # check documents (--fix to fix what can be fixed)
 yarn stroc cid contracts/*.yaml                   # print CIDs
 yarn stroc render contracts/Tally_Contract.yaml -o tally.html   # the composed contract as HTML

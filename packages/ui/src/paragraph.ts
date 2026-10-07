@@ -6,12 +6,45 @@
 // browser inserts is reduced to its text.
 
 import { LitElement } from 'lit'
-import { parseMarkup, canonicalMarkup, type MarkupNode } from '@stroc/core'
+import { parseMarkup, canonicalMarkup, escapeMarkupText, type MarkupNode } from '@stroc/core'
 
 export type RefLabel = (path: string[]) => string | undefined
 
 export interface ParagraphChange { key: string, value: string }
 export interface ParagraphSplit { key: string, before: string, after: string }
+export interface ParagraphPaste { key: string, before: string, blocks: string[], after: string }
+
+const BLOCK = /^(P|DIV|LI|H[1-6]|BLOCKQUOTE|TR|DT|DD|PRE|SECTION|ARTICLE|HEADER|FOOTER|UL|OL|TABLE|TBODY)$/
+
+// Pasted HTML as paragraphs of canonical markup: one per block element (or per run of inline
+// content between blocks). Only bold, italic and underline survive.
+export function htmlToParagraphs(html: string): string[] {
+  const body = new DOMParser().parseFromString(html, 'text/html').body
+  body.querySelectorAll('script, style, meta, link, title').forEach(n => n.remove())
+  // Treat a pair of line breaks as a paragraph break.
+  body.querySelectorAll('br + br').forEach(br => { const p = document.createElement('p'); br.replaceWith(p) })
+  const out: string[] = []
+  const hasBlock = (n: Node): boolean => Array.from(n.childNodes).some(c => c.nodeType === 1 && (BLOCK.test((c as Element).tagName) || hasBlock(c)))
+  const collect = (node: Node) => {
+    let run = document.createElement('div')
+    const flushRun = () => { const m = domToMarkup(run); if (m) out.push(m); run = document.createElement('div') }
+    for (const child of Array.from(node.childNodes)) {
+      if (child.nodeType === 1 && (BLOCK.test((child as Element).tagName) || hasBlock(child))) {
+        flushRun()
+        if (hasBlock(child)) collect(child)
+        else { const m = domToMarkup(child); if (m) out.push(m) }
+      } else run.appendChild(child.cloneNode(true))
+    }
+    flushRun()
+  }
+  collect(body)
+  return out
+}
+
+// Pasted plain text as paragraphs: one per line.
+export function textToParagraphs(text: string): string[] {
+  return text.split(/\r?\n/).map(l => canonicalMarkup(escapeMarkupText(l))).filter(Boolean)
+}
 
 const TAG_OF: Record<string, 'b' | 'i' | 'u'> = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u' }
 
@@ -82,7 +115,7 @@ export class StrocParagraph extends LitElement {
   private box?: HTMLDivElement
   private shown?: string           // the markup currently in the DOM
   private timer?: ReturnType<typeof setTimeout>
-  private savedRange?: Range
+  private savedOffset?: number     // caret position in atoms (characters, a reference counts as one)
 
   constructor() {
     super()
@@ -104,11 +137,23 @@ export class StrocParagraph extends LitElement {
     box.addEventListener('blur', () => { this.saveSelection(); this.flush() })
     box.addEventListener('keydown', e => this.onKey(e))
     box.addEventListener('paste', e => this.onPaste(e))
-    box.addEventListener('keyup', () => this.saveSelection())
-    box.addEventListener('mouseup', () => this.saveSelection())
+    document.addEventListener('selectionchange', this.onSelectionChange)
     this.appendChild(box)
     this.box = box
     this.draw()
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    document.removeEventListener('selectionchange', this.onSelectionChange)
+  }
+
+  // Remember where the caret is whenever it moves inside this paragraph, so it can be restored
+  // after a dialog (such as the reference picker) takes the focus.
+  private onSelectionChange = () => this.saveSelection()
+
+  rememberSelection() {
+    this.saveSelection()
   }
 
   updated(changed: Map<string, unknown>) {
@@ -168,7 +213,60 @@ export class StrocParagraph extends LitElement {
 
   private saveSelection() {
     const r = this.caretRange()
-    if (r) this.savedRange = r.cloneRange()
+    if (r) this.savedOffset = this.atomsBefore(r.startContainer, r.startOffset)
+  }
+
+  // Positions in a paragraph are counted in atoms: each character of text is one, and each
+  // reference is one (its label is not text). They survive redrawing the DOM, unlike Ranges.
+  private atomsBefore(container: Node, offset: number): number {
+    let count = 0
+    const visit = (node: Node): boolean => {
+      if (node === container && node.nodeType === 3) { count += offset; return true }
+      if (node === container) {
+        for (let i = 0; i < offset && i < node.childNodes.length; i++) count += this.atomsIn(node.childNodes[i])
+        return true
+      }
+      if ((node as HTMLElement).dataset?.ref) { if (node.contains(container)) return true; count += 1; return false }
+      if (node.nodeType === 3) { count += node.nodeValue?.length ?? 0; return false }
+      for (const child of Array.from(node.childNodes)) if (visit(child)) return true
+      return false
+    }
+    for (const child of Array.from(this.box!.childNodes)) if (visit(child)) break
+    if (container === this.box) { count = 0; for (let i = 0; i < offset; i++) count += this.atomsIn(this.box!.childNodes[i]) }
+    return count
+  }
+
+  private atomsIn(node: Node): number {
+    if ((node as HTMLElement).dataset?.ref) return 1
+    if (node.nodeType === 3) return node.nodeValue?.length ?? 0
+    return Array.from(node.childNodes).reduce((n, c) => n + this.atomsIn(c), 0)
+  }
+
+  // A collapsed range at an atom position.
+  private rangeAt(atoms: number): Range {
+    const r = document.createRange()
+    let left = atoms
+    const place = (node: Node): boolean => {
+      for (const child of Array.from(node.childNodes)) {
+        if ((child as HTMLElement).dataset?.ref) {
+          if (left === 0) { r.setStartBefore(child); return true }
+          left -= 1
+          if (left === 0) { r.setStartAfter(child); return true }
+          continue
+        }
+        if (child.nodeType === 3) {
+          const len = child.nodeValue?.length ?? 0
+          if (left <= len) { r.setStart(child, left); return true }
+          left -= len
+          continue
+        }
+        if (place(child)) return true
+      }
+      return false
+    }
+    if (!place(this.box!)) { r.selectNodeContents(this.box!); r.collapse(false) }
+    r.collapse(true)
+    return r
   }
 
   private onKey(e: KeyboardEvent) {
@@ -203,29 +301,65 @@ export class StrocParagraph extends LitElement {
   private split() {
     const r = this.caretRange()
     if (!r || !this.box) return
-    const head = document.createRange()
-    head.setStart(this.box, 0)
-    head.setEnd(r.startContainer, r.startOffset)
-    const tail = document.createRange()
-    tail.setStart(r.endContainer, r.endOffset)
-    tail.setEnd(this.box, this.box.childNodes.length)
-    const holder = (range: Range) => { const d = document.createElement('div'); d.appendChild(range.cloneContents()); return domToMarkup(d) }
-    const before = holder(head)
-    const after = holder(tail)
+    const { before, after } = this.around(r)
     this.shown = before
     this.dispatchEvent(new CustomEvent<ParagraphSplit>('paragraph-split', { detail: { key: this.key, before, after }, bubbles: true, composed: true }))
   }
 
+  // Paste keeps bold, italic and underline. Several paragraphs become several sections: the first
+  // joins the text before the caret, the last joins the text after it.
   private onPaste(e: ClipboardEvent) {
     e.preventDefault()
+    const html = e.clipboardData?.getData('text/html') ?? ''
     const text = e.clipboardData?.getData('text/plain') ?? ''
-    document.execCommand('insertText', false, text.replace(/\s+/g, ' '))
+    const blocks = html ? htmlToParagraphs(html) : textToParagraphs(text)
+    const r = this.caretRange()
+    if (!r || !this.box || !blocks.length) return
+    r.deleteContents()
+    if (blocks.length === 1) {
+      // Pasted into the middle of a paragraph: keep a space at either edge of what was copied.
+      const raw = html ? (new DOMParser().parseFromString(html, 'text/html').body.textContent ?? '') : text
+      const frag = markupToDom(blocks[0], this.labelRef)
+      if (/^\s/.test(raw)) frag.prepend(document.createTextNode(' '))
+      if (/\s$/.test(raw)) frag.append(document.createTextNode(' '))
+      const last = frag.lastChild
+      r.insertNode(frag)
+      if (last) {
+        const after = document.createRange()
+        after.setStartAfter(last)
+        after.collapse(true)
+        const sel = this.selection()
+        sel?.removeAllRanges()
+        sel?.addRange(after)
+      }
+      this.flush()
+      return
+    }
+    const { before, after } = this.around(r, true)
+    this.shown = undefined
+    this.dispatchEvent(new CustomEvent<ParagraphPaste>('paragraph-paste', { detail: { key: this.key, before, blocks, after }, bubbles: true, composed: true }))
+  }
+
+  // The paragraph's markup before and after a caret. With keepEdges, a space at the caret is kept
+  // (for joining pasted text); otherwise both sides are trimmed (for splitting).
+  private around(r: Range, keepEdges = false): { before: string, after: string } {
+    const head = document.createRange()
+    head.setStart(this.box!, 0)
+    head.setEnd(r.startContainer, r.startOffset)
+    const tail = document.createRange()
+    tail.setStart(r.endContainer, r.endOffset)
+    tail.setEnd(this.box!, this.box!.childNodes.length)
+    const markup = (range: Range) => { const d = document.createElement('div'); d.appendChild(range.cloneContents()); return domToMarkup(d) }
+    let before = markup(head), after = markup(tail)
+    if (keepEdges && before && /\s$/.test(head.toString())) before += ' '
+    if (keepEdges && after && /^\s/.test(tail.toString())) after = ' ' + after
+    return { before, after }
   }
 
   // Apply bold, italic or underline to the selection (from shortcuts or the toolbar).
   format(command: 'bold' | 'italic' | 'underline') {
     if (!this.box) return
-    if (!this.caretRange() && this.savedRange) this.restoreSelection()
+    if (!this.caretRange() && this.savedOffset !== undefined) this.restoreSelection()
     document.execCommand('styleWithCSS', false, 'false')
     document.execCommand(command)
     this.flush()
@@ -233,10 +367,10 @@ export class StrocParagraph extends LitElement {
 
   private restoreSelection() {
     const sel = this.selection()
-    if (!sel || !this.savedRange) return
-    this.box?.focus()
+    if (!sel || this.savedOffset === undefined || !this.box) return
+    this.box.focus()
     sel.removeAllRanges()
-    sel.addRange(this.savedRange)
+    sel.addRange(this.rangeAt(this.savedOffset))
   }
 
   // Insert a reference at the caret (or where the caret last was).
@@ -264,29 +398,20 @@ export class StrocParagraph extends LitElement {
     this.flush()
   }
 
-  // Put the caret at a character offset (or the start or end) of the paragraph.
+  // Put the caret at an atom position (or the start or end) of the paragraph.
   focusAt(where: number | 'start' | 'end') {
     if (!this.box) return
     this.box.focus()
     const sel = this.selection()
-    const r = document.createRange()
+    let r: Range
     if (where === 'start' || where === 'end') {
+      r = document.createRange()
       r.selectNodeContents(this.box)
       r.collapse(where === 'start')
-    } else {
-      let left = where
-      const walker = document.createTreeWalker(this.box, NodeFilter.SHOW_TEXT)
-      let placed = false
-      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-        if (n.parentElement?.closest('[data-ref]')) continue   // reference labels are not text
-        const len = n.nodeValue?.length ?? 0
-        if (left <= len) { r.setStart(n, left); r.collapse(true); placed = true; break }
-        left -= len
-      }
-      if (!placed) { r.selectNodeContents(this.box); r.collapse(false) }
-    }
+    } else r = this.rangeAt(where)
     sel?.removeAllRanges()
     sel?.addRange(r)
+    this.saveSelection()
   }
 }
 

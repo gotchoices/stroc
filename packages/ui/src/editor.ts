@@ -11,9 +11,10 @@ import {
   type ValidationResult,
 } from '@stroc/core'
 import { lintYaml, stringifyDocument } from '@stroc/yaml'
-import type { ComposedInline, ComposedSection, CatalogEntry } from '@stroc/compose'
-import { editorStyles } from './styles.js'
-import { StrocParagraph, type ParagraphChange, type ParagraphSplit } from './paragraph.js'
+import { MemoryStore, compose, firstOf, type ComposedInline, type ComposedSection, type CatalogEntry } from '@stroc/compose'
+import { layout, toPdfDefinition } from '@stroc/render'
+import { installStyles } from './styles.js'
+import { StrocParagraph, type ParagraphChange, type ParagraphSplit, type ParagraphPaste } from './paragraph.js'
 import * as M from './model.js'
 import { loadInclude, numberWithin, joinNumber, type IncludeInfo } from './includes.js'
 import { loadSources, saveSources, normalizeSource, SourcesResolver, sourceCatalog, forgetCatalogs } from './sources.js'
@@ -53,7 +54,6 @@ interface RefTarget {
 }
 
 export class StrocEditor extends LitElement {
-  static styles = editorStyles
   static properties = {
     version: { state: true },
     dialog: { state: true },
@@ -90,6 +90,10 @@ export class StrocEditor extends LitElement {
   private activePara?: StrocParagraph
   private refFilter = ''
   private refPara?: StrocParagraph
+  // Undo history: snapshots of the document. `at` is the current one. Typing in one paragraph or
+  // title within a short time is one step.
+  private history: { doc: M.EditDoc, group?: string, time: number }[] = []
+  private historyAt = -1
   private dragKey?: string
   private dropAt?: { key: string, where: M.Placement }
 
@@ -103,20 +107,25 @@ export class StrocEditor extends LitElement {
   // -------------------------------------------------------------------------------------------
   // Lifecycle
 
+  // Render into the page's DOM, not a shadow root: browsers (Safari in particular) do not expose
+  // the text selection inside shadow roots consistently, and in-place editing depends on it.
+  createRenderRoot() { return this }
+
   connectedCallback() {
     super.connectedCallback()
+    installStyles(this.getRootNode() as Document | ShadowRoot)
     window.addEventListener('beforeunload', this.onBeforeUnload)
-    window.addEventListener('keydown', this.onShortcut)
+    window.addEventListener('keydown', this.onShortcut, true)     // capture: before the browser's own undo
     document.addEventListener('click', this.onDocumentClick)
     const cid = new URLSearchParams(location.search).get('cid')
     if (cid) void this.openByCid(cid)
-    else this.validateSoon(0)
+    else { this.record(); this.validateSoon(0) }
   }
 
   disconnectedCallback() {
     super.disconnectedCallback()
     window.removeEventListener('beforeunload', this.onBeforeUnload)
-    window.removeEventListener('keydown', this.onShortcut)
+    window.removeEventListener('keydown', this.onShortcut, true)
     document.removeEventListener('click', this.onDocumentClick)
   }
 
@@ -152,6 +161,8 @@ export class StrocEditor extends LitElement {
     }
     if (!(e.metaKey || e.ctrlKey)) return
     const k = e.key.toLowerCase()
+    if (k === 'z' && !this.dialog) { e.preventDefault(); if (e.shiftKey) this.redo(); else this.undo(); return }
+    if (k === 'y' && !this.dialog) { e.preventDefault(); this.redo(); return }
     if (k === 's') { e.preventDefault(); void (e.shiftKey ? this.saveAs() : this.save()) }
     else if (k === 'k') { e.preventDefault(); this.showReferences() }
     else if (k === 'e') { e.preventDefault(); this.preview = !this.preview }
@@ -171,8 +182,35 @@ export class StrocEditor extends LitElement {
   // -------------------------------------------------------------------------------------------
   // Changes and validation
 
-  private changed(markDirty = true) {
+  private changed(markDirty = true, group?: string) {
     if (markDirty) this.dirty = true
+    this.record(group)
+    this.version++
+    this.validateSoon()
+  }
+
+  private record(group?: string) {
+    const now = Date.now()
+    const top = this.history[this.historyAt]
+    const snapshot = { doc: structuredClone(this.doc), group, time: now }
+    this.history.splice(this.historyAt + 1)          // a new change discards anything redoable
+    if (group && top?.group === group && now - top.time < 1500 && this.historyAt > 0) this.history[this.historyAt] = snapshot
+    else { this.history.push(snapshot); this.historyAt = this.history.length - 1 }
+    if (this.history.length > 300) { this.history.shift(); this.historyAt-- }
+  }
+
+  private undo() { this.stepHistory(-1) }
+  private redo() { this.stepHistory(1) }
+
+  private stepHistory(delta: number) {
+    this.activePara?.flush()                        // keep what was just typed as its own step
+    const target = this.historyAt + delta
+    if (target < 0 || target >= this.history.length) { this.say(delta < 0 ? 'Nothing to undo' : 'Nothing to redo'); return }
+    this.historyAt = target
+    this.doc = structuredClone(this.history[target].doc)
+    this.dirty = true
+    const key = this.activePara?.key
+    if (key && (key === 'doc' || M.locate(this.doc, key))) this.pendingFocus = { key, where: 'end' }
     this.version++
     this.validateSoon()
   }
@@ -259,7 +297,7 @@ export class StrocEditor extends LitElement {
     const { key, value } = e.detail
     if (key === 'doc') this.doc.text = value || undefined
     else { const at = M.locate(this.doc, key); if (!at) return; at.section.text = value || undefined }
-    this.changed()
+    this.changed(true, `text:${key}`)
   }
 
   private onParagraphSplit(e: CustomEvent<ParagraphSplit>) {
@@ -276,12 +314,34 @@ export class StrocEditor extends LitElement {
     this.changed()
   }
 
+  // Several pasted paragraphs: the first joins the text before the caret; the others become new
+  // paragraph sections after this one, the last joined by the text after the caret.
+  private onParagraphPaste(e: CustomEvent<ParagraphPaste>) {
+    const { key, before, blocks, after } = e.detail
+    const join = (a: string, b: string) => canonicalMarkup(a + b) || undefined
+    const first = join(before, blocks[0])
+    const lastText = blocks[blocks.length - 1]
+    const rest = blocks.slice(1).map((b, i) => M.newSection({ text: i === blocks.length - 2 ? join(b, after) : b }))
+    if (key === 'doc') {
+      this.doc.text = first
+      this.doc.sections.unshift(...rest)
+    } else {
+      const at = M.locate(this.doc, key)
+      if (!at) return
+      at.section.text = first
+      at.parent.splice(at.index + 1, 0, ...rest)
+    }
+    const last = rest[rest.length - 1]
+    this.pendingFocus = { key: last.key, where: M.plainLength(lastText) }
+    this.changed()
+  }
+
   private onParagraphMerge(e: CustomEvent<{ key: string }>) {
     // The first section joins back into the preamble (the reverse of Enter at the preamble's end).
     const first = this.doc.sections[0]
     if (first?.key === e.detail.key && first.source === undefined && first.title === undefined && !first.sections.length) {
       const left = this.doc.text ?? ''
-      const at = left.replace(/<[^>]*>|\\(?=[<\\])/g, '').length
+      const at = M.plainLength(left)
       this.doc.text = canonicalMarkup(left && first.text ? `${left} ${first.text}` : left + (first.text ?? '')) || undefined
       this.doc.sections.shift()
       this.pendingFocus = { key: 'doc', where: at }
@@ -324,6 +384,8 @@ export class StrocEditor extends LitElement {
     if (from.cid) url.searchParams.set('cid', from.cid)
     else url.searchParams.delete('cid')
     history.replaceState(null, '', url)
+    this.history = []
+    this.historyAt = -1
     this.changed(false)
   }
 
@@ -427,6 +489,32 @@ export class StrocEditor extends LitElement {
     if (!v.ok || !v.document) { this.say(`${cid} failed verification: ${v.problems[0]?.message ?? ''}`); return }
     this.dialog = undefined
     this.load(M.fromPlain(coreToPlain(v.document) as Record<string, unknown>), { cid: cid.toString() })
+  }
+
+  // Export the document as PDF: composed with its includes from the sources, laid out as a template
+  // (deal-specific values blank), with a QR code for fetching it. pdfmake and the fonts are loaded
+  // from vendor/ beside the editor bundle on first use; pdfmake may fetch only those fonts.
+  async exportPdf(pageSize: 'LETTER' | 'A4') {
+    const plain = M.toPlain(this.doc)
+    const result = await documentCid(coreFromPlain(plain).value)
+    if (!result.cid || !result.bytes) {
+      this.say(`Fix the ${this.validation.count || 'remaining'} problem${this.validation.count === 1 ? '' : 's'} before exporting: a PDF shows the document's CID`)
+      return
+    }
+    this.say('Preparing PDF…')
+    const store = new MemoryStore()
+    await store.put(result.bytes)
+    const composed = await compose(result.cid, firstOf(store, new SourcesResolver(this.sources)))
+    const laid = layout(composed, { options: { template: true, draft: composed.problems.length > 0, cidQr: true } })
+    if (!laid.layout) { this.say(`Cannot lay out: ${laid.problems[0]?.message ?? ''}`); return }
+    try {
+      const pdfMake = await loadPdfMake()
+      const def = toPdfDefinition(laid.layout, { pageSize, font: 'NotoSerif', monoFont: 'NotoSansMono', fontSize: 9.5, lineHeight: 1.0 })
+      pdfMake.createPdf(def).download(`${(this.doc.title || 'document').trim().replace(/[^\w.-]+/g, '_')}.pdf`)
+      this.say(composed.problems.length ? 'PDF exported as a draft: some included documents were not available' : 'PDF exported')
+    } catch (err) {
+      this.say(`PDF export failed: ${(err as Error).message}`)
+    }
   }
 
   private onDrop = async (e: DragEvent) => {
@@ -539,6 +627,7 @@ export class StrocEditor extends LitElement {
 
   private showReferences() {
     if (!this.activePara) { this.say('Click in a paragraph first, where the reference should go'); return }
+    this.activePara.rememberSelection()
     this.refPara = this.activePara
     this.refFilter = ''
     this.dialog = 'reference'
@@ -598,6 +687,7 @@ export class StrocEditor extends LitElement {
         @paragraph-change=${this.onParagraphChange}
         @paragraph-split=${this.onParagraphSplit}
         @paragraph-merge=${this.onParagraphMerge}
+        @paragraph-paste=${this.onParagraphPaste}
         @dragover=${(e: DragEvent) => { if (e.dataTransfer?.types.includes('Files')) { e.preventDefault(); this.dragOverFile = true } }}
         @dragleave=${() => { this.dragOverFile = false }}
         @drop=${this.onDrop}>
@@ -635,9 +725,15 @@ export class StrocEditor extends LitElement {
           ${this.menuItem('Save As…', () => void this.saveAs(), '⇧⌘S')}
           ${this.menuItem('Save As JSON…', () => void this.saveAs('json'))}
           <div class="menu-sep"></div>
+          ${this.menuItem('Export PDF (Letter)…', () => void this.exportPdf('LETTER'))}
+          ${this.menuItem('Export PDF (A4)…', () => void this.exportPdf('A4'))}
+          <div class="menu-sep"></div>
           ${this.menuItem('Sources…', () => { this.dialog = 'sources' })}
         `)}
         ${this.renderMenu('edit', 'Edit', html`
+          ${this.menuItem('Undo', () => this.undo(), '⌘Z', this.historyAt <= 0)}
+          ${this.menuItem('Redo', () => this.redo(), '⇧⌘Z', this.historyAt >= this.history.length - 1)}
+          <div class="menu-sep"></div>
           ${this.menuItem('Document Properties…', () => { this.dialog = 'properties' })}
         `)}
         ${this.renderMenu('view', 'View', html`
@@ -673,7 +769,7 @@ export class StrocEditor extends LitElement {
         <button title="Underline (⌘U)" @mousedown=${keep} @click=${() => this.format('underline')}><u>U</u></button>
         <span class="sep"></span>
         <button title="Insert a reference to a section (⌘K)" @mousedown=${keep} @click=${() => this.showReferences()}>Reference…</button>
-        <span class="hint">Enter: new paragraph · Backspace at start: join · Tab / Shift+Tab: indent / outdent · Alt+Shift+↑↓: move · drag ⋮⋮ to move (Shift to copy)</span>
+        <span class="hint">Paste keeps bold, italic, underline; several paragraphs become sections · Enter: new paragraph · Backspace at start: join · Tab / Shift+Tab: indent / outdent · Alt+Shift+↑↓: move · drag ⋮⋮ to move (Shift to copy)</span>
       </div>`
   }
 
@@ -681,7 +777,7 @@ export class StrocEditor extends LitElement {
     const d = this.doc
     return html`
       <input class="doc-title" .value=${d.title} placeholder="Document title" ?readonly=${this.preview}
-        @input=${(e: InputEvent) => { d.title = (e.target as HTMLInputElement).value; this.changed() }} />
+        @input=${(e: InputEvent) => { d.title = (e.target as HTMLInputElement).value; this.changed(true, 'title:doc') }} />
       <div class="doc-meta">
         <span><b>Author</b> ${d.author ?? html`<span class="muted">none</span>`}</span>
         <span><b>Language</b> ${d.language}</span>
@@ -716,7 +812,7 @@ export class StrocEditor extends LitElement {
           <span class="num">${number}.</span>
           <div>
             ${s.title !== undefined ? html`<input class="title-input" .value=${s.title} placeholder="Section title" ?readonly=${this.preview}
-              @input=${(e: InputEvent) => { s.title = (e.target as HTMLInputElement).value; this.changed() }} />` : nothing}
+              @input=${(e: InputEvent) => { s.title = (e.target as HTMLInputElement).value; this.changed(true, `title:${s.key}`) }} />` : nothing}
             ${this.renderParagraph(s.key, s.text, s.sections.length || s.title ? 'Text (optional)' : 'Type a paragraph')}
             ${problems.map(p => html`<div class="sec-problems">${p}</div>`)}
             ${active && !this.preview ? this.renderTools(s) : nothing}
@@ -992,6 +1088,42 @@ export class StrocEditor extends LitElement {
       <form @submit=${addReplaces}><input name="cid" placeholder="baguqeera… (CID of an earlier version)" /><button type="submit">Add</button></form>
       ${this.validation.document.length ? html`<ul class="problems">${this.validation.document.map(p => html`<li>${p}</li>`)}</ul>` : nothing}`
   }
+}
+
+interface PdfMakeBrowser {
+  setFonts(fonts: Record<string, Record<string, string>>): void
+  setUrlAccessPolicy(cb: (url: string) => boolean): void
+  createPdf(def: unknown): { download(name: string): void }
+}
+
+let pdfMakeLoading: Promise<PdfMakeBrowser> | undefined
+
+// Load pdfmake's browser build and point it at the bundled fonts, once.
+function loadPdfMake(): Promise<PdfMakeBrowser> {
+  pdfMakeLoading ??= new Promise((resolve, reject) => {
+    const vendor = new URL('vendor/', import.meta.url).href
+    const script = document.createElement('script')
+    script.src = `${vendor}pdfmake.min.js`
+    script.onload = () => {
+      const pdfMake = (window as unknown as { pdfMake: PdfMakeBrowser }).pdfMake
+      const font = (name: string) => `${vendor}fonts/${name}`
+      pdfMake.setFonts({
+        NotoSerif: {
+          normal: font('NotoSerif_400Regular.ttf'), bold: font('NotoSerif_700Bold.ttf'),
+          italics: font('NotoSerif_400Regular_Italic.ttf'), bolditalics: font('NotoSerif_700Bold_Italic.ttf'),
+        },
+        NotoSansMono: {
+          normal: font('NotoSansMono_400Regular.ttf'), bold: font('NotoSansMono_400Regular.ttf'),
+          italics: font('NotoSansMono_400Regular.ttf'), bolditalics: font('NotoSansMono_400Regular.ttf'),
+        },
+      })
+      pdfMake.setUrlAccessPolicy(url => url.startsWith(`${vendor}fonts/`))
+      resolve(pdfMake)
+    }
+    script.onerror = () => { pdfMakeLoading = undefined; reject(new Error(`could not load ${script.src}`)) }
+    document.head.appendChild(script)
+  })
+  return pdfMakeLoading
 }
 
 customElements.define('stroc-editor', StrocEditor)

@@ -7,14 +7,18 @@
   "types": "dist/src/index.d.ts",
   "module": "dist/src/index.js",
   "scripts": {
-    "build": "tsc -b && esbuild src/index.ts --bundle --format=esm --target=es2022 --sourcemap --outfile=dist/stroc-editor.js --log-level=warning",
+    "build": "tsc -b && esbuild src/index.ts --bundle --format=esm --target=es2022 --sourcemap --outfile=dist/stroc-editor.js --log-level=warning && node scripts/copy-vendor.mjs",
     "test": "vitest run"
   },
   "dependencies": {
+    "@expo-google-fonts/noto-sans-mono": "^0.4",
+    "@expo-google-fonts/noto-serif": "^0.4",
     "@stroc/compose": "workspace:*",
     "@stroc/core": "workspace:*",
+    "@stroc/render": "workspace:*",
     "@stroc/yaml": "workspace:*",
     "lit": "^3.1.4",
+    "pdfmake": "^0.3",
     "yaml": "^2"
   },
   "devDependencies": {

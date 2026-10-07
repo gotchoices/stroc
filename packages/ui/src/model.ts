@@ -280,9 +280,10 @@ export function mergeWithPrevious(doc: EditDoc, key: string): { into: EditSectio
   return { into: prev, at }
 }
 
-function plainLength(markup: string): number {
+// Length in atoms: characters of text, plus one per reference (as the paragraph editor counts).
+export function plainLength(markup: string): number {
   const count = (nodes: MarkupNode[]): number => nodes.reduce((n, x) =>
-    n + (x.type === 'text' ? x.value.length : x.type === 'ref' ? 0 : count(x.children)), 0)
+    n + (x.type === 'text' ? x.value.length : x.type === 'ref' ? 1 : count(x.children)), 0)
   return count(parseMarkup(markup).nodes)
 }
 

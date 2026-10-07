@@ -15,8 +15,12 @@ documents (for example Taleus users) never need the editor.
 - **Modules**: `editor.ts` (the component), `paragraph.ts` (in-place paragraph editing),
   `model.ts` (the document model and structure operations, unit-tested without a browser),
   `includes.ts`, `sources.ts`, `styles.ts`.
-- **Tests**: unit tests for the model (`yarn test`), and a browser smoke test that drives headless
-  Chrome with real keyboard input (`yarn build && yarn test:browser`).
+- **Renders into the page's DOM**, not a shadow root: Safari does not expose the text selection
+  inside shadow roots, and in-place editing depends on it. Its styles are nested under
+  `stroc-editor` (CSS nesting), so they do not affect the host page.
+- **Tests**: unit tests for the model (`yarn test`), and end-to-end tests with Playwright that drive
+  the real editor in Chromium, WebKit (Safari's engine) and Firefox with real keyboard and mouse
+  input (`yarn test:e2e`; it builds and starts its own server on port 3990).
 
 ## Scope
 
@@ -50,7 +54,10 @@ The document is edited in its rendered form.
 
 - **Text**: click any paragraph and type. **Enter** splits the paragraph into a new section after
   it; **Backspace** at the start of a paragraph joins it to the one before (the first section joins
-  back into the preamble). Paste is plain text.
+  back into the preamble).
+- **Paste**: bold, italic and underline are kept from formatted text (word processors, web pages);
+  everything else is dropped. Several pasted paragraphs become several paragraph sections: the first
+  joins the text before the caret, the last the text after it. Plain text splits at line breaks.
 - **Formatting**: bold, italic, underline from the toolbar or ⌘B / ⌘I / ⌘U. Whatever the browser
   produces is written back as canonical Stroc markup.
 - **Titles**: the document title at the top; a section's title is added or removed from its
@@ -71,6 +78,11 @@ The document is edited in its rendered form.
 - **Document properties** (Edit → Document Properties, or Properties… under the title): title,
   author (a domain, which is verifiable, or a name), language, published date, **parameters**
   (key, label, optional default) and **replaces** (CIDs of earlier versions).
+
+## Undo
+
+**Undo** (⌘Z) and **Redo** (⇧⌘Z, or Ctrl+Y) cover every change to the document, also in the Edit
+menu. A burst of typing in one paragraph or title is one step; each structural change is its own.
 
 ## References
 
@@ -102,6 +114,14 @@ Validation runs as you type. The status bar shows **Valid** and the CID (with Co
 of problems; each problem is shown at the section it concerns, and document-level problems under
 the title. References into included documents are checked against the composed includes.
 
+## PDF
+
+**File → Export PDF** (Letter or A4) composes the document with everything it includes (fetched from
+the sources), lays it out in the legal style as a template (deal-specific values left blank), with a
+QR code for fetching the document, and downloads it. The document must be valid, since the PDF shows
+its CID. pdfmake and the embedded fonts are loaded only when first needed, from `vendor/` beside the
+editor bundle (copied there by the build), and pdfmake may fetch nothing but those fonts.
+
 ## View
 
 - **Preview** (View menu or ⌘E): the document as readers see it, with no editing controls.
@@ -109,9 +129,6 @@ the title. References into included documents are checked against the composed i
 
 ## Not yet
 
-- Undo and redo (browser undo works within one paragraph while typing).
 - Turning written-out text into an include (it must first be published as its own document).
-- Pasting formatted text (paste is plain text).
-- Exporting PDF from the editor (`stroc render -o file.pdf` does it from the command line).
 - Embedding API for host pages: a public `doc` property exists; change and save events, and a
   host-supplied resolver, are still to define.

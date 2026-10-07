@@ -1,7 +1,11 @@
-import { css } from 'lit'
+// The editor's styles. The editor renders into the page's own DOM (not a shadow root, so text
+// selection works the same in every browser engine), so its styles are nested under the
+// stroc-editor element and cannot affect the host page.
 
-export const editorStyles = css`
-  :host {
+export const editorCss = `
+stroc-editor {
+
+  & {
     --ink: #1a1a1a; --muted: #6c757d; --line: #dee2e6; --accent: #0d6efd; --bad: #b02a37;
     --good-bg: #d1e7dd; --good: #0f5132; --warn-bg: #fff3cd; --warn: #664d03; --bad-bg: #f8d7da;
     display: flex; flex-direction: column; height: 100vh;
@@ -59,11 +63,11 @@ export const editorStyles = css`
   .para .ref.unresolved, .ref.unresolved { color: var(--bad); text-decoration: underline wavy; }
 
   /* Preview: the document as readers see it */
-  :host([preview]) .grip, :host([preview]) .sec-problems, :host([preview]) .inc-info button,
-  :host([preview]) .problems, :host([preview]) .doc-meta button { display: none; }
-  :host([preview]) .sec.active > .row { background: none; box-shadow: none; }
-  :host([preview]) .sec.include > .row { background: none; box-shadow: none; }
-  :host([preview]) .title-input { cursor: default; }
+  &[preview] .grip, &[preview] .sec-problems, &[preview] .inc-info button,
+  &[preview] .problems, &[preview] .doc-meta button { display: none; }
+  &[preview] .sec.active > .row { background: none; box-shadow: none; }
+  &[preview] .sec.include > .row { background: none; box-shadow: none; }
+  &[preview] .title-input { cursor: default; }
 
   /* Sections */
   .sec { margin: 6px 0; border-radius: 6px; position: relative; }
@@ -125,4 +129,15 @@ export const editorStyles = css`
   .dialog .row-fields input { padding: 4px 6px; border: 1px solid #ced4da; border-radius: 4px; }
   .dialog .note { font-size: 12px; color: var(--muted); }
   .drop-overlay { position: fixed; inset: 0; background: rgba(13,110,253,.08); border: 3px dashed var(--accent); z-index: 300; display: grid; place-items: center; font-size: 20px; color: var(--accent); pointer-events: none; }
+}
 `
+
+// Add the styles once to the document (or shadow root) the editor lives in.
+export function installStyles(root: Document | ShadowRoot) {
+  const host = root instanceof Document ? root.head : root
+  if (host.querySelector('style[data-stroc-editor]')) return
+  const style = document.createElement('style')
+  style.dataset.strocEditor = ''
+  style.textContent = editorCss
+  host.appendChild(style)
+}
