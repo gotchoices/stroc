@@ -9,6 +9,7 @@ import { LitElement } from 'lit'
 import { parseMarkup, canonicalMarkup, escapeMarkupText, type MarkupNode } from '@stroc/core'
 
 export type RefLabel = (path: string[]) => string | undefined
+export type ParamLabel = (key: string) => string | undefined
 
 export interface ParagraphChange { key: string, value: string }
 export interface ParagraphSplit { key: string, before: string, after: string }
@@ -49,7 +50,7 @@ export function textToParagraphs(text: string): string[] {
 const TAG_OF: Record<string, 'b' | 'i' | 'u'> = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u' }
 
 // Markup to DOM nodes (display and editing share one representation).
-export function markupToDom(markup: string, label: RefLabel, doc: Document = document): DocumentFragment {
+export function markupToDom(markup: string, label: RefLabel, doc: Document = document, paramLabel: ParamLabel = () => undefined): DocumentFragment {
   const frag = doc.createDocumentFragment()
   const build = (nodes: MarkupNode[], parent: Node) => nodes.forEach(n => {
     if (n.type === 'text') parent.appendChild(doc.createTextNode(n.value))
@@ -61,6 +62,15 @@ export function markupToDom(markup: string, label: RefLabel, doc: Document = doc
       span.contentEditable = 'false'
       span.title = `Reference to ${n.path.join('/')}`
       span.textContent = text ?? `→${n.path.join('/')}`
+      parent.appendChild(span)
+    } else if (n.type === 'param') {
+      const span = doc.createElement('span')
+      const text = paramLabel(n.key)
+      span.className = text ? 'param' : 'param unresolved'
+      span.dataset.param = n.key
+      span.contentEditable = 'false'
+      span.title = text ? `Placeholder for ${text} (${n.key})` : `Undeclared parameter ${n.key}`
+      span.textContent = `⟨${text ?? n.key}⟩`
       parent.appendChild(span)
     } else {
       const el = doc.createElement(n.tag)
@@ -81,6 +91,7 @@ export function domToMarkup(root: Node): string {
       else if (child.nodeType === 1) {
         const el = child as HTMLElement
         if (el.dataset?.ref) out.push({ type: 'ref', path: el.dataset.ref.split('/'), offset: 0 })
+        else if (el.dataset?.param) out.push({ type: 'param', key: el.dataset.param, offset: 0 })
         else if (el.tagName === 'BR') out.push({ type: 'text', value: ' ' })
         else if (TAG_OF[el.tagName]) out.push({ type: 'emphasis', tag: TAG_OF[el.tagName], children: walk(el), offset: 0 })
         else {
@@ -111,6 +122,7 @@ export class StrocParagraph extends LitElement {
   declare editable: boolean
   declare refresh: number
   labelRef: RefLabel = () => undefined
+  labelParam: ParamLabel = () => undefined
 
   private box?: HTMLDivElement
   private shown?: string           // the markup currently in the DOM
@@ -177,9 +189,14 @@ export class StrocParagraph extends LitElement {
         el.textContent = text ?? `→${el.dataset.ref}`
         el.className = text ? 'ref' : 'ref unresolved'
       })
+      this.box.querySelectorAll<HTMLElement>('[data-param]').forEach(el => {
+        const text = this.labelParam(el.dataset.param!)
+        el.textContent = `⟨${text ?? el.dataset.param}⟩`
+        el.className = text ? 'param' : 'param unresolved'
+      })
       return
     }
-    this.box.replaceChildren(markupToDom(this.value ?? '', this.labelRef))
+    this.box.replaceChildren(markupToDom(this.value ?? '', this.labelRef, document, this.labelParam))
     this.shown = this.value
     this.box.classList.toggle('empty', !this.value)
   }
@@ -227,7 +244,7 @@ export class StrocParagraph extends LitElement {
         for (let i = 0; i < offset && i < node.childNodes.length; i++) count += this.atomsIn(node.childNodes[i])
         return true
       }
-      if ((node as HTMLElement).dataset?.ref) { if (node.contains(container)) return true; count += 1; return false }
+      if ((node as HTMLElement).dataset?.ref || (node as HTMLElement).dataset?.param) { if (node.contains(container)) return true; count += 1; return false }
       if (node.nodeType === 3) { count += node.nodeValue?.length ?? 0; return false }
       for (const child of Array.from(node.childNodes)) if (visit(child)) return true
       return false
@@ -238,7 +255,7 @@ export class StrocParagraph extends LitElement {
   }
 
   private atomsIn(node: Node): number {
-    if ((node as HTMLElement).dataset?.ref) return 1
+    if ((node as HTMLElement).dataset?.ref || (node as HTMLElement).dataset?.param) return 1
     if (node.nodeType === 3) return node.nodeValue?.length ?? 0
     return Array.from(node.childNodes).reduce((n, c) => n + this.atomsIn(c), 0)
   }
@@ -249,7 +266,7 @@ export class StrocParagraph extends LitElement {
     let left = atoms
     const place = (node: Node): boolean => {
       for (const child of Array.from(node.childNodes)) {
-        if ((child as HTMLElement).dataset?.ref) {
+        if ((child as HTMLElement).dataset?.ref || (child as HTMLElement).dataset?.param) {
           if (left === 0) { r.setStartBefore(child); return true }
           left -= 1
           if (left === 0) { r.setStartAfter(child); return true }
@@ -374,12 +391,15 @@ export class StrocParagraph extends LitElement {
     sel.addRange(this.rangeAt(this.savedOffset))
   }
 
-  // Insert a reference at the caret (or where the caret last was).
-  insertRef(path: string[]) {
+  // Insert a reference or a placeholder at the caret (or where the caret last was).
+  insertRef(path: string[]) { this.insertToken(`<ref:${path.join('/')}>`) }
+  insertParam(key: string) { this.insertToken(`<param:${key}>`) }
+
+  private insertToken(token: string) {
     if (!this.box) return
     if (!this.caretRange()) this.restoreSelection()
     const r = this.caretRange() ?? (() => { const x = document.createRange(); x.selectNodeContents(this.box!); x.collapse(false); return x })()
-    const frag = markupToDom(`<ref:${path.join('/')}>`, this.labelRef)
+    const frag = markupToDom(token, this.labelRef, document, this.labelParam)
     const node = frag.firstChild!
     r.deleteContents()
     const before = this.textBefore(r)

@@ -2,7 +2,7 @@
 //
 //   text    = { char | escape | token }
 //   escape  = "\<" | "\\"
-//   token   = "<b>" | "</b>" | "<i>" | "</i>" | "<u>" | "</u>" | "<ref:" path ">"
+//   token   = "<b>" | "</b>" | "<i>" | "</i>" | "<u>" | "</u>" | "<ref:" path ">" | "<param:" id ">"
 //   path    = id { "/" id }
 //
 // Markup is not HTML. Renderers walk the parsed tree and produce their own output.
@@ -18,6 +18,7 @@ export type MarkupNode =
   | { type: 'text', value: string }                                   // literal characters, escapes resolved
   | { type: 'emphasis', tag: EmphasisTag, children: MarkupNode[], offset: number }
   | { type: 'ref', path: string[], offset: number }
+  | { type: 'param', key: string, offset: number }                     // a parameter's value, shown in place
 
 export interface MarkupIssue {
   code: string
@@ -34,6 +35,7 @@ type Token =
   | { type: 'text', value: string, offset: number }
   | { type: 'open' | 'close', tag: EmphasisTag, offset: number }
   | { type: 'ref', path: string[], offset: number }
+  | { type: 'param', key: string, offset: number }
 
 const TAG_TOKENS: [string, Token['type'], EmphasisTag][] = [
   ['<b>', 'open', 'b'], ['</b>', 'close', 'b'],
@@ -85,8 +87,18 @@ function tokenize(text: string, issues: MarkupIssue[]): Token[] {
           continue
         }
         issues.push({ code: 'bad-ref', message: 'a reference must be <ref:id> or <ref:id/id/...> using valid section ids', offset: i })
+      } else if (text.startsWith('<param:', i)) {
+        const end = text.indexOf('>', i)
+        const key = end < 0 ? '' : text.slice(i + 7, end)
+        if (end >= 0 && isValidId(key)) {
+          flush()
+          tokens.push({ type: 'param', key, offset: i })
+          i = end + 1
+          continue
+        }
+        issues.push({ code: 'bad-param', message: 'a placeholder must be <param:key> using a valid parameter key', offset: i })
       } else {
-        issues.push({ code: 'bad-tag', message: 'every < must begin a markup token (<b>, </b>, <i>, </i>, <u>, </u>, <ref:...>); write \\< for a literal <', offset: i })
+        issues.push({ code: 'bad-tag', message: 'every < must begin a markup token (<b>, </b>, <i>, </i>, <u>, </u>, <ref:...>, <param:...>); write \\< for a literal <', offset: i })
       }
       if (!buf) bufStart = i
       buf += ch
@@ -114,6 +126,8 @@ export function parseMarkup(text: string): ParsedMarkup {
       current().push({ type: 'text', value: tok.value })
     } else if (tok.type === 'ref') {
       current().push({ type: 'ref', path: tok.path, offset: tok.offset })
+    } else if (tok.type === 'param') {
+      current().push({ type: 'param', key: tok.key, offset: tok.offset })
     } else if (tok.type === 'open') {
       if (stack.some(s => s.tag === tok.tag)) {
         issues.push({ code: 'nested-same', message: `<${tok.tag}> must not be nested inside another <${tok.tag}>`, offset: tok.offset })
@@ -183,7 +197,7 @@ const forbidden = (ch: string): boolean => {
     (c < 0x20 && !/\s/u.test(ch)) || (c >= 0x7f && c <= 0x9f && !/\s/u.test(ch))
 }
 
-interface Atom { ch?: string, ref?: string[], style: number }
+interface Atom { ch?: string, ref?: string[], param?: string, style: number }
 
 export function canonicalMarkup(input: string | MarkupNode[]): string {
   const nodes = typeof input === 'string' ? parseMarkup(input).nodes : input
@@ -196,6 +210,7 @@ export function canonicalMarkup(input: string | MarkupNode[]): string {
         atoms.push({ ch: /\s/u.test(ch) ? ' ' : ch, style })
       }
     } else if (n.type === 'ref') atoms.push({ ref: n.path, style })
+    else if (n.type === 'param') atoms.push({ param: n.key, style })
     else flatten(n.children, style | BIT[n.tag])
   })
   flatten(nodes, 0)
@@ -229,7 +244,7 @@ export function canonicalMarkup(input: string | MarkupNode[]): string {
     for (let k = stack.length - 1; k >= common; k--) out += `</${stack[k]}>`
     for (let k = common; k < want.length; k++) out += `<${want[k]}>`
     stack = want
-    out += a.ref ? `<ref:${a.ref.join('/')}>` : escapeMarkupText(a.ch!)
+    out += a.ref ? `<ref:${a.ref.join('/')}>` : a.param ? `<param:${a.param}>` : escapeMarkupText(a.ch!)
   }
   for (let k = stack.length - 1; k >= 0; k--) out += `</${stack[k]}>`
   return out
@@ -246,11 +261,23 @@ export function findReferences(nodes: MarkupNode[]): { path: string[], offset: n
   return refs
 }
 
-// Plain text of a paragraph with markup removed (references shown by path), for search and diff.
+// All placeholders in a paragraph, in order.
+export function findParams(nodes: MarkupNode[]): { key: string, offset: number }[] {
+  const out: { key: string, offset: number }[] = []
+  const walk = (list: MarkupNode[]) => list.forEach(n => {
+    if (n.type === 'param') out.push({ key: n.key, offset: n.offset })
+    else if (n.type === 'emphasis') walk(n.children)
+  })
+  walk(nodes)
+  return out
+}
+
+// Plain text of a paragraph with markup removed (references by path, placeholders as [key]).
 export function markupToPlainText(nodes: MarkupNode[]): string {
   return nodes.map(n =>
     n.type === 'text' ? n.value :
     n.type === 'ref' ? n.path.join('/') :
+    n.type === 'param' ? `[${n.key}]` :
     markupToPlainText(n.children)).join('')
 }
 

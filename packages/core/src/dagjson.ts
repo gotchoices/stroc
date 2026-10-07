@@ -98,7 +98,10 @@ export function fromPlain(value: unknown): { value: unknown, problems: Problem[]
       if ('/' in obj) {
         if (Object.keys(obj).length === 1 && typeof obj['/'] === 'string') {
           try { return CID.parse(obj['/']) } catch {
-            problems.push({ path: at, code: 'bad-link', message: `"${obj['/']}" is not a CID` })
+            const linkText = obj['/']
+            problems.push({ path: at, code: 'bad-link', message: /\.(ya?ml|json)$/i.test(linkText)
+              ? `"${linkText}" is a file, not a CID: run \`stroc link\` to replace it with that file's CID`
+              : `"${linkText}" is not a CID` })
             return v
           }
         }

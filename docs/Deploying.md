@@ -49,9 +49,10 @@ yarn stroc lint taleus-contracts/*.yaml
 yarn stroc cid taleus-contracts/*.yaml
 ```
 
-Included documents are linked by CID, so work bottom-up: finish the clauses, take their CIDs, put
-them in the documents that include them, repeat up to the top-level contract. (`stroc update`, which
-will do this automatically, is planned; see STATUS.)
+Included documents are linked by CID. While drafting, write includes as file links
+(`source: {/: ./Ethics.yaml}`) and run `yarn stroc link taleus-contracts/` to replace them with CIDs,
+bottom-up. After a published clause changes, update the documents that include it with its new CID
+(`stroc update`, which will do this automatically, is planned; see STATUS).
 
 ## 3. Review
 
@@ -135,8 +136,8 @@ domain hosts documents for several apps (Taleus, chat, bonum...):
 
 - **One shared set** (recommended when the domain issues all of them): one folder, one catalog.
   Mixing is harmless, since CIDs are global and each app uses only the documents it is given.
-  *Pending decision*: an optional `collections` field on catalog entries (`taleus`, `chat`), so an
-  app can list only its own, and `stroc serve` accepting one folder per collection.
+  An optional `collections` field on catalog entries (`taleus`, `chat`), so an app could list only
+  its own, was considered and deferred (2026-10-07) until a need appears.
 - **A subdomain per app** (`taleus.sereus.org`): its own folder, server and catalog, with
   `author: taleus.sereus.org`. Use this when an app is, or may become, a separate publisher.
 - Not supported: one set per path (`sereus.org/taleus/...`). It would put a URL path into the

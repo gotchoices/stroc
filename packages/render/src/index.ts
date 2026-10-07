@@ -57,6 +57,7 @@ export interface Run {
   underline?: boolean
   ref?: boolean            // a resolved cross-reference ("Section 3.1")
   unresolved?: boolean     // a reference that did not resolve (drafts only)
+  param?: 'supplied' | 'default' | 'blank'   // a placeholder: its value, or [Label] when there is none
 }
 
 export interface ParticularsRow {
@@ -125,16 +126,23 @@ export function checkData(doc: Composed, data: unknown = {}): Problem[] {
 // ---------------------------------------------------------------------------------------------
 // Layout
 
-function runs(nodes: ComposedInline[], labels: Labels, style: Omit<Run, 'text'> = {}): Run[] {
+// How placeholders are filled: from the data object, else the declared default, else [Label].
+type ParamValue = (path: string) => { text: string, kind: 'supplied' | 'default' | 'blank' }
+
+function runs(nodes: ComposedInline[], labels: Labels, value: ParamValue, style: Omit<Run, 'text'> = {}): Run[] {
   return nodes.flatMap((n): Run[] => {
     if (n.type === 'text') return [{ text: n.value, ...style }]
+    if (n.type === 'param') {
+      const v = value(n.path)
+      return [{ text: v.text, ...style, param: v.kind }]
+    }
     if (n.type === 'ref') {
       return n.target
         ? [{ text: `${labels.section} ${formatNumber(n.target)}`, ...style, ref: true }]
         : [{ text: `[${n.path.join('/')}]`, ...style, unresolved: true }]
     }
     const next = { ...style, ...(n.tag === 'b' ? { bold: true } : n.tag === 'i' ? { italic: true } : { underline: true }) }
-    return runs(n.children, labels, next)
+    return runs(n.children, labels, value, next)
   })
 }
 
@@ -154,6 +162,16 @@ export function layout(doc: Composed, input: { data?: Record<string, string>, bl
   const problems = [...doc.problems, ...dataProblems]
   if (!doc.document || (problems.length && !options.draft)) return { problems }
 
+  const declared = new Map<string, { label: string, default?: string }>()
+  for (const g of doc.parameters) for (const p of g.parameters) declared.set([...g.prefix, p.key].join('/'), p)
+  const value: ParamValue = path => {
+    const supplied = data[path]
+    if (typeof supplied === 'string' && supplied) return { text: supplied, kind: 'supplied' }
+    const p = declared.get(path)
+    if (p?.default !== undefined) return { text: p.default, kind: 'default' }
+    return { text: `[${p?.label ?? path}]`, kind: 'blank' }
+  }
+
   const blocks: LayoutBlock[] = [{ kind: 'title', text: doc.title }]
 
   if (doc.parameters.length) {
@@ -169,7 +187,7 @@ export function layout(doc: Composed, input: { data?: Record<string, string>, bl
     blocks.push({ kind: 'particulars', heading: labels.particulars, groups })
   }
 
-  if (doc.text) blocks.push({ kind: 'preamble', runs: runs(doc.text, labels) })
+  if (doc.text) blocks.push({ kind: 'preamble', runs: runs(doc.text, labels, value) })
 
   const walk = (sections: ComposedSection[]) => {
     for (const s of sections) {
@@ -178,7 +196,7 @@ export function layout(doc: Composed, input: { data?: Record<string, string>, bl
         number: formatNumber(s.number) + '.',
         depth: s.number.length,
         ...(s.title ? { title: s.title } : {}),
-        ...(s.text ? { runs: runs(s.text, labels) } : {}),
+        ...(s.text ? { runs: runs(s.text, labels, value) } : {}),
         ...(s.include ? { cid: s.include.cid.toString() } : {}),
       })
       walk(s.sections)
@@ -217,6 +235,7 @@ function runsHtml(list: Run[]): string {
     let h = esc(r.text)
     if (r.ref) h = `<span class="ref">${h}</span>`
     if (r.unresolved) h = `<span class="unresolved">${h}</span>`
+    if (r.param) h = `<span class="param ${r.param}">${h}</span>`
     if (r.underline) h = `<u>${h}</u>`
     if (r.italic) h = `<em>${h}</em>`
     if (r.bold) h = `<strong>${h}</strong>`
@@ -255,6 +274,9 @@ body { margin: 0; background: #fff; color: var(--ink); }
 .stroc .section .head + p { margin-top: 0.15em; }
 .stroc .ref { font-style: normal; }
 .stroc .unresolved { color: #b00; }
+.stroc .param { color: var(--value); border-bottom: 1px dotted var(--value); }
+.stroc .param.supplied { font-weight: bold; }
+.stroc .param.blank { color: #888; border-bottom-style: dashed; }
 .stroc .app h2 { font-size: 12pt; margin: 1.5em 0 0.5em; }
 .stroc .app table { border-collapse: collapse; margin: 0 0 1em; }
 .stroc .app td { padding: 0.1em 1em 0.1em 0; vertical-align: top; font-size: 9pt; }
@@ -385,6 +407,7 @@ function pdfRuns(list: Run[]): PdfContent[] {
     if (r.italic) t.italics = true
     if (r.underline) t.decoration = 'underline'
     if (r.unresolved) t.color = '#b00000'
+    if (r.param) { t.color = r.param === 'blank' ? '#888888' : '#0b4f8a'; if (r.param === 'supplied') t.bold = true }
     return t
   })
 }

@@ -1,7 +1,7 @@
 # Stroc Specification
 
 **Status**: Work in Progress  
-**Version**: 0.16 (Draft)
+**Version**: 0.17 (Draft)
 
 The document format is not yet frozen. Until it is, documents carry `stroc: "0.1"`; the first
 frozen version will be `"1.0"`, and tools for it will reject `"0.1"` documents.
@@ -119,7 +119,8 @@ parameters:
   order of presentation.
 - Parameters have no types. Values are plain text, presented as given; formatting dates or
   amounts is the supplier's job.
-- The document's text should refer to these values by role ("the Stock Holder"), not repeat them.
+- The text either shows a value in place with a placeholder (`<param:key>`, see Placeholders) or
+  refers to it by role ("the Stock Holder named in the Particulars").
 
 #### Supplying values
 
@@ -146,12 +147,28 @@ terms/limit: '2400'          # "limit" declared by the document included as "ter
 When rendered, the parameters of the whole composed document are presented together in one table
 near the top, grouped by the document that declares them (see [Rendering.md](Rendering.md)).
 
-#### Future: inline placeholders
+#### Placeholders
 
-A later `stroc` version may add a placeholder token, for example `<param:stock-name>`, that
-renders a parameter's value inside a sentence, visibly marked as supplied data. It is not part of
-this version. If adopted: the token is hashed and the value is not; every placeholder must name a
-declared parameter; and there is no conditional text.
+A paragraph can show a parameter's value inside a sentence with a placeholder token:
+
+```yaml
+parameters:
+  - key: weekly-rent
+    label: Weekly Rent
+text: >-
+  The Renter shall pay the Owner a weekly rent of <param:weekly-rent> in advance.
+```
+
+- `<param:key>` names a parameter **declared by the same document**; an undeclared key is an error.
+  A clause therefore stays self-contained: when it is included, its values are supplied under the
+  include's path (`terms/weekly-rent`), as for any parameter.
+- The token is hashed as written; the value is not. One template has one CID however it is filled.
+- When rendered, the value replaces the token and is visibly marked as supplied data, whether it
+  came from the data object or the declared default. Where there is no value (a blank template), the
+  parameter's label is shown in brackets: `[Weekly Rent]`.
+- Values are plain text, inserted as written; no markup, no formatting by the renderer.
+- There is no conditional text: a placeholder only shows a value, never selects wording.
+- A value that changes during the life of an agreement should not be a placeholder (see above).
 
 ### Removed Fields (from Legacy)
 
@@ -553,7 +570,7 @@ renderers must parse it and generate their output, never pass text through as HT
 text    = { char | escape | token }
 escape  = "\<" | "\\"                       literal "<" and literal "\"
 token   = "<b>" | "</b>" | "<i>" | "</i>" | "<u>" | "</u>"
-        | "<ref:" path ">"
+        | "<ref:" path ">" | "<param:" id ">"
 path    = id { "/" id }                       ids as in Section Ids
 char    = any character allowed in text, except "<" and "\"
 ```
@@ -564,6 +581,7 @@ char    = any character allowed in text, except "<" and "\"
 | `<i>...</i>` | Italic emphasis |
 | `<u>...</u>` | Underline emphasis |
 | `<ref:path>` | Cross-reference (see [Cross-References](#cross-references)) |
+| `<param:key>` | Placeholder for a parameter's value (see [Placeholders](#placeholders)) |
 
 Rules:
 - **Every `<` begins a token.** A `<` that does not begin one of the tokens above is an error; a
@@ -574,7 +592,7 @@ Rules:
   its colon. (`<b class="x">` is simply not a token, so it is an error.)
 - Markup is allowed only in `text`. Titles and other fields are plain text, where `<` and `\` are
   ordinary characters.
-- Further tokens (for example `<param:…>` or `<nbsp>`) can be added only by a new `stroc` version.
+- Further tokens (for example `<nbsp>`) can be added only by a new `stroc` version.
 
 ### Nesting and One Spelling
 
@@ -588,7 +606,7 @@ Each piece of formatted text has exactly one valid spelling, so it has exactly o
   other, which left two spellings for the same formatting.)
 - Two identical emphasis elements must not be adjacent (`<b>a</b><b>b</b>` must be `<b>ab</b>`).
 - Emphasized content must not begin or end with a space (`<b>a </b>b` must be `<b>a</b> b`).
-- `<ref:…>` may appear inside emphasis.
+- `<ref:…>` and `<param:…>` may appear inside emphasis.
 - The linter reports each violation and offers the single correct spelling.
 - In YAML, write paragraphs as plain, single-quoted or folded (`>-`) scalars. Inside double-quoted
   YAML scalars, backslash is YAML's own escape and `\<` is a YAML error.
@@ -745,3 +763,4 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 | 0.14 | 2026-10-06 | `language` is a BCP 47 tag; documents carry `stroc: "0.1"` until the format is frozen; editor behavior moved to Editor.md |
 | 0.15 | 2026-10-07 | `author` is a verifiable domain or a plain name; published sets use the IPFS trustless-gateway path `/ipfs/<cid>`; catalog at `/.well-known/stroc/catalog.json` with `domain` and per-entry `role` |
 | 0.16 | 2026-10-07 | Emphasis order b, i, u applies at every depth, so each formatting has exactly one spelling |
+| 0.17 | 2026-10-07 | Inline placeholders `<param:key>` for a document's own parameters; collections for catalogs deferred |

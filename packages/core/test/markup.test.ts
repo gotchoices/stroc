@@ -117,3 +117,19 @@ describe('canonicalMarkup', () => {
     expect(canonicalMarkup(t)).toBe(t)
   })
 })
+
+describe('placeholders', () => {
+  it('parses <param:key>', () => {
+    const { nodes, issues } = parseMarkup('Rent of <b><param:weekly-rent></b> weekly.')
+    expect(issues).toEqual([])
+    expect(markupToPlainText(nodes)).toBe('Rent of [weekly-rent] weekly.')
+  })
+  it('rejects malformed placeholders', () => {
+    expect(codes('<param:>')).toEqual(['bad-param'])
+    expect(codes('<param:Weekly Rent>')).toEqual(['bad-param'])
+    expect(codes('<param:rent')).toEqual(['bad-param'])
+  })
+  it('keeps placeholders in canonical markup', () => {
+    expect(canonicalMarkup('<i>pay <param:rent> </i>now')).toBe('<i>pay <param:rent></i> now')
+  })
+})

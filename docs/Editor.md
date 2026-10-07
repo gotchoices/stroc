@@ -92,6 +92,13 @@ filter. Picking a section of this document that has no id gives it one from its 
 always show the target's current number ("Section 3.1"); one that does not resolve is underlined in
 red.
 
+## Placeholders
+
+**Parameter…** (toolbar or Insert menu) inserts a placeholder at the caret: pick one of the
+document's parameters, or declare a new one by its label (the key is derived from it). Placeholders
+show as chips with the parameter's label (`⟨Weekly Rent⟩`); one naming an undeclared parameter is
+red. Changing a parameter's key under Properties updates its placeholders.
+
 ## Included documents
 
 Insert → Included Document lists the documents in the sources' catalogs (or takes a CID) and asks

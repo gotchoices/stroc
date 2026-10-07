@@ -61,6 +61,8 @@ stroc-editor {
   .para.empty::before { content: attr(data-placeholder); color: #adb5bd; }
   .para .ref { color: var(--accent); cursor: default; }
   .para .ref.unresolved, .ref.unresolved { color: var(--bad); text-decoration: underline wavy; }
+  .para .param, .composed .param, .inc-body .param { color: #0b4f8a; background: #e7f0fa; border-radius: 3px; padding: 0 3px; font-size: 0.95em; white-space: nowrap; }
+  .para .param.unresolved { color: var(--bad); background: var(--bad-bg); }
 
   /* Preview: the document as readers see it */
   &[preview] .sec-problems, &[preview] .problems, &[preview] .doc-meta button,

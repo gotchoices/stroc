@@ -280,10 +280,10 @@ export function mergeWithPrevious(doc: EditDoc, key: string): { into: EditSectio
   return { into: prev, at }
 }
 
-// Length in atoms: characters of text, plus one per reference (as the paragraph editor counts).
+// Length in atoms: characters of text, plus one per reference or placeholder (as the editor counts).
 export function plainLength(markup: string): number {
   const count = (nodes: MarkupNode[]): number => nodes.reduce((n, x) =>
-    n + (x.type === 'text' ? x.value.length : x.type === 'ref' ? 1 : count(x.children)), 0)
+    n + (x.type === 'text' ? x.value.length : x.type === 'ref' || x.type === 'param' ? 1 : count(x.children)), 0)
   return count(parseMarkup(markup).nodes)
 }
 
@@ -338,4 +338,19 @@ export function includeCids(doc: EditDoc): string[] {
   const walk = (list: EditSection[]) => list.forEach(s => { if (s.source) out.push(s.source); else walk(s.sections) })
   walk(doc.sections)
   return out
+}
+
+// Rename a parameter key and update every placeholder for it in the document.
+export function renameParam(doc: EditDoc, oldKey: string, newKey: string): number {
+  let count = 0
+  const fix = (text: string | undefined) => text?.replace(/<param:([a-z0-9-]+)>/g, (m, key: string) => {
+    if (key !== oldKey) return m
+    count++
+    return `<param:${newKey}>`
+  })
+  doc.text = fix(doc.text)
+  const walk = (list: EditSection[]) => list.forEach(s => { s.text = fix(s.text); walk(s.sections) })
+  walk(doc.sections)
+  for (const p of doc.parameters) if (p.key === oldKey) p.key = newKey
+  return count
 }

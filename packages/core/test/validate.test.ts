@@ -184,3 +184,14 @@ describe('parameters', () => {
     ])
   })
 })
+
+describe('placeholders', () => {
+  it('requires each placeholder to name a parameter declared by the same document', () => {
+    const doc = { ...base, parameters: [{ key: 'rent', label: 'Rent' }], text: 'Pay <param:rent> or <param:fee>.' }
+    expect(at(doc)).toEqual(['text:undeclared-param'])
+  })
+  it('accepts declared placeholders anywhere in the document', () => {
+    const doc = { ...base, parameters: [{ key: 'rent', label: 'Rent' }], sections: [{ text: 'Pay <b><param:rent></b>.' }] }
+    expect(codes(doc)).toEqual([])
+  })
+})

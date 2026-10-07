@@ -100,7 +100,9 @@ export function lintYaml(text: string): YamlLintResult {
   if (parsed.value === undefined) return { valid: false, problems: parsed.problems, warnings: [] }
   const validation = validateDocument(parsed.value)
   const place = (prob: Problem): LocatedProblem => ({ ...prob, ...locate(p, offsetOfPath(p, prob.path)) })
-  const problems = [...parsed.problems, ...validation.problems.map(place)]
+  // A malformed link is reported once, by the reader, not again by validation.
+  const seen = new Set(parsed.problems.map(p => p.path.join('.')))
+  const problems = [...parsed.problems, ...validation.problems.filter(p => !(p.code === 'bad-link' && seen.has(p.path.join('.')))).map(place)]
   return {
     valid: problems.length === 0,
     value: parsed.value,
@@ -259,3 +261,53 @@ export function fixYaml(text: string): FixResult {
   return { text: out, fixed: edits.length }
 }
 
+// ---------------------------------------------------------------------------------------------
+// File links (drafts)
+//
+// While drafting a set of documents, an include may name a sibling file instead of a CID:
+// `source: {/: ./clause.yaml}`. Such a file is not yet a valid document. `stroc link` replaces each
+// file link with the CID of that file, bottom-up.
+
+export interface FileLink {
+  target: string            // the path as written
+  start: number             // source offsets of the path value
+  end: number
+  line: number
+}
+
+const FILE_LINK = /\.(ya?ml|json)$/i
+
+export function isFileLink(value: string): boolean {
+  return FILE_LINK.test(value)
+}
+
+export function findFileLinks(text: string): FileLink[] {
+  const p = parse(text)
+  const links: FileLink[] = []
+  visit(p.ydoc, {
+    Pair(_k, pair) {
+      if (!isScalar(pair.key) || pair.key.value !== '/' || !isScalar(pair.value)) return
+      const value = pair.value.value
+      if (typeof value === 'string' && isFileLink(value) && pair.value.range) {
+        links.push({ target: value, start: pair.value.range[0], end: pair.value.range[1], line: p.lc.linePos(pair.value.range[0]).line })
+      }
+    },
+  })
+  return links
+}
+
+// Replace file links with CIDs; `resolve` returns the CID for a link's target, or undefined.
+export function replaceFileLinks(text: string, resolve: (target: string) => string | undefined): { text: string, replaced: number, unresolved: FileLink[] } {
+  const links = findFileLinks(text)
+  const unresolved: FileLink[] = []
+  let out = text
+  let replaced = 0
+  for (const link of [...links].sort((a, b) => b.start - a.start)) {
+    const cid = resolve(link.target)
+    if (!cid) { unresolved.unshift(link); continue }
+    const trailing = /\s*$/.exec(text.slice(link.start, link.end))![0]
+    out = out.slice(0, link.start) + cid + trailing + out.slice(link.end)
+    replaced++
+  }
+  return { text: out, replaced, unresolved }
+}

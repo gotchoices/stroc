@@ -175,6 +175,20 @@ test.describe('the editor', () => {
     expect(pdf).toMatch(/NotoSerif/)
   })
 
+  test('a placeholder can be declared and inserted at the caret', async ({ page }) => {
+    await page.goto('/editor/')
+    await seed(page, [{ key: 'r', title: 'Rent', text: 'The Renter shall pay in advance.' }])
+    await caret(page, 'r', 'start')
+    await page.evaluate(() => (document.querySelector('stroc-paragraph[data-key="r"]') as unknown as { focusAt(n: number): void }).focusAt(21))   // "The Renter shall pay |in advance."
+    await page.getByTestId('insert-parameter').click()
+    await expect(page.getByTestId('dialog-parameter')).toBeVisible()
+    await page.getByTestId('new-param-label').fill('Weekly Rent')
+    await page.getByTestId('new-param-add').click()
+    await expect.poll(async () => (await doc(page)).sections[0].text).toBe('The Renter shall pay <param:weekly-rent> in advance.')
+    await expect(para(page, 'r')).toContainText('⟨Weekly Rent⟩')
+    await expect(page.getByTestId('valid')).toBeVisible()
+  })
+
   test('Preview hides the editing controls', async ({ page }) => {
     await page.goto('/editor/')
     await seed(page, [{ key: 'a', title: 'A', text: 'Alpha.' }])

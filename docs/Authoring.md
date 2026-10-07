@@ -22,7 +22,7 @@ parameters:                   # optional: values filled in when the agreement is
     label: Term (years)
     default: '2'              # a parameter with a default is optional
 text: >-
-  This Agreement is between the First Party and the Second Party named in the Particulars.
+  This Agreement is between <param:party-a> (the "First Party") and <param:party-b> (the "Second Party").
   It protects <b>Confidential Information</b> as defined in <ref:definitions>.
 sections:
   - id: definitions
@@ -43,7 +43,7 @@ sections:
   - id: term
     title: Term
     text: >-
-      This Agreement lasts for the Term stated in the Particulars.
+      This Agreement lasts for <param:term-years> years.
   - id: boilerplate
     source: {/: baguqeera...}   # include another published document by its CID
 ```
@@ -89,6 +89,8 @@ sections:
   - `<b>…</b>` bold, `<i>…</i>` italic, `<u>…</u>` underline. Nest them in the order b, i, u
     (`<b><i>x</i></b>`, never `<i><b>x</b></i>`). No space just inside a tag (`<b>x</b> y`, not
     `<b>x </b>y`). Never two of the same tag side by side (`<b>ab</b>`, not `<b>a</b><b>b</b>`).
+  - `<param:key>` shows the value of one of this document's parameters (a placeholder). It must name
+    a parameter declared in this document's `parameters`.
   - `<ref:id>` refers to a section of this document; `<ref:include-id/section-id>` to a section of an
     included document. It renders as "Section 3.1". A reference can only point into this document
     or what it includes, never to a document that includes this one.
@@ -97,8 +99,10 @@ sections:
 
 **Parameters**
 - Each has `key` (same rules as an id), `label`, and optionally `default`.
-- Refer to them in the text by role ("the First Party named in the Particulars"), never by
-  inventing placeholders: values are not substituted into the text.
+- Show a value in the text with a placeholder, `<param:key>`, or refer to it by role ("the First
+  Party named in the Particulars"). The value is not part of the document: the same document (one
+  CID) serves every agreement made from it, and the renderer fills the value in, marked as supplied.
+- Do not invent other placeholder syntaxes (`{{name}}`, `[NAME]`, `____`): they are plain text.
 - **The Particulars** is a table the renderer generates near the top of the document, listing each
   parameter's label and value. Do not write it yourself.
 - Every parameter is listed there whether or not the text mentions it; mentioning it by role is
@@ -128,14 +132,10 @@ sections:
    fonts, colors, sizes and layout. Words in capitals for emphasis ("shall NOT") stay as written.
 7. **Defined terms**: keep them as written (quoted, capitalized, bold if the original bolds them).
 8. **Blanks** ("________"): every blank becomes a parameter, labelled with the defined term or a
-   short description. The text then refers to it:
-   - a party with a defined term: `______ (the "Owner")` becomes
-     `the person named as Owner in the Particulars (the "Owner")`;
-   - an amount or date: `a weekly rent of $______` becomes
-     `the weekly rent stated in the Particulars`.
-
-   This is a wording change that Stroc currently requires, because values are never substituted
-   into the text. Keep it as close to the original as you can.
+   short description, and a placeholder where the blank was. The wording stays as it was:
+   - `______________ (the "Owner")` becomes `<param:owner> (the "Owner")`;
+   - `a weekly rent of $______` becomes `a weekly rent of $<param:weekly-rent>` (or put the currency
+     in the value and write `a weekly rent of <param:weekly-rent>`).
 9. **Things Stroc cannot express** (tables, images, footnotes, attached schedules): leave the
    reference to them in the text ("the attached schedule") and report them to the author.
 
@@ -154,14 +154,22 @@ clause, a definitions schedule) or should be reviewable on its own.
   parties"). That is allowed, but makes it reusable only in agreements that define those terms the
   same way; prefer neutral wording in clauses meant for wide reuse.
 
-**CIDs**: a `source` needs the included file's CID, which exists only once that file is final.
-Write clause files first, run `yarn stroc cid clauses/*.yaml`, and put each CID into the including
-document; then lint. When a clause changes, its CID changes and every document that includes it must
-be updated. (A tool to do this linking automatically is planned; see STATUS.)
+**CIDs**: a published `source` is the included file's CID. While drafting, write the file instead,
+`source: {/: ./general-provisions.yaml}`, and run
+
+```
+yarn stroc link drafts/
+```
+
+It replaces every such file link with that file's CID, working bottom-up through the files (a
+clause's own links first), and touches nothing else in the files. Until then, `stroc lint` reports
+each file link. When a clause changes later, its CID changes and the documents that include it must
+be updated with its new CID.
 
 ## Checking
 
 ```
+yarn stroc link docs/                # turn include file links into CIDs (drafts)
 yarn stroc lint docs/*.yaml          # report problems with line numbers
 yarn stroc lint --fix docs/*.yaml    # fix spacing, markup spelling, language case, unquoted values
 yarn stroc cid docs/*.yaml           # print each document's CID
@@ -176,6 +184,6 @@ it to:
   rule above;
 - keep the wording exactly, except for converting cross-references to `<ref:…>`;
 - give ids to every referenced section and every include;
-- leave `source: {/: TODO-<file-name>}` for includes it cannot compute, and list them, so the author
-  can fill in CIDs (`stroc lint` will flag each one until then);
+- write each include as a link to the clause's file, `source: {/: ./<file-name>.yaml}`; the author
+  runs `stroc link` to turn these into CIDs;
 - report anything in the source it could not express (tables, images, footnotes).

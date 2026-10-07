@@ -7,7 +7,7 @@ import type { Problem } from './types.js'
 import { checkText, findEntityLike } from './text.js'
 import { isValidId, MAX_ID_LENGTH, looksLikeDomain } from './ids.js'
 import { canonicalLanguageTag, isCanonicalLanguageTag } from './language.js'
-import { parseMarkup, findReferences } from './markup.js'
+import { parseMarkup, findReferences, findParams } from './markup.js'
 
 export const SUPPORTED_VERSIONS = ['0.1'] as const
 
@@ -37,6 +37,8 @@ interface Ctx {
   warnings: Problem[]
   ids: Map<string, { include: boolean, at: Path }>
   refs: { path: string[], at: Path, offset: number }[]
+  params: { key: string, at: Path, offset: number }[]
+  declared: Set<string>
 }
 
 function isObject(v: unknown): v is Record<string, unknown> {
@@ -77,6 +79,7 @@ function checkParagraph(ctx: Ctx, value: unknown, at: Path) {
   const { nodes, issues } = parseMarkup(text)
   for (const issue of issues) problem(ctx, at, issue.code, issue.message, issue.offset)
   for (const ref of findReferences(nodes)) ctx.refs.push({ path: ref.path, at, offset: ref.offset })
+  for (const p of findParams(nodes)) ctx.params.push({ key: p.key, at, offset: p.offset })
   for (const offset of findEntityLike(text)) {
     ctx.warnings.push({ path: at, code: 'entity-like', message: 'looks like an HTML entity; Stroc text is literal, so it will appear exactly as written', offset })
   }
@@ -217,6 +220,7 @@ function checkParameters(ctx: Ctx, value: unknown) {
         if (!isValidId(key)) problem(ctx, [...at, 'key'], 'bad-id', `"${key}" is not a valid key: same rules as a section id`)
         else if (keys.has(key)) problem(ctx, [...at, 'key'], 'duplicate-key', `parameter key "${key}" is declared more than once`)
         keys.add(key)
+        ctx.declared.add(key)
       }
     }
     if (param.label === undefined) problem(ctx, [...at, 'label'], 'missing', 'a parameter must have a label')
@@ -244,7 +248,7 @@ function checkReferences(ctx: Ctx): ExternalReference[] {
 
 // Validate a document in the data model (links as CID objects, e.g. from fromPlain or decodeDocument).
 export function validateDocument(doc: unknown): ValidationResult {
-  const ctx: Ctx = { problems: [], warnings: [], ids: new Map(), refs: [] }
+  const ctx: Ctx = { problems: [], warnings: [], ids: new Map(), refs: [], params: [], declared: new Set() }
   if (!isObject(doc)) {
     problem(ctx, [], 'not-object', `a document must be an object, not ${describe(doc)}`)
     return { valid: false, problems: ctx.problems, warnings: [], external: [] }
@@ -266,5 +270,10 @@ export function validateDocument(doc: unknown): ValidationResult {
   if (doc.replaces !== undefined) checkReplaces(ctx, doc.replaces)
   if (doc.parameters !== undefined) checkParameters(ctx, doc.parameters)
   const external = checkReferences(ctx)
+  for (const p of ctx.params) {
+    if (!ctx.declared.has(p.key)) {
+      problem(ctx, p.at, 'undeclared-param', `<param:${p.key}>: no parameter "${p.key}" is declared in this document's parameters`, p.offset)
+    }
+  }
   return { valid: ctx.problems.length === 0, problems: ctx.problems, warnings: ctx.warnings, external }
 }

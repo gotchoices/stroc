@@ -1,0 +1,17 @@
+{
+  "stroc": "0.1",
+  "language": "en",
+  "title": "Equipment Rental Terms",
+  "author": "example.org",
+  "parameters": [
+    { "key": "owner", "label": "Owner" },
+    { "key": "renter", "label": "Renter" },
+    { "key": "weekly-rent", "label": "Weekly Rent" },
+    { "key": "deposit", "label": "Security Deposit", "default": "$500" }
+  ],
+  "text": "This Agreement is between <param:owner> (the \"Owner\") and <param:renter> (the \"Renter\").",
+  "sections": [
+    { "id": "rent", "title": "Rent", "text": "The Renter shall pay a weekly rent of <b><param:weekly-rent></b> in advance." },
+    { "id": "deposit", "title": "Deposit", "text": "The Renter shall pay a security deposit of <param:deposit>, returned under <ref:rent>." }
+  ]
+}

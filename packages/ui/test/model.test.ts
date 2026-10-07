@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { fromPlain as coreFromPlain, documentCid } from '@stroc/core'
 import {
   fromPlain, toPlain, newDoc, newSection, locate, allSections, sectionAtPath, moveUp, moveDown, indent,
-  outdent, remove, place, splitParagraph, mergeWithPrevious, uniqueId, renameId, replaceInclude, includeCids,
+  outdent, remove, place, splitParagraph, mergeWithPrevious, uniqueId, renameId, renameParam, replaceInclude, includeCids, plainLength,
   type EditDoc,
 } from '../src/model.js'
 
@@ -119,5 +119,19 @@ describe('ids', () => {
     expect(doc.sections[2].id).toBe('clause')
     expect(renameId(doc, 'b', 'bee')).toBe(1)
     expect(doc.text).toBe('See <ref:bee> and <ref:clause/cure>.')
+  })
+})
+
+describe('parameters', () => {
+  it('renames a key and every placeholder for it', () => {
+    const doc = fromPlain({ stroc: '0.1', language: 'en', title: 'T', parameters: [{ key: 'rent', label: 'Rent' }],
+      text: 'Pay <param:rent>.', sections: [{ text: 'Again <b><param:rent></b>, not <param:other>.' }] })
+    expect(renameParam(doc, 'rent', 'weekly-rent')).toBe(2)
+    expect(doc.text).toBe('Pay <param:weekly-rent>.')
+    expect(doc.sections[0].text).toBe('Again <b><param:weekly-rent></b>, not <param:other>.')
+    expect(doc.parameters[0].key).toBe('weekly-rent')
+  })
+  it('counts a placeholder as one position', () => {
+    expect(plainLength('ab <param:x> c')).toBe(6)
   })
 })

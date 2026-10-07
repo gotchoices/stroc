@@ -95,6 +95,7 @@ export type ComposedInline =
   | { type: 'text', value: string }
   | { type: 'emphasis', tag: 'b' | 'i' | 'u', children: ComposedInline[] }
   | { type: 'ref', path: string[], target?: number[] }
+  | { type: 'param', path: string }      // full parameter path, e.g. "terms/limit"
 
 export interface ComposedSection {
   number: number[]               // e.g. [3, 1] for section 3.1
@@ -167,10 +168,11 @@ export async function compose(root: CID | string, resolver: Resolver): Promise<C
     return v.document
   }
 
-  const convertText = (text: string, scope: Scope, at: string): ComposedInline[] => {
+  const convertText = (text: string, scope: Scope, at: string, prefix: string[]): ComposedInline[] => {
     const convert = (nodes: MarkupNode[]): ComposedInline[] => nodes.map(n =>
       n.type === 'text' ? { type: 'text', value: n.value } :
       n.type === 'ref' ? { type: 'ref', path: n.path } :
+      n.type === 'param' ? { type: 'param', path: [...prefix, n.key].join('/') } :
       { type: 'emphasis', tag: n.tag, children: convert(n.children) })
     const nodes = convert(parseMarkup(text).nodes)
     pending.push({ nodes, scope, at })
@@ -202,13 +204,13 @@ export async function compose(root: CID | string, resolver: Resolver): Promise<C
         placeholder.title = doc.title
         placeholder.include = { cid: sec.source, document: doc }
         if (doc.parameters) parameters.push({ section: { number, title: doc.title }, prefix: innerPrefix, parameters: doc.parameters })
-        if (doc.text) placeholder.text = convertText(doc.text, inner, `${at} > ${sec.id}`)
+        if (doc.text) placeholder.text = convertText(doc.text, inner, `${at} > ${sec.id}`, innerPrefix)
         placeholder.sections = await composeSections(doc.sections, number, inner, innerPrefix, depth + 1, `${at} > ${sec.id}`)
       } else {
         const section: ComposedSection = { number, sections: [] }
         if (sec.id) { section.id = sec.id; scope.ids.set(sec.id, section) }
         if (sec.title) section.title = sec.title
-        if (sec.text) section.text = convertText(sec.text, scope, at)
+        if (sec.text) section.text = convertText(sec.text, scope, at, prefix)
         section.sections = await composeSections(sec.sections, number, scope, prefix, depth, at)
         out.push(section)
       }
@@ -222,7 +224,7 @@ export async function compose(root: CID | string, resolver: Resolver): Promise<C
   }
   const rootScope: Scope = { ids: new Map(), includes: new Map() }
   if (document.parameters) parameters.unshift({ prefix: [], parameters: document.parameters })
-  const text = document.text ? convertText(document.text, rootScope, 'root') : undefined
+  const text = document.text ? convertText(document.text, rootScope, 'root', []) : undefined
   const sections = await composeSections(document.sections, [], rootScope, [], 0, 'root')
   // Root parameters first, then included documents' in document order.
   parameters.sort((a, b) => compareNumbers(a.section?.number ?? [], b.section?.number ?? []))

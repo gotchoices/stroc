@@ -118,6 +118,8 @@ As in [Specification: Composition](Specification.md#composition):
 - `<b>`, `<i>`, `<u>` render as bold, italic and underline.
 - `<ref:path>` renders as the target's number in the composed document, e.g. "Section 3.1", or
   "Section 3" for a whole included document. The word is a localizable label.
+- `<param:key>` renders the parameter's value in place (supplied, else the default), marked as
+  supplied data; in a template with no value it renders as `[Label]`.
 - Escapes (`\<`, `\\`) render as the literal characters.
 
 ### Particulars

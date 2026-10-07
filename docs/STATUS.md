@@ -136,19 +136,11 @@ All settled 2026-10-06; details under Decisions above, and in the spec and
 
 ## Other open questions
 
-- [ ] **Several apps on one domain** ([Deploying.md](Deploying.md)). Recommended: one shared set per
-  domain with an optional `collections` field on catalog entries and `stroc serve` serving one
-  folder per collection; a subdomain per app when it is a separate publisher. Decide before
-  publishing the Taleus set on sereus.org.
-- [ ] **`stroc link`** for modularizing: let drafts write `source: {/: ./clause.yaml}` (invalid, so
-  lint flags it) and have the tool replace each with the file's CID, bottom-up. Makes AI-assisted
-  splitting of a document into clauses a one-command step. Overlaps `stroc update`.
 
-- [ ] **Inline placeholders, revisited.** An AI test of [Authoring.md](Authoring.md) (2026-10-07)
-  showed the cost of deferring them: a blank amount or date ("a weekly rent of $______") cannot keep
-  its wording and becomes "the weekly rent stated in the Particulars". `<param:weekly-rent>` would
-  render the value in place. Decide whether to add it to the format (a new token and `stroc`
-  version, as described under Future in the spec).
+- [x] **Inline placeholders** (decided 2026-10-07, spec 0.17): `<param:key>` for the document's own
+  parameters, prompted by the AI authoring test, where blanks could not keep their wording.
+- [x] **Collections for multi-app domains**: deferred (2026-10-07) until a need appears.
+- [x] **`stroc link`**: approved (2026-10-07).
 
 - [x] **Trim [Sereus.md](Sereus.md).** Done 2026-10-06: now describes how Stroc serves Sereus apps
   (the environment, division of responsibility, distributing documents, packaging, guidance for
@@ -253,6 +245,9 @@ Library and composition
 - [ ] `replaces` in types and validation (list of CIDv1 DAG-JSON links, no duplicates)
 - [ ] CLI package `@stroc/cli`, independent of the editor (Q3). Replaces strdoc's `hash` and `refcheck`:
   - [x] `stroc lint [files]`: the shared lint rules, with `--fix`
+  - [x] `stroc link <folder|files>`: drafts may write includes as file links
+        (`source: {/: ./clause.yaml}`); the command replaces them with CIDs bottom-up, editing only
+        those values; cycles and missing files reported; lint points to it
   - [ ] `stroc status [folder]`: each file's CID and `replaces` chain; every `source` pointing at a
         superseded version, naming the newer file; `source` CIDs the tool has never seen, by file and line
   - [ ] `stroc update [files] [--all]`: update chosen sources, add `replaces` to each document that
@@ -362,6 +357,10 @@ Editor
 
 - [x] `checkData`: missing required values, unknown keys, non-string values; paths across includes
 - [x] Particulars table in `layout`: hoisted, grouped by declaring document, values styled distinctly
+- [x] Placeholders `<param:key>` (spec 0.17): core grammar and validation (undeclared key is an
+      error), canonical markup, golden vector, composition by path, rendered in place in HTML and PDF
+      (supplied, default, or `[Label]` when blank), editor chips with Insert → Parameter (declare and
+      insert), key rename updates placeholders
 - [x] App blocks (`heading`, `paragraph`, `table`, `qr`) placed after the document; QR drawn by
       the renderer; closing root-CID QR option
 - [ ] `stroc publish`: write what `stroc serve` would serve, as static files (`ipfs/<cid>`, CARs,

@@ -176,3 +176,34 @@ describe('the sample Tally Contract', () => {
     expect(outline).toMatchSnapshot()
   })
 })
+
+describe('placeholders', () => {
+  async function template() {
+    const store = new MemoryStore()
+    return compose(await store.putDocument(fixture('template')), store)
+  }
+  const runsOf = (l: { blocks: LayoutBlock[] }) => l.blocks.flatMap(b => b.kind === 'preamble' || (b.kind === 'section' && b.runs) ? (b as { runs: { text: string, param?: string, bold?: boolean }[] }).runs : [])
+
+  it('shows supplied values and defaults in place, marked', async () => {
+    const l = layout(await template(), { data: { owner: 'Acme Rentals', renter: 'Jane Doe', 'weekly-rent': '$120' } }).layout!
+    const params = runsOf(l).filter(r => r.param)
+    expect(params).toEqual([
+      { text: 'Acme Rentals', param: 'supplied' },
+      { text: 'Jane Doe', param: 'supplied' },
+      { text: '$120', param: 'supplied', bold: true },
+      { text: '$500', param: 'default' },
+    ])
+    expect(toHtml(l)).toContain('<strong><span class="param supplied">$120</span></strong>')
+  })
+  it('shows [Label] where a template has no value', async () => {
+    const l = layout(await template(), { options: { template: true } }).layout!
+    expect(runsOf(l).filter(r => r.param).map(r => r.text)).toEqual(['[Owner]', '[Renter]', '[Weekly Rent]', '$500'])
+  })
+  it('fills a placeholder in an included clause by its path', async () => {
+    const store = new MemoryStore()
+    const clause = await store.putDocument(fixture('template'))
+    const root = await store.putDocument({ stroc: '0.1', language: 'en', title: 'Master', sections: [{ id: 'rental', source: clause }] })
+    const l = layout(await compose(root, store), { data: { 'rental/owner': 'A', 'rental/renter': 'B', 'rental/weekly-rent': 'C' } }).layout!
+    expect(runsOf(l).filter(r => r.param).map(r => r.text)).toEqual(['A', 'B', 'C', '$500'])
+  })
+})

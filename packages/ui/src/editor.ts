@@ -6,6 +6,7 @@
 
 import { LitElement, html, nothing, type TemplateResult } from 'lit'
 import { CID } from 'multiformats/cid'
+import { suggestId } from '@stroc/core'
 import {
   fromPlain as coreFromPlain, toPlain as coreToPlain, validateDocument, documentCid, verifyDocument, canonicalMarkup,
   type ValidationResult,
@@ -19,7 +20,7 @@ import * as M from './model.js'
 import { loadInclude, numberWithin, joinNumber, type IncludeInfo } from './includes.js'
 import { loadSources, saveSources, normalizeSource, SourcesResolver, sourceCatalog, forgetCatalogs } from './sources.js'
 
-type Dialog = 'sources' | 'open' | 'include' | 'properties' | 'reference' | undefined
+type Dialog = 'sources' | 'open' | 'include' | 'properties' | 'reference' | 'parameter' | undefined
 type Format = 'yaml' | 'json'
 
 interface FileHandle {
@@ -136,7 +137,9 @@ export class StrocEditor extends LitElement {
       const para = this.renderRoot.querySelector<StrocParagraph>(`stroc-paragraph[data-key="${key}"]`)
       if (para) {
         this.pendingFocus = undefined
-        requestAnimationFrame(() => para.focusAt(where))
+        // As soon as the paragraph has rendered (a microtask, before the next key event), so text
+        // typed right after Enter lands in the new paragraph.
+        void para.updateComplete.then(() => para.focusAt(where))
       }
     }
   }
@@ -288,6 +291,12 @@ export class StrocEditor extends LitElement {
     const info = first.section.source ? this.includes.get(first.section.source) : undefined
     const within = info?.composed ? numberWithin(info.composed, path.slice(1)) : undefined
     return within ? `Section ${joinNumber(first.number, within)}` : undefined
+  }
+
+  // The label a placeholder shows, or undefined if the parameter is not declared.
+  private paramLabel = (key: string): string | undefined => {
+    const p = this.doc.parameters.find(x => x.key === key)
+    return p ? (p.label || p.key) : undefined
   }
 
   // -------------------------------------------------------------------------------------------
@@ -633,6 +642,20 @@ export class StrocEditor extends LitElement {
     this.dialog = 'reference'
   }
 
+  private showParameters() {
+    if (!this.activePara) { this.say('Click in a paragraph first, where the value should appear'); return }
+    this.activePara.rememberSelection()
+    this.refPara = this.activePara
+    this.dialog = 'parameter'
+  }
+
+  private pickParameter(key: string) {
+    this.dialog = undefined
+    const para = this.refPara
+    this.refPara = undefined
+    requestAnimationFrame(() => para?.insertParam(key))
+  }
+
   // Everything a reference can point to: this document's sections, and the sections of included
   // documents that have ids (their ids cannot be added from here).
   private referenceTargets(): RefTarget[] {
@@ -747,6 +770,7 @@ export class StrocEditor extends LitElement {
           ${this.menuItem('subsection', 'Subsection', () => this.addSection('child'), '', !this.activeKey)}
           ${this.menuItem('include', 'Included Document…', () => this.showOpen('include'))}
           ${this.menuItem('reference', 'Reference…', () => this.showReferences(), '⌘K')}
+          ${this.menuItem('parameter', 'Parameter…', () => this.showParameters())}
         `)}
         <div class="status" data-test="status">
           ${this.notice ? html`<span>${this.notice}</span>` : nothing}
@@ -770,6 +794,7 @@ export class StrocEditor extends LitElement {
         <button title="Underline (⌘U)" @mousedown=${keep} @click=${() => this.format('underline')}><u>U</u></button>
         <span class="sep"></span>
         <button title="Insert a reference to a section (⌘K)" @mousedown=${keep} @click=${() => this.showReferences()}>Reference…</button>
+        <button data-test="insert-parameter" title="Insert a placeholder for a parameter's value" @mousedown=${keep} @click=${() => this.showParameters()}>Parameter…</button>
         <span class="hint">Paste keeps bold, italic, underline; several paragraphs become sections · Enter: new paragraph · Backspace at start: join · Tab / Shift+Tab: indent / outdent · Alt+Shift+↑↓: move · drag ⋮⋮ to move (Shift to copy)</span>
       </div>`
   }
@@ -794,7 +819,7 @@ export class StrocEditor extends LitElement {
   private renderParagraph(key: string, value: string | undefined, placeholder: string) {
     return html`<stroc-paragraph data-key=${key} .key=${key} .value=${value ?? ''} .placeholder=${this.preview ? '' : placeholder}
       .editable=${!this.preview} spellcheck=${this.checkSpelling ? 'true' : 'false'}
-      .labelRef=${this.refLabel} .refresh=${this.version}></stroc-paragraph>`
+      .labelRef=${this.refLabel} .labelParam=${this.paramLabel} .refresh=${this.version}></stroc-paragraph>`
   }
 
   private renderSections(list: M.EditSection[], prefix: string): unknown {
@@ -871,8 +896,8 @@ export class StrocEditor extends LitElement {
           </div>
         </div>
         ${doc ? html`<div class="inc-body">
-          ${doc.text ? html`<div>${this.renderComposedInline(doc.text, number)}</div>` : nothing}
-          ${doc.sections.map(c => this.renderComposed(c, number))}
+          ${doc.text ? html`<div>${this.renderComposedInline(doc.text, number, this.paramLabels(doc))}</div>` : nothing}
+          ${doc.sections.map(c => this.renderComposed(c, number, this.paramLabels(doc)))}
         </div>` : nothing}
       </div>`
   }
@@ -906,28 +931,34 @@ export class StrocEditor extends LitElement {
       </div>`
   }
 
-  private renderComposedInline(nodes: ComposedInline[], prefix: string): unknown {
+  private renderComposedInline(nodes: ComposedInline[], prefix: string, params?: Map<string, string>): unknown {
     return nodes.map(n => {
       if (n.type === 'text') return n.value
+      if (n.type === 'param') return html`<span class="param">[${params?.get(n.path) ?? n.path}]</span>`
       if (n.type === 'ref') return n.target
         ? html`<span class="ref">Section ${joinNumber(prefix, n.target)}</span>`
         : html`<span class="ref unresolved">→${n.path.join('/')}</span>`
-      const inner = this.renderComposedInline(n.children, prefix)
+      const inner = this.renderComposedInline(n.children, prefix, params)
       return n.tag === 'b' ? html`<b>${inner}</b>` : n.tag === 'i' ? html`<i>${inner}</i>` : html`<u>${inner}</u>`
     })
   }
 
-  private renderComposed(sec: ComposedSection, prefix: string): TemplateResult {
+  // Labels of a composed include's parameters, by path within it.
+  private paramLabels(doc: { parameters: { prefix: string[], parameters: { key: string, label: string }[] }[] }): Map<string, string> {
+    return new Map(doc.parameters.flatMap(g => g.parameters.map(p => [[...g.prefix, p.key].join('/'), p.label] as [string, string])))
+  }
+
+  private renderComposed(sec: ComposedSection, prefix: string, params?: Map<string, string>): TemplateResult {
     return html`
       <div class="composed">
         <div class="crow"><span class="cnum">${joinNumber(prefix, sec.number)}.</span>
           <div>
             ${sec.title || sec.include ? html`<div class="chead">${sec.title ? html`<span class="ctitle">${sec.title}</span>` : nothing}
               ${sec.include ? html`<span class="cid-line">${sec.include.cid.toString()}</span>` : nothing}</div>` : nothing}
-            ${sec.text ? html`<div>${this.renderComposedInline(sec.text, prefix)}</div>` : nothing}
+            ${sec.text ? html`<div>${this.renderComposedInline(sec.text, prefix, params)}</div>` : nothing}
           </div>
         </div>
-        ${sec.sections.length ? html`<div class="csub">${sec.sections.map(c => this.renderComposed(c, prefix))}</div>` : nothing}
+        ${sec.sections.length ? html`<div class="csub">${sec.sections.map(c => this.renderComposed(c, prefix, params))}</div>` : nothing}
       </div>`
   }
 
@@ -941,8 +972,40 @@ export class StrocEditor extends LitElement {
       this.dialog === 'sources' ? this.renderSourcesDialog(close) :
       this.dialog === 'properties' ? this.renderPropertiesDialog(close) :
       this.dialog === 'reference' ? this.renderReferenceDialog(close) :
+      this.dialog === 'parameter' ? this.renderParameterDialog(close) :
       this.renderCatalogDialog(close)
     return html`<div class="backdrop" @click=${close}></div><div class="dialog" role="dialog" data-test=${`dialog-${this.dialog}`}>${body}</div>`
+  }
+
+  private renderParameterDialog(close: () => void) {
+    const params = this.doc.parameters.filter(p => p.key)
+    const add = (e: Event) => {
+      e.preventDefault()
+      const form = e.target as HTMLFormElement
+      const label = (form.elements.namedItem('label') as HTMLInputElement).value.trim()
+      const dflt = (form.elements.namedItem('default') as HTMLInputElement).value.trim()
+      if (!label) return
+      const used = new Set(this.doc.parameters.map(p => p.key))
+      let key = suggestId(label)
+      for (let n = 2; used.has(key); n++) key = `${suggestId(label)}-${n}`
+      this.doc.parameters.push({ key, label, ...(dflt ? { default: dflt } : {}) })
+      this.changed()
+      this.pickParameter(key)
+    }
+    return html`
+      <h2>Insert a placeholder <button @click=${close}>Cancel</button></h2>
+      <p class="intro">A placeholder shows a parameter's value in the text when the document is used. The value is not part of the document: the same document (one CID) serves every agreement.</p>
+      ${params.length ? html`<table>
+        <thead><tr><th>Label</th><th>Key</th><th>Default</th></tr></thead>
+        <tbody>${params.map(p => html`<tr class="pick" data-test="param-row" data-key=${p.key} @click=${() => this.pickParameter(p.key)}>
+          <td>${p.label}</td><td><code>${p.key}</code></td><td>${p.default ?? html`<span class="muted">required</span>`}</td></tr>`)}</tbody>
+      </table>` : html`<p class="muted">This document declares no parameters yet.</p>`}
+      <label>New parameter</label>
+      <form @submit=${add}>
+        <input name="label" data-test="new-param-label" placeholder="Label, e.g. Weekly Rent" />
+        <input name="default" placeholder="Default (optional)" />
+        <button type="submit" data-test="new-param-add">Add and insert</button>
+      </form>`
   }
 
   private renderReferenceDialog(close: () => void) {
@@ -1078,7 +1141,13 @@ export class StrocEditor extends LitElement {
       <label>Parameters</label>
       <p class="note">Values supplied when the document is used (party names, dates); shown in a Particulars table. A parameter without a default is required.</p>
       ${d.parameters.map((p, i) => html`<div class="row-fields">
-        <input .value=${p.key} placeholder="key, e.g. stock-name" @input=${param(i, 'key')} />
+        <input .value=${p.key} placeholder="key, e.g. stock-name" title="Changing the key updates its placeholders"
+          @change=${(e: Event) => {
+            const v = (e.target as HTMLInputElement).value.trim()
+            const old = d.parameters[i].key
+            if (old && v && old !== v) { const n = M.renameParam(this.doc, old, v); if (n) this.say(`Updated ${n} placeholder${n === 1 ? '' : 's'}`) } else d.parameters[i].key = v
+            this.changed()
+          }} />
         <input .value=${p.label} placeholder="Label, e.g. Stock Holder" @input=${param(i, 'label')} />
         <input .value=${p.default ?? ''} placeholder="Default (optional)" @input=${param(i, 'default')} />
         <button @click=${() => { d.parameters.splice(i, 1); this.changed() }}>Remove</button></div>`)}

@@ -6,7 +6,7 @@ How Stroc is tested, and the rules that keep the tests useful as the code change
 
 | Layer | Command | What it pins | Breaks when |
 |-------|---------|--------------|-------------|
-| Unit (Vitest), every package | `yarn test` | Hashing (golden CIDs), canonical text and markup, validation rules, YAML read/write/fix, composition and references, layout and PDF definition, the editor's document model, the server | Behavior changes |
+| Unit (Vitest), every package | `yarn test` | Hashing (golden CIDs), canonical text and markup, validation rules, YAML read/write/fix, composition and references, layout and PDF definition, the editor's document model, the server, CLI commands (run as built) | Behavior changes |
 | Sample library | `yarn test` (yaml, render) | Every `contracts/*.yaml` valid, includes current, and the rendered outline of the Tally Contract (snapshot) | A document, composition or numbering changes |
 | End to end (Playwright) | `yarn test:e2e` | The editor's established features, as a user exercises them, in Chromium, WebKit (Safari's engine) and Firefox | A feature stops working in some browser |
 

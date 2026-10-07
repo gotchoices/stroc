@@ -20,6 +20,7 @@ const GOLDEN: Record<string, string> = {
   markup: 'baguqeeral3x6fb2w2ki4tkdjvkchbqwtgrpf62ticqiqakwdj5vhccxb3uva',
   unicode: 'baguqeeraflz7y4q7nim4pqvgjwbeajmm2auo7azqfkhozuuzmawvhbay5yoq',
   contract: 'baguqeera7usd5pm43tx4rx6nretjizkmq3mvlprxhoodwqvgqmnoblz37swq',
+  template: 'baguqeeradltxmjyu6pauyywxkzeqqzr6bniq5xgrigildiz3h4dme4mwufpq',   // placeholders (spec 0.17)
 }
 
 describe('golden vectors', () => {
