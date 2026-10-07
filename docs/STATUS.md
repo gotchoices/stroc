@@ -185,8 +185,8 @@ Specification and decisions
 
 ### Stage 0 — Safety net
 
-- [x] Vitest in every package, wired to `yarn test` (204 tests); `yarn test:e2e` (Playwright) for the
-      editor in three browser engines
+- [x] Vitest in every package, wired to `yarn test` (221 tests); `yarn test:e2e` (Playwright) for the
+      editor in three browser engines (39 checks each run)
 - [x] Unit tests for text rules, ids, language tags, markup and validation, including malformed input
 - [x] Golden-vector CID tests (5 fixture documents in `packages/core/test/fixtures/`, including a
       contract that includes a clause by CID). Recorded for format `"0.1"`; re-recorded at freeze.
@@ -242,17 +242,20 @@ Spec first (per [Workflow.md](Workflow.md)), then code.
 ### Stage 2 — strdoc parity
 
 Library and composition
-- [ ] `replaces` in types and validation (list of CIDv1 DAG-JSON links, no duplicates)
-- [ ] CLI package `@stroc/cli`, independent of the editor (Q3). Replaces strdoc's `hash` and `refcheck`:
+- [x] `replaces` in types and validation (list of CIDv1 DAG-JSON links, no duplicates)
+- [x] CLI package `@stroc/cli`, independent of the editor (Q3). Replaces strdoc's `hash` and `refcheck`:
   - [x] `stroc lint [files]`: the shared lint rules, with `--fix`
   - [x] `stroc link <folder|files>`: drafts may write includes as file links
         (`source: {/: ./clause.yaml}`); the command replaces them with CIDs bottom-up, editing only
         those values; cycles and missing files reported; lint points to it
-  - [ ] `stroc status [folder]`: each file's CID and `replaces` chain; every `source` pointing at a
-        superseded version, naming the newer file; `source` CIDs the tool has never seen, by file and line
-  - [ ] `stroc update [files] [--all]`: update chosen sources, add `replaces` to each document that
-        changes as a result, report the parents now out of date
-  - [ ] Record file (format of the tool's choosing), rebuilt from the folder and `replaces` if lost
+  - [x] `stroc status [folder]`: each file's CID and earlier versions; every include current,
+        outdated (naming the file and its current CID), a file link, or from outside the folder;
+        hints when a hand-edited document does not list what it replaces
+  - [x] `stroc update [folder] [files] [--all]`: update chosen includes, add `replaces` to each
+        document that changes as a result, report (or with `--all`, update) the parents now outdated
+  - [x] Record file `.stroc-record.json`, rebuilt from the folder and `replaces` if lost
+  - [x] Archive `.stroc-archive/`: the bytes of every recorded version, so in-place edits never lose
+        a published version; the server serves archived versions as `superseded`
 - [x] `@stroc/compose`: `Resolver` interface (`get(cid)`), `MemoryStore`, `firstOf`, `findMissing`;
       every fetch verified against its CID
 - [x] `compose(root, resolver)`: includes resolved into one numbered tree; references resolved
@@ -304,7 +307,7 @@ Rendering (`@stroc/render`, per [Rendering.md](Rendering.md))
       `<qrBase>/ipfs/<cid>`, or the bare CID)
 - [x] Template view (`template`): the document as published, required values as blanks
 - [x] HTML is readable on phones (small-screen layout)
-- [ ] The editor loads `@stroc/render` in the browser (the QR library is CommonJS: bundle it)
+- [x] The editor loads `@stroc/render` in the browser (bundled by esbuild, QR library included)
 
 Editor
 - [x] Bundled with core and compose (esbuild); fetches and verifies documents in the browser
@@ -367,8 +370,9 @@ Editor
       `.well-known/stroc/catalog.json`, `index.html`); optionally upload to IPFS
 - [ ] Bundle as a CAR file: root CID → the document and everything it includes; every block verified offline
 - [x] Local store helper (`MemoryStore`) and missing check (`findMissing`), in `@stroc/compose`
-- [ ] Packages per the layout decision; everything except ui and cli runs in browser, Node and
-      React Native / NativeScript
+- [x] Packages per the layout decision (core, yaml, compose, render, pdf, ui, cli, server); core,
+      yaml, compose and render are free of Node APIs; `@stroc/pdf` is the Node writer (browsers and
+      phones use pdfmake's browser build with `toPdfDefinition`).
 - [ ] Example tally-style contract written in abstract roles with parameter declarations,
       rendered with sample data
 
@@ -380,8 +384,8 @@ Editor
 - [ ] `translates` lineage
 - [ ] IPFS transport adapter (`dag put/get`)
 - [ ] Publisher signatures
-- [ ] AI drafting guide (prompt bundle that produces valid Stroc source)
-- [ ] Outline panel, search, undo/redo
+- [x] AI drafting guide: [Authoring.md](Authoring.md), tested by having an agent convert a sample agreement
+- [ ] Outline panel and search in the editor (undo/redo done)
 
 ## Known defects
 

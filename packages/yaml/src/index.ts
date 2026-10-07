@@ -6,7 +6,7 @@
 // in the standard layout.
 
 import {
-  parseDocument, isScalar, visit, stringify, LineCounter,
+  parseDocument, isScalar, isMap, isSeq, isPair, visit, stringify, LineCounter,
   type Document, type Node as YamlNode, type Scalar,
 } from 'yaml'
 import {
@@ -310,4 +310,73 @@ export function replaceFileLinks(text: string, resolve: (target: string) => stri
     replaced++
   }
   return { text: out, replaced, unresolved }
+}
+
+// ---------------------------------------------------------------------------------------------
+// In-place edits for the folder tools
+
+export interface LinkValue {
+  value: string             // the CID (or file path) as written
+  start: number
+  end: number
+  line: number
+  inReplaces: boolean       // part of the document's replaces list, not an include
+}
+
+// Every link value ({/: ...}) in a file, with its position.
+export function findLinkValues(text: string): LinkValue[] {
+  const p = parse(text)
+  const out: LinkValue[] = []
+  visit(p.ydoc, {
+    Pair(_k, pair, path) {
+      if (!isScalar(pair.key) || pair.key.value !== '/' || !isScalar(pair.value) || !pair.value.range) return
+      const inReplaces = path.some(n => isPair(n) && isScalar(n.key) && n.key.value === 'replaces')
+      out.push({ value: String(pair.value.value), start: pair.value.range[0], end: pair.value.range[1], line: p.lc.linePos(pair.value.range[0]).line, inReplaces })
+    },
+  })
+  return out
+}
+
+// Replace include links by CID: `map` gives the new CID for an old one (others are left alone).
+export function replaceLinkValues(text: string, map: (value: string) => string | undefined): { text: string, replaced: number } {
+  let out = text
+  let replaced = 0
+  for (const v of findLinkValues(text).filter(v => !v.inReplaces).sort((a, b) => b.start - a.start)) {
+    const next = map(v.value)
+    if (!next || next === v.value) continue
+    const trailing = /\s*$/.exec(text.slice(v.start, v.end))![0]
+    out = out.slice(0, v.start) + next + trailing + out.slice(v.end)
+    replaced++
+  }
+  return { text: out, replaced }
+}
+
+// Add a CID to the document's replaces list, creating the list in its standard place if needed.
+export function addReplaces(text: string, cid: string): string {
+  const p = parse(text)
+  const top = p.ydoc.contents
+  if (!isMap(top)) return text
+  if (findLinkValues(text).some(v => v.inReplaces && v.value === cid)) return text
+  const pair = top.items.find(i => isScalar(i.key) && i.key.value === 'replaces')
+  if (pair && isSeq(pair.value) && pair.value.range) {
+    const seq = pair.value
+    if (seq.flow) {
+      const close = text.lastIndexOf(']', seq.range![1])
+      return text.slice(0, close) + `, {/: ${cid}}` + text.slice(close)
+    }
+    const first = seq.items[0] as { range?: [number, number, number] }
+    const indent = first?.range ? ' '.repeat(p.lc.linePos(first.range[0]).col - 3) : '  '
+    let end = seq.range![1]
+    while (end > 0 && text[end - 1] === '\n') end--
+    return text.slice(0, end) + `\n${indent}- {/: ${cid}}` + text.slice(end)
+  }
+  // No list yet: insert it before the first key that comes after replaces in the standard order.
+  const after = ['parameters', 'text', 'sections']
+  const next = top.items.find(i => isScalar(i.key) && after.includes(String(i.key.value)))
+  const block = `replaces:\n  - {/: ${cid}}\n`
+  if (next && isScalar(next.key) && next.key.range) {
+    const at = text.lastIndexOf('\n', next.key.range[0] - 1) + 1
+    return text.slice(0, at) + block + text.slice(at)
+  }
+  return text.replace(/\n*$/, '\n') + block
 }

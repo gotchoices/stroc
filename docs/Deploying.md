@@ -51,8 +51,14 @@ yarn stroc cid taleus-contracts/*.yaml
 
 Included documents are linked by CID. While drafting, write includes as file links
 (`source: {/: ./Ethics.yaml}`) and run `yarn stroc link taleus-contracts/` to replace them with CIDs,
-bottom-up. After a published clause changes, update the documents that include it with its new CID
-(`stroc update`, which will do this automatically, is planned; see STATUS).
+bottom-up.
+
+The tools keep two things in the folder, beside the documents:
+- `.stroc-record.json`: which CIDs each file has had (rebuilt from `replaces` lists if lost);
+- `.stroc-archive/`: the exact bytes of every version the tools have recorded, so editing a file in
+  place never loses a published version. The server serves archived versions as `superseded`.
+
+Keep both with the folder: commit them to git and deploy them with the documents.
 
 ## 3. Review
 
@@ -122,10 +128,20 @@ should show **✓ Verified** and **✓ Author sereus.org confirmed**.
 
 ## 7. Revising and retiring
 
-- **Never delete a published document.** Signed tallies refer to it by CID for as long as they
-  exist; keep its file in the folder.
-- A revision is a new document with `replaces: [{/: <old cid>}]`. The catalog then marks the old
-  one `superseded` automatically. Re-link everything that includes it (step 2).
+- **Never delete a published version.** Signed tallies refer to it by CID for as long as they exist.
+  Editing a file in place is fine once the tools have recorded its current version (run
+  `stroc status` before editing a published set): the old bytes stay in `.stroc-archive/` and are
+  still served. Do not delete the archive.
+- Revise a document by editing it and adding `replaces: [{/: <old cid>}]` (`stroc status` reminds
+  you). Then bring the documents that include it up to date:
+
+  ```
+  yarn stroc status taleus-contracts       # what is outdated, and where
+  yarn stroc update taleus-contracts --all # update includes up to the top; each changed document
+                                           # records the version it replaces
+  ```
+
+  The catalog marks replaced and archived versions `superseded` automatically.
 - To stop recommending a document, list its CID under `withdrawn` in `.stroc.yaml`.
 - After changing files, reload the server: `docker kill -s HUP <container>` (or restart it).
 

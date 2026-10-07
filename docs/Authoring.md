@@ -170,6 +170,8 @@ be updated with its new CID.
 
 ```
 yarn stroc link docs/                # turn include file links into CIDs (drafts)
+yarn stroc status docs/              # which includes point at older versions
+yarn stroc update docs/ --all        # update them, recording what each changed document replaces
 yarn stroc lint docs/*.yaml          # report problems with line numbers
 yarn stroc lint --fix docs/*.yaml    # fix spacing, markup spelling, language case, unquoted values
 yarn stroc cid docs/*.yaml           # print each document's CID

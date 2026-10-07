@@ -4,11 +4,12 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { parse } from 'yaml'
-import { documentCid, isDomain, type StrocDocument } from '@stroc/core'
+import { documentCid, isDomain, verifyDocument, type StrocDocument } from '@stroc/core'
 import { lintYaml, type LocatedProblem } from '@stroc/yaml'
 import type { Catalog, CatalogEntry } from '@stroc/compose'
 
 export const CONFIG_FILE = '.stroc.yaml'
+export const ARCHIVE_DIR = '.stroc-archive'      // earlier versions kept by the folder tools
 
 export interface FolderConfig {
   domain?: string          // the domain this folder is served for
@@ -21,6 +22,7 @@ export interface LibraryDocument {
   bytes: Uint8Array
   document: StrocDocument
   file: string
+  archived?: boolean      // an earlier version kept in the archive, not a current file
 }
 
 export interface Library {
@@ -54,6 +56,18 @@ export async function loadLibrary(folder: string, overrides: FolderConfig = {}):
     if (!cid || !bytes) continue
     documents.set(cid.toString(), { cid: cid.toString(), bytes, document: lint.value as StrocDocument, file })
   }
+  // Earlier versions: served as they were, verified against their names, never replacing a current file.
+  const archive = path.join(folder, ARCHIVE_DIR)
+  if (existsSync(archive)) {
+    for (const name of readdirSync(archive).filter(n => n.endsWith('.json')).sort()) {
+      const cid = name.slice(0, -5)
+      if (documents.has(cid)) continue
+      const bytes = new Uint8Array(readFileSync(path.join(archive, name)))
+      const v = await verifyDocument(bytes, cid).catch(() => undefined)
+      if (!v?.ok || !v.document) { skipped.push({ file: `${ARCHIVE_DIR}/${name}`, problems: v?.problems ?? [] }); continue }
+      documents.set(cid, { cid, bytes, document: v.document, file: `${ARCHIVE_DIR}/${name}`, archived: true })
+    }
+  }
   return { folder, config, documents, skipped, loaded: new Date() }
 }
 
@@ -70,7 +84,7 @@ export function buildCatalog(lib: Library): Catalog {
       cid: d.cid,
       title: d.document.title,
       role: d.document.author === domain ? 'author' : endorsed.has(d.cid) ? 'endorse' : 'mirror',
-      status: withdrawn.has(d.cid) ? 'withdrawn' : replaced.has(d.cid) ? 'superseded' : 'current',
+      status: withdrawn.has(d.cid) ? 'withdrawn' : replaced.has(d.cid) || d.archived ? 'superseded' : 'current',
       ...(d.document.published ? { published: d.document.published } : {}),
       ...(d.document.replaces ? { replaces: d.document.replaces.map(String) } : {}),
     }))
