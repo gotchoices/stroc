@@ -107,6 +107,17 @@ describe('fixYaml', () => {
     const clean = stringifyDocument(coreFixture('clause'))
     expect(fixYaml(clean)).toEqual({ text: clean, fixed: 0 })
   })
+  it('fixes markup spelling in paragraphs', () => {
+    const text = "stroc: '0.1'\nlanguage: en\ntitle: T\ntext: Keep <i>a<b>b</b>c</i> and <b>x </b>y.\n"
+    const { text: out, fixed } = fixYaml(text)
+    expect(fixed).toBe(1)
+    expect(out).toContain('text: Keep <i>a</i><b><i>b</i></b><i>c</i> and <b>x</b> y.')
+    expect(lintYaml(out).problems).toEqual([])
+  })
+  it('leaves markup grammar errors for the author', () => {
+    const text = "stroc: '0.1'\nlanguage: en\ntitle: T\ntext: Bold <B>x</B>.\n"
+    expect(fixYaml(text).fixed).toBe(0)
+  })
   it('does not touch what it cannot fix', () => {
     const text = "stroc: '0.1'\nlanguage: en\ntitle: T\ntext: if a < b\n"
     expect(fixYaml(text).fixed).toBe(0)

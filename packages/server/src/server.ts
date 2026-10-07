@@ -7,7 +7,6 @@ import { watch, type FSWatcher } from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { CID } from 'multiformats/cid'
-import { fromPlain, documentCid } from '@stroc/core'
 import { CATALOG_PATH, MemoryStore, compose } from '@stroc/compose'
 import { layout, toHtml } from '@stroc/render'
 import { loadLibrary, buildCatalog, type Library, type FolderConfig } from './library.js'
@@ -134,8 +133,7 @@ export async function createDocumentServer(options: ServerOptions): Promise<Docu
   return { app, library: () => lib, reload, close: () => watcher?.close() }
 }
 
-// Development only: the editor page, its scripts, and the validation endpoints it still uses
-// until the rewrite computes CIDs in the browser.
+// Development only: the editor page and its bundle. The editor validates and computes CIDs itself.
 function mountEditor(app: express.Express) {
   const noCache = { etag: false, lastModified: false, setHeaders: (res: express.Response) => res.set('Cache-Control', 'no-store') }
   const serverRoot = path.dirname(require.resolve('@stroc/server/package.json'))
@@ -144,24 +142,6 @@ function mountEditor(app: express.Express) {
   app.use('/editor/', express.static(path.join(serverRoot, 'public'), noCache))
   app.use('/editor/', express.static(path.join(uiRoot, 'dist'), noCache))
 
-  app.post(['/validate', '/cid'], express.json({ limit: '1mb' }), async (req, res) => {
-    const plain = fromPlain(req.body)
-    const result = await documentCid(plain.value)
-    const problems = [...plain.problems, ...result.validation.problems]
-    res.status(problems.length ? 400 : 200).json({
-      valid: problems.length === 0,
-      ...(problems.length === 0 && result.cid ? { cid: result.cid.toString() } : {}),
-      problems,
-      warnings: result.validation.warnings,
-    })
-  })
-  app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (err instanceof SyntaxError) {
-      res.status(400).json({ valid: false, problems: [{ path: [], code: 'bad-json', message: 'request body is not valid JSON' }] })
-      return
-    }
-    next(err)
-  })
 }
 
 export async function startServer(options: ServerOptions & { port?: number, host?: string }): Promise<DocumentServer & { url: string }> {

@@ -135,8 +135,7 @@ describe('editor hosting (development)', () => {
     const server = await startServer({ folder: contracts, port: 0, editor: true })
     try {
       expect((await fetch(`${server.url}/editor/`)).status).toBe(200)
-      const res = await fetch(`${server.url}/cid`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{bad' })
-      expect(res.status).toBe(400)
+      expect((await fetch(`${server.url}/editor/stroc-editor.js`)).status).toBe(200)
     } finally { server.close() }
   })
 })

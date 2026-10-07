@@ -179,7 +179,7 @@ Specification and decisions
 
 ### Stage 0 — Safety net
 
-- [x] Vitest in every package, wired to `yarn test` (176 tests)
+- [x] Vitest in every package, wired to `yarn test` (204 tests); `yarn test:browser` for the editor
 - [x] Unit tests for text rules, ids, language tags, markup and validation, including malformed input
 - [x] Golden-vector CID tests (5 fixture documents in `packages/core/test/fixtures/`, including a
       contract that includes a clause by CID). Recorded for format `"0.1"`; re-recorded at freeze.
@@ -227,8 +227,10 @@ Spec first (per [Workflow.md](Workflow.md)), then code.
 - [x] Sample library: all 13 MyCHIPs documents converted to `contracts/*.yaml`, includes linked
       by real CID; a test keeps every file valid and every include current (D10)
 - [x] Prototype editor opens `.yaml` files (saves JSON until the rewrite)
-- [ ] Lint fixes for markup spelling (tag order, adjacent spans, edge spaces) and `eng` → `en`
-      style shortest-tag advice
+- [x] `canonicalMarkup` in core: writes any formatting in its one valid spelling; the emphasis order
+      b, i, u now applies at every depth (spec 0.16), closing a gap that allowed two spellings
+- [x] `stroc lint --fix` corrects markup spelling in paragraphs (grammar errors left to the author)
+- [ ] `eng` → `en` style shortest-tag advice
 
 ### Stage 2 — strdoc parity
 
@@ -297,26 +299,45 @@ Rendering (`@stroc/render`, per [Rendering.md](Rendering.md))
 
 Editor
 - [x] Bundled with core and compose (esbuild); fetches and verifies documents in the browser
-- [ ] Validation and CID in the browser (Validate & Generate CID still calls the server)
+- [x] Rewritten as components (`editor.ts`, `paragraph.ts`, `model.ts`, `styles.ts`, plus `sources.ts`,
+      `includes.ts`); the single-file prototype is gone
+- [x] Validation and CID in the browser as you type; problems shown at their section; status bar
+      shows Valid or the problem count and the CID with a copy button; server endpoints removed (D7)
 - [x] Sources list (File → Sources): user-controlled, ordered, remembered per browser
 - [x] Open File… and Open by CID… (also `?cid=` in the address, used by Open in new tab)
 - [x] Sources dialog shown over the page (was drawn inline, off-screen when scrolled)
-- [ ] Open by CID offers a list: query every source's catalog and show title, author, role, status
-      and source to choose from; pasting a CID remains for gateways
-- [ ] Embeddable: public `doc` property, `readonly` mode, change and save events
+- [x] Open from Sources lists every source's catalog (title, source, claim, status); a CID can
+      still be entered for gateways
+- [ ] Embeddable API: change and save events, host-supplied resolver (`doc` property and Preview
+      exist)
 - [x] Included documents fetched, verified, composed and shown in place, numbered; header shows
       verification, serving source, author check, source catalog role and status, problems inside;
       Open and Open in new tab
 - [x] References show live numbers, including into included documents; unresolved marked
-- [ ] Indent/outdent; move a section to another parent; drag and drop before/after/into,
-      Shift to copy
-- [ ] Convert a section between written-out and included
-- [ ] Type directly in the rendered view; Enter splits the paragraph into a new sibling section
-- [ ] Edit-all / preview-all
-- [ ] Insert a reference by picking the target (proposes an id from its title); shows its live number
-- [ ] Renaming an id updates references within the document
-- [ ] Open/Save YAML (standard) and JSON; Save validates and writes the canonical document
-- [ ] Validation errors shown at the offending section
+- [x] Indent/outdent (Tab, Shift+Tab, toolbar), move (Alt+Shift+↑↓, toolbar), drag and drop by the
+      grip: before, after or into a section; Shift or Alt to copy (copies get no ids)
+- [x] Write out a copy of an included document (replaces the include with editable text)
+- [ ] Turn written-out text into an include (needs publishing the text as its own document first)
+- [x] Type directly in the rendered view; Enter splits the paragraph into a new sibling section;
+      Backspace at the start joins it to the previous paragraph; plain-text paste
+- [x] Bold, italic, underline from the toolbar and ⌘B/⌘I/⌘U, saved as canonical markup
+- [x] Preview (View menu, ⌘E): the document as readers see it, no editing controls
+- [x] Spell-check toggle (View menu)
+- [x] Browser smoke test: `yarn test:browser` drives headless Chrome with real keyboard input
+      through opening, typing, splitting, joining, bold, indent, references, preview and Open
+- [ ] Undo/redo across the document
+- [ ] Pasting formatted text (reduced to Stroc markup)
+- [ ] Export PDF from the editor
+- [ ] Usability pass against a real document
+- [x] Insert a reference by picking the target (toolbar, Insert menu, ⌘K): this document's sections
+      and included documents' sections with ids, with live numbers and a filter; a section without
+      an id gets one from its title; a space is kept before the reference
+- [x] Renaming an id updates references within the document (and says how many)
+- [x] Open and Save YAML (standard) and JSON; Save writes back to the opened file where the browser
+      allows (File System Access), otherwise downloads; saving an invalid draft is allowed, with
+      the problem count reported (D8)
+- [x] Document properties dialog: title, author, language, published, parameters, replaces
+- [x] Validation errors shown at the offending section
 
 ### Stage 3 — Taleus readiness
 
@@ -346,14 +367,10 @@ Editor
 
 ## Known defects
 
-Found 2026-10-06. D1–D6, D9 and D10 fixed 2026-10-06.
+Found 2026-10-06. All fixed: D1–D6, D9, D10 on 2026-10-06; D7, D8 on 2026-10-07.
 
-- **D7. Editor depends on the dev server** for validation and CID, and keeps the document in private
-  state with no events, so it cannot be embedded or used offline. (Rewrite, Stage 2.)
-- **D8. Editor Save does not validate before writing.** Since 2026-10-06 it does write the same
-  tidied document that is validated (empty fields omitted, whitespace collapsed, links as
-  `{"/": cid}`), and Open accepts both link and older string sources. (Rewrite, Stage 2.)
-- **D10 (fixed).** The old sample contracts were replaced by the converted library.
+- **D7, D8 (fixed 2026-10-07).** The rewritten editor validates and hashes in the browser, and
+  Save writes the canonical document (drafts with problems may be saved; the count is reported).
 
 ## Running it
 
@@ -362,6 +379,7 @@ yarn dev        # build, then serve contracts/ with --watch --editor on :3000 (P
 yarn start      # build, then serve contracts/ (no editor)
 yarn test       # unit tests, golden vectors, sample library, server
 yarn lint       # ESLint, all packages
+yarn test:browser                 # editor smoke test in headless Chrome (after yarn build)
 yarn stroc lint contracts/*.yaml                  # check documents (--fix to fix what can be fixed)
 yarn stroc cid contracts/*.yaml                   # print CIDs
 yarn stroc render contracts/Tally_Contract.yaml -o tally.html   # the composed contract as HTML

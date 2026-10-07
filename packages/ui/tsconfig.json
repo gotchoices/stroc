@@ -19,6 +19,9 @@
     },
     {
       "path": "../compose"
+    },
+    {
+      "path": "../yaml"
     }
   ]
 }

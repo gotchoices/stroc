@@ -10,7 +10,7 @@ import {
   type Document, type Node as YamlNode, type Scalar,
 } from 'yaml'
 import {
-  fromPlain, toPlain, validateDocument, canonicalizeText, canonicalLanguageTag,
+  fromPlain, toPlain, validateDocument, canonicalizeText, canonicalLanguageTag, canonicalMarkup, parseMarkup,
   type Problem, type ValidationResult,
 } from '@stroc/core'
 
@@ -200,15 +200,24 @@ export function stringifyDocument(doc: unknown, options: { header?: string } = {
 // ---------------------------------------------------------------------------------------------
 // Fixing
 
+// Markup spelling problems that can be fixed without guessing the author's intent. Grammar errors
+// (a bare <, a mistyped tag, unbalanced tags) are left for the author.
+const SPELLING = new Set(['empty-emphasis', 'nested-same', 'emphasis-order', 'adjacent-emphasis', 'emphasis-edge-space'])
+
+function fixParagraph(value: string): string {
+  const { issues } = parseMarkup(value)
+  return issues.every(i => SPELLING.has(i.code)) ? canonicalMarkup(value) : canonicalizeText(value)
+}
+
 export interface FixResult {
   text: string            // the fixed source
   fixed: number           // number of values changed
 }
 
 // Fix what can be fixed mechanically: non-canonical text (spaces, invisible characters, NFC),
-// language tag case, and values YAML read as numbers or booleans that must be strings. Only the
-// affected values are rewritten; comments and layout elsewhere are kept. Markup spelling and
-// structure are reported by lint, not fixed.
+// markup spelling in paragraphs (order, merging, edge spaces), language tag case, and values YAML
+// read as numbers or booleans that must be strings. Only the affected values are rewritten;
+// comments and layout elsewhere are kept. Markup grammar errors are reported, not fixed.
 export function fixYaml(text: string): FixResult {
   const p = parse(text)
   if (p.ydoc.errors.length) return { text, fixed: 0 }
@@ -224,7 +233,7 @@ export function fixYaml(text: string): FixResult {
       let replacement: string | undefined
       const value = node.value
       if (typeof value === 'string') {
-        let fixedValue = inLink ? value : canonicalizeText(value)
+        let fixedValue = inLink ? value : key === 'text' ? fixParagraph(value) : canonicalizeText(value)
         if (key === 'language') fixedValue = canonicalLanguageTag(fixedValue) ?? fixedValue
         if (fixedValue !== value && fixedValue !== '') {
           const isBlock = node.type === 'BLOCK_FOLDED' || node.type === 'BLOCK_LITERAL'

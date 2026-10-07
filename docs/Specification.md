@@ -1,7 +1,7 @@
 # Stroc Specification
 
 **Status**: Work in Progress  
-**Version**: 0.15 (Draft)
+**Version**: 0.16 (Draft)
 
 The document format is not yet frozen. Until it is, documents carry `stroc: "0.1"`; the first
 frozen version will be `"1.0"`, and tools for it will reject `"0.1"` documents.
@@ -582,8 +582,10 @@ Each piece of formatted text has exactly one valid spelling, so it has exactly o
 
 - Emphasis tags must be balanced and properly nested, and must not be empty.
 - A tag must not be nested inside the same tag (`<b>a <b>b</b></b>` is an error).
-- When an emphasis element contains exactly one other emphasis element and nothing else, the outer
-  one must come first in the order `b`, `i`, `u`: `<b><i>x</i></b>`, not `<i><b>x</b></i>`.
+- Emphasis nests in the order `b`, `i`, `u` at every depth: `<b>` never inside `<i>` or `<u>`, and
+  `<i>` never inside `<u>`. So `<b><i>x</i></b>`, not `<i><b>x</b></i>`; and `<i>a</i><b><i>b</i></b><i>c</i>`,
+  not `<i>a<b>b</b>c</i>`. (Until 0.16 this applied only when one emphasis wrapped exactly one
+  other, which left two spellings for the same formatting.)
 - Two identical emphasis elements must not be adjacent (`<b>a</b><b>b</b>` must be `<b>ab</b>`).
 - Emphasized content must not begin or end with a space (`<b>a </b>b` must be `<b>a</b> b`).
 - `<ref:…>` may appear inside emphasis.
@@ -742,3 +744,4 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 | 0.13 | 2026-10-06 | Published sets: file layout under a base URL, `catalog.json` format with entry status, provenance check |
 | 0.14 | 2026-10-06 | `language` is a BCP 47 tag; documents carry `stroc: "0.1"` until the format is frozen; editor behavior moved to Editor.md |
 | 0.15 | 2026-10-07 | `author` is a verifiable domain or a plain name; published sets use the IPFS trustless-gateway path `/ipfs/<cid>`; catalog at `/.well-known/stroc/catalog.json` with `domain` and per-entry `role` |
+| 0.16 | 2026-10-07 | Emphasis order b, i, u applies at every depth, so each formatting has exactly one spelling |

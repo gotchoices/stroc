@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseMarkup, findReferences, markupToPlainText, escapeMarkupText } from '../src/index.js'
+import { parseMarkup, findReferences, markupToPlainText, escapeMarkupText, canonicalMarkup } from '../src/index.js'
 
 const codes = (s: string) => parseMarkup(s).issues.map(i => i.code)
 
@@ -59,6 +59,9 @@ describe('parseMarkup: errors', () => {
     expect(codes('<b>a <b>b</b></b>')).toEqual(['nested-same'])
     expect(codes('<i><b>x</b></i>')).toEqual(['emphasis-order'])
     expect(codes('<u><i>x</i></u>')).toEqual(['emphasis-order'])
+    expect(codes('<i>a<b>b</b>c</i>')).toEqual(['emphasis-order'])
+    expect(codes('<u>a <b>b</b></u>')).toEqual(['emphasis-order'])
+    expect(codes('<i>a</i><b><i>b</i></b><i>c</i>')).toEqual([])
     expect(codes('<b>a</b><b>b</b>')).toEqual(['adjacent-emphasis'])
     expect(codes('<b> a</b>')).toEqual(['emphasis-edge-space'])
     expect(codes('<b>a </b>b')).toEqual(['emphasis-edge-space'])
@@ -72,5 +75,45 @@ describe('escapeMarkupText', () => {
   it('round-trips literal text', () => {
     const literal = 'if a < b then c\\d'
     expect(markupToPlainText(parseMarkup(escapeMarkupText(literal)).nodes)).toBe(literal)
+  })
+})
+
+describe('canonicalMarkup', () => {
+  const cases: [string, string][] = [
+    ['plain text', 'plain text'],
+    ['<i><b>x</b></i>', '<b><i>x</i></b>'],
+    ['<i>a<b>b</b>c</i>', '<i>a</i><b><i>b</i></b><i>c</i>'],
+    ['<b>a</b><b>b</b>', '<b>ab</b>'],
+    ['<b> a </b>b', 'a b'.replace('a', '<b>a</b>')],
+    ['  lots   of\tspace\n', 'lots of space'],
+    ['<b></b>x', 'x'],
+    ['x <b> </b> y', 'x y'],
+    ['see <b><ref:cure></b> now', 'see <b><ref:cure></b> now'],
+    ['a \\< b \\\\ c', 'a \\< b \\\\ c'],
+    ['zero\u200Bwidth\u00A0nbsp', 'zerowidth nbsp'],
+  ]
+  for (const [input, expected] of cases) {
+    it(`writes ${JSON.stringify(input)} canonically`, () => {
+      expect(canonicalMarkup(input)).toBe(expected)
+    })
+  }
+  it('always produces valid, idempotent markup', () => {
+    const samples = [
+      '<u>x <i>y <b>z</b></i></u>', '<i>a</i> <i>b</i>', '<u><u>x</u></u>', '<b>a <i> b </i> c</b>',
+      ...cases.map(c => c[0]),
+    ]
+    for (const s of samples) {
+      const once = canonicalMarkup(s)
+      expect(parseMarkup(once).issues, `${s} -> ${once}`).toEqual([])
+      expect(canonicalMarkup(once)).toBe(once)
+    }
+  })
+  it('gives the same spelling for the same formatting', () => {
+    expect(canonicalMarkup('<i>a<b>b</b>c</i>')).toBe(canonicalMarkup('<i>a</i><b><i>b</i></b><i>c</i>'))
+    expect(canonicalMarkup('<u><i><b>x</b></i></u>')).toBe(canonicalMarkup('<b><u><i>x</i></u></b>'))
+  })
+  it('leaves the golden fixture text unchanged', () => {
+    const t = 'Plain, <b>bold</b>, <i>italic</i>, <u>underlined</u>, <b><i><u>all three</u></i></b>, <b>bold with <i>italic</i> inside</b>, a literal \\< and a literal \\\\, plus > and & as typed.'
+    expect(canonicalMarkup(t)).toBe(t)
   })
 })

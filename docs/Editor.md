@@ -1,6 +1,6 @@
 # Stroc Editor
 
-**Status**: Draft, 2026-10-06
+**Status**: Working, 2026-10-07
 
 The browser-based editor authors use to create and revise Stroc documents. The document format is
 in [Specification.md](Specification.md); this file covers how the editor behaves. Readers of
@@ -8,94 +8,110 @@ documents (for example Taleus users) never need the editor.
 
 ## Platform
 
-- **Lit web component** (`<stroc-editor>`, package `@stroc/ui`), so it can be embedded in any page
-  or framework (plain HTML, Vue, Svelte, React), and used on its own as a standalone page.
-- **Runs entirely in the browser.** The editor is bundled (esbuild) with `@stroc/core` and
-  `@stroc/compose`; it fetches and verifies documents itself. (Validate & Generate CID still calls
-  the hosting server until the rewrite.) `stroc serve --editor` hosts it at `/editor/`.
-- **Rewritten** in Stage 2 as a set of small components, replacing the current single-file
-  prototype. Until then new capabilities go into separate modules (`sources.ts`, `includes.ts`)
-  that the prototype uses and the rewrite will reuse.
+- **Lit web component** (`<stroc-editor>`, package `@stroc/ui`), embeddable in any page or
+  framework and usable on its own. `stroc serve --editor` hosts it at `/editor/`.
+- **Runs entirely in the browser**: bundled (esbuild) with `@stroc/core`, `@stroc/compose` and
+  `@stroc/yaml`. It validates, computes CIDs, and fetches and verifies included documents itself.
+- **Modules**: `editor.ts` (the component), `paragraph.ts` (in-place paragraph editing),
+  `model.ts` (the document model and structure operations, unit-tested without a browser),
+  `includes.ts`, `sources.ts`, `styles.ts`.
+- **Tests**: unit tests for the model (`yarn test`), and a browser smoke test that drives headless
+  Chrome with real keyboard input (`yarn build && yarn test:browser`).
 
 ## Scope
 
-The editor handles **one document at a time**: open, edit, validate, save, and show its CID. It
-reads the documents a file includes (to show them in place and check references into them), but it
-does not track revisions or update other files. Library housekeeping belongs to the folder tools
-(`stroc lint`, `status`, `update`, `publish`); see [STATUS.md](STATUS.md).
+One document at a time: open, edit, validate, save, show its CID. It reads the documents a file
+includes (to show them in place and resolve references into them) but does not track revisions or
+update other files; library housekeeping belongs to the folder tools (`stroc lint`, `status`,
+`update`, `publish`).
 
-## Sources and opening documents
+## Opening and saving
 
-- **Sources**: an ordered list of servers (`stroc serve`, static hosts, IPFS gateways), edited
-  under File → Sources and remembered by the browser. It starts as the server hosting the editor.
-  Documents are fetched by CID from the first source that has them and always verified.
-- **Open File…** opens a YAML or JSON file from the computer. **Open by CID…** fetches a document
-  from the sources. The editor's address carries `?cid=<cid>` for a document opened by CID, so a
-  link opens it directly.
-- Several folders can be served at once (`stroc serve a --port 3001`, `stroc serve b --port 3002`)
-  and added as sources to one editor (`stroc serve --editor` with no folder hosts only the editor).
+- **New**, **Open File…** (⌘O; YAML or JSON), **Open from Sources…** (a list of every document in
+  the sources' catalogs, or a CID), and dropping a file on the page.
+- **Save** (⌘S) writes back to the opened file where the browser allows (File System Access, in
+  Chromium browsers); otherwise it downloads. **Save As…** (⇧⌘S) and **Save As JSON…**.
+- Saved files are canonical: YAML in the standard layout (one sentence per line), or JSON. What is
+  saved is exactly what is hashed.
+- An unfinished document can be saved; the editor reports how many problems it still has.
+- `?cid=<cid>` in the editor's address opens that document from the sources.
+
+## Sources
+
+An ordered list of servers (`stroc serve`, static hosts, IPFS gateways), edited under File →
+Sources and remembered by the browser. It starts as the server hosting the editor. Documents are
+fetched by CID from the first source that has them, and always verified. Several folders can be
+served at once (`stroc serve a --port 3001`, `stroc serve b --port 3002`) and added as sources to
+one editor (`stroc serve --editor` with no folder hosts only the editor).
+
+## Editing
+
+The document is edited in its rendered form.
+
+- **Text**: click any paragraph and type. **Enter** splits the paragraph into a new section after
+  it; **Backspace** at the start of a paragraph joins it to the one before (the first section joins
+  back into the preamble). Paste is plain text.
+- **Formatting**: bold, italic, underline from the toolbar or ⌘B / ⌘I / ⌘U. Whatever the browser
+  produces is written back as canonical Stroc markup.
+- **Titles**: the document title at the top; a section's title is added or removed from its
+  toolbar.
+- **The section toolbar** (shown for the section being edited): move up/down, outdent/indent, add or
+  remove the title, add a paragraph after or a subsection inside, delete, and the section's **id**
+  (with a suggestion from the title). Renaming an id updates every reference to it.
+- **Moving sections**:
+
+  | Operation | How |
+  |-----------|-----|
+  | Indent under the section above / outdent | Tab / Shift+Tab, or the toolbar |
+  | Move up / down | Alt+Shift+↑ / ↓, or the toolbar |
+  | Move before / after / into a section | Drag by the ⋮⋮ grip onto the upper third / lower third / middle |
+  | Copy instead of move | Hold Shift or Alt while dropping (copies get no ids) |
+  | Delete | Toolbar (asks first) |
+
+- **Document properties** (Edit → Document Properties, or Properties… under the title): title,
+  author (a domain, which is verifiable, or a name), language, published date, **parameters**
+  (key, label, optional default) and **replaces** (CIDs of earlier versions).
+
+## References
+
+Insert a reference with **Reference…** on the toolbar, Insert → Reference, or **⌘K**: a list of every
+section of the document and of its included documents (those with ids), with live numbers and a
+filter. Picking a section of this document that has no id gives it one from its title. References
+always show the target's current number ("Section 3.1"); one that does not resolve is underlined in
+red.
 
 ## Included documents
 
-Each include is fetched, verified and composed (with everything it includes) and shown in place,
-read-only, numbered within the document. Its header shows:
-- its title (from the included document) and the include's id;
+Insert → Included Document lists the documents in the sources' catalogs (or takes a CID) and asks
+for the include's id. Each include is fetched, verified and composed with everything it includes,
+and shown in place, read-only and numbered. Its header shows:
+- its title and the include's id;
 - **Verified**, **Not found in any source** or **Failed verification**;
 - which source served it;
-- its author: a name (not verifiable), or a domain with the result of the author check against
-  that domain's catalog (confirmed, not confirmed and why);
-- what the serving source's catalog says about it (role and status; superseded or withdrawn are
-  highlighted);
-- the number of problems inside it (missing nested documents, unresolved references);
-- **Open** (in this tab) and **Open in new tab** (an ordinary link).
+- its author: a name (not verifiable), or a domain with the result of checking that domain's catalog;
+- what the serving source's catalog says about it (role and status; superseded or withdrawn
+  highlighted), and the number of problems inside it;
+- **Open** and **Open in new tab**.
 
-References show live section numbers, including references into included documents; references
-that do not resolve are marked.
+**Write out a copy** (on the include's toolbar) replaces the include with an editable copy of its
+text, no longer linked by CID.
 
-## Files
+## Validation
 
-- Opens and saves YAML (the standard format) and JSON.
-- Save validates first and writes the canonical document; what is saved is exactly what is hashed.
-- Pasted HTML has entities decoded and markup reduced to Stroc's tokens before it reaches the
-  document.
+Validation runs as you type. The status bar shows **Valid** and the CID (with Copy), or the number
+of problems; each problem is shown at the section it concerns, and document-level problems under
+the title. References into included documents are checked against the composed includes.
 
-## Display and editing
+## View
 
-The legacy strdoc editor is the baseline; see [Legacy.md](Legacy.md) for what it did.
+- **Preview** (View menu or ⌘E): the document as readers see it, with no editing controls.
+- **Spell check**: the browser's own, on by default, toggled in the View menu.
 
-- **Rendered view by default**, in the same legal layout as the renderer
-  ([Rendering.md](Rendering.md)), with live section numbers.
-- **Edit in place**: click into a paragraph and type in the rendered view. Pressing Enter splits
-  the paragraph into a new sibling section.
-- **Structure details on demand**: a section's id, title and (for an include) its source are
-  editable in a panel when the section is selected.
-- **Edit-all / preview-all** toggle.
-- **Emphasis**: bold, italic and underline buttons and shortcuts; the editor maintains the
-  canonical spelling (nesting order, no empty or adjacent duplicate spans).
-- **References**: insert by picking the target section; the editor proposes an id from the target's
-  title and shows the live number. Renaming an id updates references within the document.
-- **Includes**: shown in place as described above; a section can be converted between
-  written-out and included (to do).
-- **Validation errors** are shown at the offending section, as you type where possible.
-- **Spell check**: the browser's own, with a toggle.
-- **Undo/redo**: later.
+## Not yet
 
-## Moving sections
-
-| Operation | Trigger |
-|-----------|---------|
-| **Move before** | Drag to upper half of target |
-| **Move after** | Drag to lower half of target |
-| **Move as child** | Drag to the right (indent) |
-| **Copy** instead of move | Hold Shift while dragging |
-| **Indent / outdent** | Toolbar buttons and keyboard shortcuts |
-| **Move up / down** | Toolbar buttons and keyboard shortcuts |
-| **Delete** | Delete button (with undo once undo exists) |
-
-Drag and drop works for titled sections and untitled paragraphs alike, across levels.
-
-## Embedding
-
-- Public `doc` property and a `readonly` mode.
-- Events for change and save, so a host page can store documents its own way.
-- A host can supply a resolver for included documents.
+- Undo and redo (browser undo works within one paragraph while typing).
+- Turning written-out text into an include (it must first be published as its own document).
+- Pasting formatted text (paste is plain text).
+- Exporting PDF from the editor (`stroc render -o file.pdf` does it from the command line).
+- Embedding API for host pages: a public `doc` property exists; change and save events, and a
+  host-supplied resolver, are still to define.

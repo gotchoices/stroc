@@ -664,6 +664,7 @@ __metadata:
   dependencies:
     "@stroc/compose": "workspace:*"
     "@stroc/core": "workspace:*"
+    "@stroc/yaml": "workspace:*"
     esbuild: "npm:^0.28"
     lit: "npm:^3.1.4"
     typescript: "npm:^5.4.0"
