@@ -18,6 +18,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@expo-google-fonts/noto-sans-mono": "^0.4",
+    "@expo-google-fonts/noto-serif": "^0.4",
     "@stroc/render": "workspace:*",
     "pdfmake": "^0.3"
   },

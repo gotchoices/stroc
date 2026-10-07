@@ -38,6 +38,17 @@ describe('stroc serve on the sample library', () => {
     expect((await fetch(`${server.url}/editor/`)).status).toBe(404)
     expect((await fetch(`${server.url}/cid`, { method: 'POST' })).status).toBe(404)
   })
+  it('sends a browser the readable document, and everyone else the bytes', async () => {
+    const page = await fetch(`${server.url}/ipfs/${TALLY}`, { headers: { Accept: 'text/html,application/xhtml+xml,*/*;q=0.8' } })
+    expect(page.headers.get('content-type')).toContain('text/html')
+    expect(page.headers.get('vary')).toBe('Accept')
+    const html = await page.text()
+    expect(html).toContain('<h1>MyCHIPS Tally Agreement</h1>')
+    expect(html).toContain('issued by mychips.org (current)')
+    expect(html).toContain(`/ipfs/${TALLY}?format=raw`)
+    expect((await fetch(`${server.url}/ipfs/${TALLY}`)).headers.get('content-type')).toBe('application/vnd.ipld.dag-json')
+    expect((await fetch(`${server.url}/ipfs/${TALLY}?format=raw`, { headers: { Accept: 'text/html' } })).headers.get('content-type')).toBe('application/vnd.ipld.raw')
+  })
   it('serves a catalog for the configured domain', async () => {
     const catalog = await (await fetch(`${server.url}/.well-known/stroc/catalog.json`)).json()
     expect(catalog.domain).toBe('mychips.org')

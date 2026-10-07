@@ -275,6 +275,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@expo-google-fonts/noto-sans-mono@npm:^0.4":
+  version: 0.4.2
+  resolution: "@expo-google-fonts/noto-sans-mono@npm:0.4.2"
+  checksum: 10c0/9196403e1eb9a3f749fc21c0da14449ada247a908ddf10a8831955fc8d27532dac296c7cace42edfd4252a2256dd9e65f0d4c2e15ea749b6cc105ef97f8cb01a
+  languageName: node
+  linkType: hard
+
+"@expo-google-fonts/noto-serif@npm:^0.4":
+  version: 0.4.2
+  resolution: "@expo-google-fonts/noto-serif@npm:0.4.2"
+  checksum: 10c0/7441e29adf4377bbe651cf2c22e728434d7a9344d054539ace64e826174bf2c68f4e0a402637405fcb55bcbda5ab59516b29886ab65fa80ee50457a3126c5b8a
+  languageName: node
+  linkType: hard
+
 "@humanfs/core@npm:^0.19.2":
   version: 0.19.2
   resolution: "@humanfs/core@npm:0.19.2"
@@ -597,6 +611,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@stroc/pdf@workspace:packages/pdf"
   dependencies:
+    "@expo-google-fonts/noto-sans-mono": "npm:^0.4"
+    "@expo-google-fonts/noto-serif": "npm:^0.4"
     "@stroc/compose": "workspace:*"
     "@stroc/core": "workspace:*"
     "@stroc/render": "workspace:*"
@@ -627,6 +643,7 @@ __metadata:
   dependencies:
     "@stroc/compose": "workspace:*"
     "@stroc/core": "workspace:*"
+    "@stroc/render": "workspace:*"
     "@stroc/ui": "workspace:*"
     "@stroc/yaml": "workspace:*"
     "@types/express": "npm:^4.17.21"

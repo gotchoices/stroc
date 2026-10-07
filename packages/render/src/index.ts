@@ -3,7 +3,7 @@
 // every output format (and any app with its own UI) draws the same thing.
 
 import qrcode from 'qrcode-generator'
-import type { Problem } from '@stroc/core'
+import { isDomain, type Problem } from '@stroc/core'
 import { formatNumber, type Composed, type ComposedInline, type ComposedSection } from '@stroc/compose'
 
 // ---------------------------------------------------------------------------------------------
@@ -20,6 +20,7 @@ export interface Labels {
   particulars: string      // heading of the parameter table
   notSpecified: string     // shown for a missing value in drafts
   documentId: string       // label before the root CID
+  blank: string            // a required value not yet supplied (template view)
 }
 
 export const ENGLISH: Labels = {
@@ -27,12 +28,23 @@ export const ENGLISH: Labels = {
   particulars: 'Particulars',
   notSpecified: 'not specified',
   documentId: 'Document',
+  blank: '________________',
 }
 
 export interface RenderOptions {
   labels?: Partial<Labels>
   draft?: boolean          // render despite problems (missing values, unresolved references)
-  cidQr?: boolean          // print the root CID as a QR code at the end
+  template?: boolean       // the document as published: required values print as blanks, not errors
+  cidQr?: boolean          // print a QR code at the end: a URL for fetching the document (see qrUrl)
+  qrBase?: string          // base URL for the QR code when the author is not a domain (e.g. a gateway)
+}
+
+// The URL a QR code (or link) uses to fetch a document: from its author's domain when the author is
+// a domain, else from qrBase; undefined if neither applies (the QR then holds the bare CID).
+export function documentUrl(cid: string, author: string | undefined, qrBase?: string): string | undefined {
+  if (author && isDomain(author)) return `https://${author}/ipfs/${cid}`
+  if (qrBase) return `${qrBase.replace(/\/+$/, '')}/ipfs/${cid}`
+  return undefined
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -138,7 +150,8 @@ export function layout(doc: Composed, input: { data?: Record<string, string>, bl
   const options = input.options ?? {}
   const labels: Labels = { ...ENGLISH, ...options.labels }
   const data = input.data ?? {}
-  const problems = [...doc.problems, ...checkData(doc, data)]
+  const dataProblems = checkData(doc, data).filter(p => !(options.template && p.code === 'missing-value'))
+  const problems = [...doc.problems, ...dataProblems]
   if (!doc.document || (problems.length && !options.draft)) return { problems }
 
   const blocks: LayoutBlock[] = [{ kind: 'title', text: doc.title }]
@@ -149,7 +162,8 @@ export function layout(doc: Composed, input: { data?: Record<string, string>, bl
       rows: group.parameters.map(p => {
         const path = [...group.prefix, p.key].join('/')
         const supplied = typeof data[path] === 'string' && data[path] !== ''
-        return { label: p.label, value: supplied ? data[path] : p.default ?? labels.notSpecified, supplied }
+        const missing = options.template ? labels.blank : labels.notSpecified
+        return { label: p.label, value: supplied ? data[path] : p.default ?? missing, supplied }
       }),
     }))
     blocks.push({ kind: 'particulars', heading: labels.particulars, groups })
@@ -180,7 +194,10 @@ export function layout(doc: Composed, input: { data?: Record<string, string>, bl
   }
 
   const cid = doc.cid.toString()
-  if (options.cidQr) blocks.push({ kind: 'qr', value: cid, caption: `${labels.documentId} ${cid}`, modules: qrModules(cid) })
+  if (options.cidQr) {
+    const url = documentUrl(cid, doc.document.author, options.qrBase)
+    blocks.push({ kind: 'qr', value: url ?? cid, caption: url ?? `${labels.documentId} ${cid}`, modules: qrModules(url ?? cid) })
+  }
 
   return {
     layout: { title: doc.title, language: doc.language, cid, labels, blocks, draft: !!options.draft },
@@ -244,7 +261,19 @@ body { margin: 0; background: #fff; color: var(--ink); }
 .stroc figure.qr { display: inline-block; vertical-align: top; margin: 1em 1em 0 0; text-align: center; }
 .stroc figure.qr figcaption { font-family: ui-monospace, Menlo, monospace; font-size: 6pt; color: var(--muted); max-width: 140px; word-break: break-all; }
 .stroc .draft { color: #b00; text-align: center; font-weight: bold; margin-bottom: 1em; }
+.stroc .notice { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 9pt; color: #444; background: #f3f5f8; border-radius: 6px; padding: 0.6em 0.9em; margin: 0 0 1.5em; }
+@media print { .stroc .notice { display: none; } }
 .stroc-footer { font-family: ui-monospace, Menlo, monospace; font-size: 6.5pt; color: var(--muted); text-align: right; max-width: 7in; margin: 0 auto; padding: 0 0.5in 0.5in; }
+@media (max-width: 640px) {
+  .stroc { padding: 1em 0.9em 2em; font-size: 12pt; }
+  .stroc .section { margin-left: calc((var(--depth) - 1) * 0.9em); column-gap: 0.4em; }
+  .stroc .section .head { flex-wrap: wrap; gap: 0 1em; }
+  .stroc .section .cid { white-space: normal; overflow-wrap: anywhere; }
+  .stroc .section p { text-align: left; }
+  .stroc .preamble { text-align: left; }
+  .stroc-footer { padding: 0 0.9em 1em; text-align: left; overflow-wrap: anywhere; }
+}
+.stroc .notice { overflow-wrap: anywhere; }
 @page { size: letter; margin: 0.75in 0.75in 0.9in; }
 @media print {
   .stroc { padding: 0; max-width: none; }
@@ -252,9 +281,18 @@ body { margin: 0; background: #fff; color: var(--ink); }
 }
 `
 
+export interface HtmlOptions {
+  // A notice shown above the document (not printed), e.g. who served it and how to verify it.
+  notice?: { text: string, links?: [label: string, href: string][] }
+}
+
 // A standalone, print-ready HTML page.
-export function toHtml(l: Layout): string {
+export function toHtml(l: Layout, options: HtmlOptions = {}): string {
   const body: string[] = []
+  if (options.notice) {
+    const links = (options.notice.links ?? []).map(([label, href]) => `<a href="${esc(href)}">${esc(label)}</a>`).join(' · ')
+    body.push(`<div class="notice">${esc(options.notice.text)}${links ? ` ${links}` : ''}</div>`)
+  }
   if (l.draft) body.push('<div class="draft">DRAFT</div>')
   for (const b of l.blocks) {
     switch (b.kind) {
@@ -319,7 +357,10 @@ ${body.join('\n')}
 
 export interface PdfOptions {
   pageSize?: 'LETTER' | 'A4'
-  font?: string            // a font name the PDF writer knows; default "Times"
+  font?: string            // body font family known to the PDF writer; default "Times"
+  monoFont?: string        // font family for CIDs; default "Courier"
+  fontSize?: number        // body size in points; default 10.5
+  lineHeight?: number      // multiple of the font's own line spacing; default 1.15
 }
 
 // pdfmake's document definition is loosely typed; keep it as plain data.
@@ -427,7 +468,7 @@ export function toPdfDefinition(l: Layout, options: PdfOptions = {}): PdfDefinit
     info: { title: l.title, subject: `Stroc document ${l.cid}`, keywords: l.cid, creator: 'Stroc' },
     pageSize: options.pageSize ?? 'LETTER',
     pageMargins: [60, 54, 60, 60],
-    defaultStyle: { font: options.font ?? 'Times', fontSize: 10.5, lineHeight: 1.15 },
+    defaultStyle: { font: options.font ?? 'Times', fontSize: options.fontSize ?? 10.5, lineHeight: options.lineHeight ?? 1.15 },
     styles: {
       title: { fontSize: 16, bold: true, alignment: 'center', margin: [0, 0, 0, 14] },
       particularsHeading: { bold: true, margin: [0, 0, 0, 4] },
@@ -436,7 +477,7 @@ export function toPdfDefinition(l: Layout, options: PdfOptions = {}): PdfDefinit
       supplied: { bold: true, color: '#0b4f8a' },
       preamble: { alignment: 'justify', margin: [0, 0, 0, 10], leadingIndent: 24 },
       paragraph: { alignment: 'justify' },
-      cid: { font: 'Courier', fontSize: 5.5, color: '#666666' },
+      cid: { font: options.monoFont ?? 'Courier', fontSize: 5.5, color: '#666666' },
       appHeading: { fontSize: 12, bold: true, margin: [0, 14, 0, 6] },
       appText: { fontSize: 9 },
     },

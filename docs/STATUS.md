@@ -179,7 +179,7 @@ Specification and decisions
 
 ### Stage 0 — Safety net
 
-- [x] Vitest in every package, wired to `yarn test` (170 tests)
+- [x] Vitest in every package, wired to `yarn test` (176 tests)
 - [x] Unit tests for text rules, ids, language tags, markup and validation, including malformed input
 - [x] Golden-vector CID tests (5 fixture documents in `packages/core/test/fixtures/`, including a
       contract that includes a clause by CID). Recorded for format `"0.1"`; re-recorded at freeze.
@@ -261,6 +261,9 @@ Document server (`stroc serve`, `@stroc/server`; replaced the old dev server)
 - [x] Folder config `.stroc.yaml`: `domain`, `endorse`, `withdrawn`; roles from `author`,
       `superseded` from `replaces` (`contracts/.stroc.yaml` sets `mychips.org`)
 - [x] `--watch` reloads on change (development); `SIGHUP` reloads (production)
+- [x] Browsers get the composed document as a readable page at `/ipfs/<cid>` (content
+      negotiation, `Vary: Accept`), with a notice saying how to verify it; every other client
+      gets the bytes. A QR code on a printed contract therefore opens the contract.
 - [x] `--editor` hosts the editor at `/editor/` with its validation endpoints (development);
       `--editor` with no folder hosts only the editor; a busy port gives a clear message
 - [x] `Dockerfile`: built and run against `contracts/` (2026-10-07); `stroc-server` entry point
@@ -282,8 +285,13 @@ Rendering (`@stroc/render`, per [Rendering.md](Rendering.md))
       same legal layout as HTML; footer with root CID and page n / total; Letter or A4; DRAFT
       watermark; QR codes as SVG; PDF metadata carries the title and CID; no external access
 - [x] `stroc render ... -o file.pdf [--a4]`
-- [ ] Embed a free font family (Noto Serif) instead of the non-embedded standard fonts: consistent
-      rendering across viewers, and the way to non-Latin scripts
+- [x] Embedded fonts by default: Noto Serif and Noto Sans Mono (Latin, Greek, Cyrillic), loaded
+      into pdfmake's in-memory file system; standard fonts optional (`standardFonts`)
+- [ ] Fonts for further scripts (Arabic, Hebrew, CJK, Indic) and right-to-left layout
+- [x] Closing QR code encodes `https://<author-domain>/ipfs/<cid>` for a domain author (or
+      `<qrBase>/ipfs/<cid>`, or the bare CID)
+- [x] Template view (`template`): the document as published, required values as blanks
+- [x] HTML is readable on phones (small-screen layout)
 - [ ] Export PDF in the editor (pdfmake browser build)
 - [ ] The editor loads `@stroc/render` in the browser (the QR library is CommonJS: bundle it)
 

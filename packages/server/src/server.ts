@@ -8,7 +8,8 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { CID } from 'multiformats/cid'
 import { fromPlain, documentCid } from '@stroc/core'
-import { CATALOG_PATH } from '@stroc/compose'
+import { CATALOG_PATH, MemoryStore, compose } from '@stroc/compose'
+import { layout, toHtml } from '@stroc/render'
 import { loadLibrary, buildCatalog, type Library, type FolderConfig } from './library.js'
 
 const emptyLibrary = (): Library => ({ folder: '', config: {}, documents: new Map(), skipped: [], loaded: new Date() })
@@ -70,12 +71,40 @@ export async function createDocumentServer(options: ServerOptions): Promise<Docu
     }
     const doc = lib.documents.get(key)
     if (!doc) { res.status(404).type('text/plain').send('not found\n'); return }
+    res.set('Vary', 'Accept')
+    // A browser (no explicit format, HTML preferred) gets the composed document as a page, e.g.
+    // after scanning a QR code; every other client gets the bytes.
+    if (req.query.format === undefined && req.accepts(['application/vnd.ipld.raw', 'application/vnd.ipld.dag-json', 'application/json', 'text/html']) === 'text/html') {
+      htmlView(key).then(html => {
+        res.set('Cache-Control', 'public, max-age=300')
+        res.type('html').send(html)
+      }, () => res.status(500).type('text/plain').send('could not render\n'))
+      return
+    }
     const raw = req.query.format === 'raw' || /application\/vnd\.ipld\.raw/.test(req.get('accept') ?? '')
     res.set('Content-Type', raw ? 'application/vnd.ipld.raw' : 'application/vnd.ipld.dag-json')
     res.set('Cache-Control', IMMUTABLE)
     res.set('ETag', `"${key}"`)
     res.send(Buffer.from(doc.bytes))
   })
+
+  // The document as a readable page, composed from this server's own library. Missing includes and
+  // other problems are shown (draft view); missing deal-specific values print as blanks.
+  async function htmlView(key: string): Promise<string> {
+    const store = new MemoryStore()
+    for (const d of lib.documents.values()) await store.put(d.bytes)
+    const composed = await compose(key, store)
+    const result = layout(composed, { options: { template: true, draft: composed.problems.length > 0 } })
+    const domain = lib.config.domain ?? 'localhost'
+    const entry = buildCatalog(lib).entries.find(e => e.cid === key)
+    const claim = entry ? ` This server lists it as ${entry.role === 'author' ? `issued by ${domain}` : entry.role === 'endorse' ? `recommended by ${domain}` : 'hosted only'} (${entry.status}).` : ''
+    return toHtml(result.layout!, {
+      notice: {
+        text: `Rendered by the server for ${domain}.${claim} To verify, fetch the document itself and check that it hashes to ${key}.`,
+        links: [['Document bytes', `/ipfs/${key}?format=raw`], ['Catalog', CATALOG_PATH], ['All documents', '/']],
+      },
+    })
+  }
 
   app.get(CATALOG_PATH, (_req, res) => {
     publicData(res)

@@ -53,7 +53,13 @@ describe('toPdf', () => {
     expect(pdf.startsWith('%PDF-')).toBe(true)
     expect(pdf).toContain(`Stroc document ${l.cid}`)
     expect(pdf.match(/\/Type \/Page\b/g)?.length).toBe(1)
+    expect(pdf).toMatch(/\/BaseFont \/[A-Z]{6}\+NotoSerif-Bold/)   // embedded (subset) by default
+    expect(pdf).toContain('NotoSansMono')
+  })
+  it('can use the non-embedded standard fonts instead', async () => {
+    const pdf = text(await toPdf(await contractLayout(), { standardFonts: true }))
     expect(pdf).toContain('/BaseFont /Times-Bold')
+    expect(pdf).not.toContain('NotoSerif')
   })
   it('paginates a long contract', async () => {
     const { lintYaml } = await import('@stroc/yaml')

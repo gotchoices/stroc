@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { fromPlain } from '@stroc/core'
 import { MemoryStore, compose } from '@stroc/compose'
 import { lintYaml } from '@stroc/yaml'
-import { checkData, layout, toHtml, qrModules, type LayoutBlock } from '../src/index.js'
+import { checkData, layout, toHtml, qrModules, documentUrl, type LayoutBlock } from '../src/index.js'
 
 const fixture = (name: string) => fromPlain(JSON.parse(readFileSync(
   new URL(`../../core/test/fixtures/${name}.json`, import.meta.url), 'utf8'))).value
@@ -97,6 +97,37 @@ describe('toHtml', () => {
     expect(html).not.toContain('<script>')
     expect(html).toContain('A &lt;script&gt;x&lt;/script&gt; title')
     expect(html).toContain('Literal &lt; and &amp; &quot;quotes&quot;')
+  })
+})
+
+describe('template view', () => {
+  it('prints missing required values as blanks instead of refusing', async () => {
+    const r = layout(await contract(), { options: { template: true } })
+    expect(r.problems).toEqual([])
+    const p = r.layout!.blocks[1] as Extract<LayoutBlock, { kind: 'particulars' }>
+    expect(p.groups[0].rows[0]).toEqual({ label: 'Stock Holder', value: '________________', supplied: false })
+    expect(r.layout!.draft).toBe(false)
+  })
+  it('still refuses composition problems', async () => {
+    const store = new MemoryStore()
+    const c = await compose(await store.putDocument(fixture('contract')), store)   // clause missing
+    expect(layout(c, { options: { template: true } }).layout).toBeUndefined()
+  })
+})
+
+describe('documentUrl and the closing QR', () => {
+  const cid = 'baguqeera56bfnrqnf54kmd3c6ovga3mbinfdkwrdqwks6mntqpez22cjszea'
+  it('fetches from the author domain when there is one', () => {
+    expect(documentUrl(cid, 'mychips.org')).toBe(`https://mychips.org/ipfs/${cid}`)
+    expect(documentUrl(cid, 'Bob Anderson')).toBeUndefined()
+    expect(documentUrl(cid, 'Bob Anderson', 'https://ipfs.io/')).toBe(`https://ipfs.io/ipfs/${cid}`)
+  })
+  it('puts the URL in the QR code for a domain author', async () => {
+    const store = new MemoryStore()
+    const root = await store.putDocument({ stroc: '0.1', language: 'en', title: 'T', author: 'example.org' })
+    const l = layout(await compose(root, store), { options: { cidQr: true } }).layout!
+    const qr = l.blocks.at(-1) as Extract<LayoutBlock, { kind: 'qr' }>
+    expect(qr.value).toBe(`https://example.org/ipfs/${l.cid}`)
   })
 })
 

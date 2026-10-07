@@ -260,11 +260,18 @@ gateway, and verifies everything it receives.
 | `GET /ipfs/<cid>` (clients add `?format=raw` and `Accept: application/vnd.ipld.raw`) | The document's canonical DAG-JSON bytes |
 | `GET /ipfs/<cid>?format=car` (optional) | A CAR bundle of the document and everything it includes |
 | `GET /.well-known/stroc/catalog.json` | The catalog |
+| `GET /ipfs/<cid>` with `Accept: text/html` and no `format` (optional) | The composed document as a readable page, for a person following a link or QR code |
 | `GET /` (optional) | A human-readable index of the catalog |
 
 - A static host ignores the query string and serves the file, so publishing needs nothing but a web
   server. A client that does not receive a CAR fetches included documents one by one.
-- Responses for `/ipfs/<cid>` never change and may be cached indefinitely.
+- Responses for `/ipfs/<cid>` with `format=raw` never change and may be cached indefinitely. A
+  server that also offers the readable page sends `Vary: Accept`. The page is a convenience: it
+  proves nothing, and verifying still means fetching the bytes and checking the CID.
+- **Linking to a document**: `https://<author-domain>/ipfs/<cid>` fetches a document from the domain
+  that issues it (for example from a QR code printed on a contract). The CID in the URL lets the
+  reader verify whatever comes back. For documents on IPFS, `ipfs://<cid>` or a public gateway's
+  `https://<gateway>/ipfs/<cid>` find the document wherever it is kept.
 - Servers send `Access-Control-Allow-Origin: *` on `/ipfs/` and catalog responses, so browser-based
   editors and readers on other origins can fetch them. The data is public and is verified by the
   client, so this is safe.

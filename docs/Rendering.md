@@ -88,7 +88,10 @@ Modeled on MyCHIPs' `lib/control/buildpdf.js`, the layout users were satisfied w
 3. **Preamble**: the root document's `text`.
 4. **Sections**, numbered.
 5. **App blocks**, in the order supplied.
-6. **Closing identifier**: the root CID, optionally also as a QR code (option `cidQr`).
+6. **Closing identifier**: optionally a QR code (option `cidQr`). It encodes
+   `https://<author-domain>/ipfs/<cid>` when the root document's author is a domain, so scanning it
+   fetches the document from its issuer; otherwise `<qrBase>/ipfs/<cid>` if a base (for example an
+   IPFS gateway) is given; otherwise the bare CID.
 
 ### Numbering and sections
 
@@ -125,8 +128,9 @@ As in [Specification: Composition](Specification.md#composition):
   declares parameters follows as a group headed by its section number and title, in document
   order.
 - Each row is the parameter's label and value. A missing value shows the default; a missing
-  required value is an error from `checkData`, and `layout` refuses to render without an explicit
-  option to show such values as "not specified" (for drafts).
+  required value is an error from `checkData`, and `layout` refuses to render unless `draft` (shows
+  "not specified", with a DRAFT mark) or `template` (the document as published, with a blank line
+  to fill in, no mark) is set.
 - Supplied values are styled distinctly from document text, so a reader can tell the fixed terms
   from the deal-specific values.
 - The heading is a renderer label, default "Particulars". (The word "Definitions" is left for
@@ -155,11 +159,10 @@ label set passed in options. English is the default. The document's own text is 
 
 ## Open issues
 
-- **Embedded fonts.** PDFs currently use the PDF standard fonts (Times, Courier), as MyCHIPs did.
-  They are not embedded, so each viewer substitutes its own (one test renderer showed no bold at
-  all), and they cover Latin text only. Recommended: embed a free font family (for example Noto
-  Serif, with Noto Sans Mono for CIDs) for consistent legal documents and non-Latin scripts; how an
-  app adds fonts for other scripts is to be decided.
+- **Fonts for other scripts.** PDFs embed Noto Serif and Noto Sans Mono (Latin, Greek, Cyrillic),
+  so every viewer shows the same document. Other scripts (Arabic, Hebrew, CJK, Indic...) need
+  further Noto families; how an app selects or adds them is to be decided. The non-embedded PDF
+  standard fonts remain an option (`standardFonts`) for the smallest files, Latin only.
 - **pdfmake on a device**: confirm on React Native (Hermes) and NativeScript (see Platforms).
 - **Right-to-left documents**: bidi marks are preserved in text; layout direction is not yet
   addressed.
