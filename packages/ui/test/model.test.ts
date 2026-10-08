@@ -6,11 +6,11 @@ import {
   type EditDoc,
 } from '../src/model.js'
 
-const CLAUSE = 'baguqeerajvalsjwwhumendz7fedvc7sscqwvjcwiwdflwozdvhpor6jg32dq'
+const CLAUSE = 'baguqeerarfba72wstizzz3quu2bhl4lpk2oisbwmwe6zahewpa4ewtuzub6q'
 
 function sample(): EditDoc {
   return fromPlain({
-    stroc: '0.1', language: 'en', title: 'T',
+    stroc: '1.0', language: 'en', title: 'T',
     text: 'See <ref:b> and <ref:inc/cure>.',
     sections: [
       { id: 'a', title: 'A', text: 'One.' },
@@ -36,10 +36,10 @@ describe('conversion', () => {
     doc.title = '  Spaced  title '
     doc.sections.push(newSection(), newSection({ title: '', text: '' }), newSection({ text: '<i><b>x</b></i>  y ' }))
     doc.parameters.push({ key: '', label: '' })
-    expect(toPlain(doc)).toEqual({ stroc: '0.1', language: 'en', title: 'Spaced title', sections: [{ text: '<b><i>x</i></b> y' }] })
+    expect(toPlain(doc)).toEqual({ stroc: '1.0', language: 'en', title: 'Spaced title', sections: [{ text: '<b><i>x</i></b> y' }] })
   })
   it('accepts older files with as and string sources', () => {
-    const doc = fromPlain({ stroc: '0.1', language: 'en', title: 'T', sections: [{ as: 'x', source: CLAUSE }] })
+    const doc = fromPlain({ stroc: '1.0', language: 'en', title: 'T', sections: [{ as: 'x', source: CLAUSE }] })
     expect(doc.sections[0]).toMatchObject({ id: 'x', source: CLAUSE })
   })
 })
@@ -124,7 +124,7 @@ describe('ids', () => {
 
 describe('parameters', () => {
   it('renames a key and every placeholder for it', () => {
-    const doc = fromPlain({ stroc: '0.1', language: 'en', title: 'T', parameters: [{ key: 'rent', label: 'Rent' }],
+    const doc = fromPlain({ stroc: '1.0', language: 'en', title: 'T', parameters: [{ key: 'rent', label: 'Rent' }],
       text: 'Pay <param:rent>.', sections: [{ text: 'Again <b><param:rent></b>, not <param:other>.' }] })
     expect(renameParam(doc, 'rent', 'weekly-rent')).toBe(2)
     expect(doc.text).toBe('Pay <param:weekly-rent>.')

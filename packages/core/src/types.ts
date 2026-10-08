@@ -1,4 +1,4 @@
-// Core types for Stroc documents (Specification 0.14)
+// Core types for Stroc documents (Specification 1.0)
 import type { CID } from 'multiformats/cid'
 
 export type { CID }

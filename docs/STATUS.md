@@ -89,9 +89,10 @@ Stroc stays a general document library: it must not depend on Taleus or Sereus. 
   small type in a page margin and may print it as a QR code at the end.
 - **Language tags are BCP 47** (`en`, `en-US`, `sr-Latn`), replacing ISO 639-2 (`eng`): the standard
   browsers and date formatting use, and able to name a script. Spec 0.14.
-- **Format version `"0.1"` until frozen.** Documents made during development carry `stroc: "0.1"`.
-  The format is frozen, as `"1.0"`, when golden vectors are recorded and the first real set is
-  published; `"1.0"` tools reject `"0.1"` documents.
+- **Format frozen at `"1.0"`** (2026-10-07). Documents made during development carried
+  `stroc: "0.1"`; tools now reject them (`draft-version`, with a message saying how to upgrade).
+  Golden vectors and the sample contracts were re-recorded under `"1.0"`. Any change to document
+  bytes now needs a new format version.
 - **Package layout**: `@stroc/core` (types, validation and lint rules, markup tokenizer, encoding,
   CID, verification; runs everywhere, built without Node types); `@stroc/yaml` (read, write,
   `--fix`); `@stroc/compose` (resolver, composition, local store, missing check, CAR bundles, HTTP
@@ -185,11 +186,11 @@ Specification and decisions
 
 ### Stage 0 — Safety net
 
-- [x] Vitest in every package, wired to `yarn test` (221 tests); `yarn test:e2e` (Playwright) for the
+- [x] Vitest in every package, wired to `yarn test` (224 tests); `yarn test:e2e` (Playwright) for the
       editor in three browser engines (39 checks each run)
 - [x] Unit tests for text rules, ids, language tags, markup and validation, including malformed input
 - [x] Golden-vector CID tests (5 fixture documents in `packages/core/test/fixtures/`, including a
-      contract that includes a clause by CID). Recorded for format `"0.1"`; re-recorded at freeze.
+      contract that includes a clause by CID). Re-recorded for format `"1.0"` at the freeze.
 - [x] Malformed input returns problems instead of throwing (D1)
 - [x] Fix editor XSS (D2)
 - [x] ESLint configured and passing (`yarn lint`, all packages)
@@ -392,11 +393,10 @@ Editor
 ### Publishing on npmjs.org
 
 Prepare the library for others (Taleus first) to install. Nothing is published yet.
-- [ ] **License**: none in the repository yet. Choose one (MyCHIPs uses its own terms; wylib and the
-      Sereus projects should be checked for consistency), add `LICENSE`, and set `license` in every
-      package.
-- [ ] **Scope**: the names are free on npm (`stroc`, `@stroc/core` return 404, checked 2026-10-07), but
-      `@stroc/…` needs an npm organization (or user) named `stroc`; create it, or choose another scope
+- [x] **License**: MIT, Copyright Got Choices Foundation (as Quereus, ChipNet, Taleus, wylib),
+      chosen 2026-10-07. `LICENSE` at the root and in every package; `license` set in every package.
+- [x] **Scope**: the npm organization `stroc` exists (2026-10-07), so the packages publish as
+      `@stroc/…`
 - [ ] **Which packages are public**: core, yaml, compose, render, pdf, cli (`stroc` command), server
       (`stroc-server`); ui (the editor bundle) is currently private: publish it or ship it only inside
       the server package

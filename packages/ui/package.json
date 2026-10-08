@@ -1,6 +1,7 @@
 {
   "name": "@stroc/ui",
   "version": "0.0.1",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "main": "dist/src/index.js",

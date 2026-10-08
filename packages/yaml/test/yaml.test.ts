@@ -40,22 +40,22 @@ describe('sentenceLines', () => {
 
 describe('YAML rules', () => {
   it('requires values YAML reads as numbers to be quoted', () => {
-    const r = lintYaml("stroc: 0.1\nlanguage: en\ntitle: T\n")
+    const r = lintYaml("stroc: 1.0\nlanguage: en\ntitle: T\n")
     expect(r.problems.map(p => `${p.line} ${p.code}`)).toEqual(['1 not-string'])
   })
   it('rejects anchors, aliases, tags and merge keys', () => {
-    expect(lintYaml("stroc: '0.1'\nlanguage: &l en\ntitle: *l\n").problems.map(p => p.code)).toEqual(['yaml-anchor', 'yaml-alias'])
-    expect(lintYaml("stroc: !!str 0.1\nlanguage: en\ntitle: T\n").problems.map(p => p.code)).toEqual(['yaml-tag'])
-    expect(lintYaml("stroc: '0.1'\nlanguage: en\ntitle: T\n<<: {author: A}\n").problems.map(p => p.code)).toContain('yaml-merge')
+    expect(lintYaml("stroc: '1.0'\nlanguage: &l en\ntitle: *l\n").problems.map(p => p.code)).toEqual(['yaml-anchor', 'yaml-alias'])
+    expect(lintYaml("stroc: !!str 1.0\nlanguage: en\ntitle: T\n").problems.map(p => p.code)).toEqual(['yaml-tag'])
+    expect(lintYaml("stroc: '1.0'\nlanguage: en\ntitle: T\n<<: {author: A}\n").problems.map(p => p.code)).toContain('yaml-merge')
   })
   it('rejects duplicate keys', () => {
-    expect(lintYaml("stroc: '0.1'\nlanguage: en\ntitle: A\ntitle: B\n").problems.map(p => p.code)).toEqual(['yaml-error'])
+    expect(lintYaml("stroc: '1.0'\nlanguage: en\ntitle: A\ntitle: B\n").problems.map(p => p.code)).toEqual(['yaml-error'])
   })
   it('accepts JSON, which is YAML', async () => {
     const json = readFileSync(new URL('../../core/test/fixtures/contract.json', import.meta.url), 'utf8')
     const r = lintYaml(json)
     expect(r.problems).toEqual([])
-    expect(await cidOf(r.value)).toBe('baguqeera7usd5pm43tx4rx6nretjizkmq3mvlprxhoodwqvgqmnoblz37swq')
+    expect(await cidOf(r.value)).toBe('baguqeeraf2yimqb3c6qle6kmvxxfbfrbetjbosx2ub7xoigovzqb52i3neea')
   })
   it('reads a link written {/: cid}', () => {
     const r = parseYaml("source: {/: baguqeeraoqsvkl57icpvp2tm52uhmryobrrof557ya5cpnq7isfstfgsxwoa}\n")
@@ -66,18 +66,18 @@ describe('YAML rules', () => {
     expect(r.problems.map(p => `${p.line} ${p.code}`)).toEqual(['2 bad-link'])
   })
   it('locates validation problems by line', () => {
-    const text = "stroc: '0.1'\nlanguage: en\ntitle: T\nsections:\n  - title: A\n  - id: Bad\n    text: x\n"
+    const text = "stroc: '1.0'\nlanguage: en\ntitle: T\nsections:\n  - title: A\n  - id: Bad\n    text: x\n"
     expect(lintYaml(text).problems.map(p => `${p.line}:${p.col} ${p.code}`)).toEqual(['6:9 bad-id'])
   })
   it('treats double-quoted backslash escapes as YAML errors', () => {
-    expect(lintYaml("stroc: '0.1'\nlanguage: en\ntitle: T\ntext: \"a \\< b\"\n").problems[0].code).toBe('yaml-error')
+    expect(lintYaml("stroc: '1.0'\nlanguage: en\ntitle: T\ntext: \"a \\< b\"\n").problems[0].code).toBe('yaml-error')
   })
 })
 
 describe('fixYaml', () => {
   const messy = [
     '# Keep this comment',
-    'stroc: 0.1',
+    'stroc: 1.0',
     'language: EN-us',
     'title: Tally  Agreement   # and this one',
     'text: >-',
@@ -98,7 +98,7 @@ describe('fixYaml', () => {
     expect(lintYaml(text).problems).toEqual([])
     expect(text).toContain('# Keep this comment')
     expect(text).toContain('# and this one')
-    expect(text).toContain("stroc: '0.1'")
+    expect(text).toContain("stroc: '1.0'")
     expect(text).toContain('language: en-US')
     expect(text).toContain('text: >-\n  First sentence.\n  Second sentence.\nsections:')
     expect(text).toContain('      Has extra spaces.\n    sections:')
@@ -108,18 +108,18 @@ describe('fixYaml', () => {
     expect(fixYaml(clean)).toEqual({ text: clean, fixed: 0 })
   })
   it('fixes markup spelling in paragraphs', () => {
-    const text = "stroc: '0.1'\nlanguage: en\ntitle: T\ntext: Keep <i>a<b>b</b>c</i> and <b>x </b>y.\n"
+    const text = "stroc: '1.0'\nlanguage: en\ntitle: T\ntext: Keep <i>a<b>b</b>c</i> and <b>x </b>y.\n"
     const { text: out, fixed } = fixYaml(text)
     expect(fixed).toBe(1)
     expect(out).toContain('text: Keep <i>a</i><b><i>b</i></b><i>c</i> and <b>x</b> y.')
     expect(lintYaml(out).problems).toEqual([])
   })
   it('leaves markup grammar errors for the author', () => {
-    const text = "stroc: '0.1'\nlanguage: en\ntitle: T\ntext: Bold <B>x</B>.\n"
+    const text = "stroc: '1.0'\nlanguage: en\ntitle: T\ntext: Bold <B>x</B>.\n"
     expect(fixYaml(text).fixed).toBe(0)
   })
   it('does not touch what it cannot fix', () => {
-    const text = "stroc: '0.1'\nlanguage: en\ntitle: T\ntext: if a < b\n"
+    const text = "stroc: '1.0'\nlanguage: en\ntitle: T\ntext: if a < b\n"
     expect(fixYaml(text).fixed).toBe(0)
     expect(lintYaml(text).problems.map(p => p.code)).toEqual(['bad-tag'])
   })

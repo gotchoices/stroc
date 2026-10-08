@@ -34,7 +34,7 @@ let counter = 0
 export const newKey = () => `s${++counter}`
 
 export function newDoc(): EditDoc {
-  return { stroc: '0.1', language: 'en', title: 'Untitled Document', replaces: [], parameters: [], sections: [] }
+  return { stroc: '1.0', language: 'en', title: 'Untitled Document', replaces: [], parameters: [], sections: [] }
 }
 
 export function newSection(init: Partial<Omit<EditSection, 'key'>> = {}): EditSection {
@@ -59,7 +59,7 @@ export function fromPlain(plain: Record<string, unknown>): EditDoc {
     }
   }
   return {
-    stroc: String(plain.stroc ?? '0.1'),
+    stroc: String(plain.stroc ?? '1.0'),
     language: String(plain.language ?? 'en'),
     title: String(plain.title ?? ''),
     ...(plain.author !== undefined ? { author: String(plain.author) } : {}),

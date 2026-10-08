@@ -9,7 +9,7 @@ import { startServer } from '@stroc/server'
 
 const cli = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../dist/src/index.js')
 const run = (...args: string[]) => spawnSync(process.execPath, [cli, ...args], { encoding: 'utf8' })
-const doc = (title: string, extra = '') => `stroc: '0.1'\nlanguage: en\ntitle: ${title}\nauthor: example.org\n${extra}`
+const doc = (title: string, extra = '') => `stroc: '1.0'\nlanguage: en\ntitle: ${title}\nauthor: example.org\n${extra}`
 const cidOf = (f: string) => run('cid', f).stdout.split(' ')[0]
 
 let dir: string

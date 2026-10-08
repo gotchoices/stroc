@@ -3,10 +3,10 @@ import { CID } from 'multiformats/cid'
 import { validateDocument } from '../src/index.js'
 
 const ETHICS = CID.parse('baguqeeraoqsvkl57icpvp2tm52uhmryobrrof557ya5cpnq7isfstfgsxwoa')
-const OLD = CID.parse('baguqeera23wj73l2maypjd4rsenk2gybqesgrydiyhia55u3t2zosx6at2va')
+const OLD = CID.parse('baguqeeracqxwoqi4pg3ab52w46ilo7rshuk7l2agc7erux64ocjkiqk22zeq')
 const DAG_PB = CID.parse('bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi')
 
-const base = { stroc: '0.1', language: 'en', title: 'Tally Agreement' }
+const base = { stroc: '1.0', language: 'en', title: 'Tally Agreement' }
 
 // Codes of all problems, optionally with their paths.
 const codes = (doc: unknown) => validateDocument(doc).problems.map(p => p.code)
@@ -69,7 +69,10 @@ describe('document fields', () => {
     expect(at({ ...base, name: 'X', version: 2 })).toEqual(['name:unknown-field', 'version:unknown-field'])
   })
   it('checks the format version', () => {
-    expect(codes({ ...base, stroc: '1.0' })).toEqual(['version-too-new'])
+    expect(codes({ ...base, stroc: '1.0' })).toEqual([])
+    expect(codes({ ...base, stroc: '1.1' })).toEqual(['version-too-new'])
+    expect(codes({ ...base, stroc: '2.0' })).toEqual(['version-too-new'])
+    expect(codes({ ...base, stroc: '0.1' })).toEqual(['draft-version'])
     expect(codes({ ...base, stroc: 'banana' })).toEqual(['unknown-version'])
     expect(codes({ ...base, stroc: 0.1 })).toEqual(['not-string'])
   })

@@ -15,12 +15,12 @@ function fixture(name: string): unknown {
 // would get a new identity. Change an expected value only as a deliberate format change, together
 // with the `stroc` version.
 const GOLDEN: Record<string, string> = {
-  minimal: 'baguqeera23wj73l2maypjd4rsenk2gybqesgrydiyhia55u3t2zosx6at2va',
-  clause: 'baguqeerajvalsjwwhumendz7fedvc7sscqwvjcwiwdflwozdvhpor6jg32dq',
-  markup: 'baguqeeral3x6fb2w2ki4tkdjvkchbqwtgrpf62ticqiqakwdj5vhccxb3uva',
-  unicode: 'baguqeeraflz7y4q7nim4pqvgjwbeajmm2auo7azqfkhozuuzmawvhbay5yoq',
-  contract: 'baguqeera7usd5pm43tx4rx6nretjizkmq3mvlprxhoodwqvgqmnoblz37swq',
-  template: 'baguqeeradltxmjyu6pauyywxkzeqqzr6bniq5xgrigildiz3h4dme4mwufpq',   // placeholders (spec 0.17)
+  minimal: 'baguqeeracqxwoqi4pg3ab52w46ilo7rshuk7l2agc7erux64ocjkiqk22zeq',
+  clause: 'baguqeerarfba72wstizzz3quu2bhl4lpk2oisbwmwe6zahewpa4ewtuzub6q',
+  markup: 'baguqeerax6fqmovxte2bo53wu4x2fingttzzdflfiscaaxjkxqbdkkfjtena',
+  unicode: 'baguqeerauedoshjoye5ndbbcca4kwzwbhlqjvxhxn4vkm4nmrcmec6xsghiq',
+  contract: 'baguqeeraf2yimqb3c6qle6kmvxxfbfrbetjbosx2ub7xoigovzqb52i3neea',
+  template: 'baguqeeracbzq4lzxd7emtyuztcc4un7pjb5abbz2qwrq2zxovjyo2l5rfkcq',   // placeholders (spec 0.17)
 }
 
 describe('golden vectors', () => {
@@ -34,12 +34,12 @@ describe('golden vectors', () => {
 
   it('encodes canonical DAG-JSON exactly', () => {
     const text = new TextDecoder().decode(encodeDagJson(fixture('minimal')))
-    expect(text).toBe('{"language":"en","stroc":"0.1","text":"This is a sentence.","title":"Example Document"}')
+    expect(text).toBe('{"language":"en","stroc":"1.0","text":"This is a sentence.","title":"Example Document"}')
   })
 
   it('encodes a link as {"/": cid}', () => {
     const text = new TextDecoder().decode(encodeDagJson(fixture('contract')))
-    expect(text).toContain('"source":{"/":"baguqeerajvalsjwwhumendz7fedvc7sscqwvjcwiwdflwozdvhpor6jg32dq"}')
+    expect(text).toContain('"source":{"/":"baguqeerarfba72wstizzz3quu2bhl4lpk2oisbwmwe6zahewpa4ewtuzub6q"}')
   })
 
   it('the contract includes the clause by its golden CID', () => {
@@ -54,12 +54,12 @@ describe('golden vectors', () => {
 
 describe('documentCid', () => {
   it('refuses a non-canonical document rather than fixing it', async () => {
-    const r = await documentCid({ stroc: '0.1', language: 'en', title: 'Title ' })
+    const r = await documentCid({ stroc: '1.0', language: 'en', title: 'Title ' })
     expect(r.cid).toBeUndefined()
     expect(r.validation.problems.map(p => p.code)).toEqual(['trailing-space'])
   })
   it('refuses unknown fields rather than dropping them', async () => {
-    const r = await documentCid({ stroc: '0.1', language: 'en', title: 'T', name: 'x' })
+    const r = await documentCid({ stroc: '1.0', language: 'en', title: 'T', name: 'x' })
     expect(r.cid).toBeUndefined()
   })
 })
@@ -91,7 +91,7 @@ describe('verifyDocument', () => {
     expect(r.problems.map(p => p.code)).toEqual(['not-canonical'])
   })
   it('rejects valid DAG-JSON that is not a valid document', async () => {
-    const value = { stroc: '0.1', language: 'en', title: 'T', name: 'extra' }
+    const value = { stroc: '1.0', language: 'en', title: 'T', name: 'extra' }
     const b = encodeDagJson(value)
     const r = await verifyDocument(b, await cidOfValue(value))
     expect(r.ok).toBe(false)

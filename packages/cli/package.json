@@ -1,6 +1,7 @@
 {
   "name": "@stroc/cli",
   "version": "0.0.1",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "stroc": "dist/src/index.js"

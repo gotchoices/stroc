@@ -1,6 +1,6 @@
 # Converted from MyCHIPs contract/Credit_Terms.yaml (published 2020-04-01).
 # Sample content for Stroc; not a legal document in force.
-stroc: '0.1'
+stroc: '1.0'
 language: en
 title: Credit Terms and Conditions
 author: mychips.org

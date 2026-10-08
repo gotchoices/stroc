@@ -2,8 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { createHash } from 'node:crypto'
 import { setSha256, resetSha256, documentCid, verifyDocument, encodeDagJson } from '../src/index.js'
 
-const doc = { stroc: '0.1', language: 'en', title: 'Example Document', text: 'This is a sentence.' }
-const GOLDEN = 'baguqeera23wj73l2maypjd4rsenk2gybqesgrydiyhia55u3t2zosx6at2va'   // minimal fixture
+const doc = { stroc: '1.0', language: 'en', title: 'Example Document', text: 'This is a sentence.' }
+const GOLDEN = 'baguqeeracqxwoqi4pg3ab52w46ilo7rshuk7l2agc7erux64ocjkiqk22zeq'   // minimal fixture
 const nodeSha = (b: Uint8Array) => new Uint8Array(createHash('sha256').update(b).digest())
 
 afterEach(() => resetSha256())

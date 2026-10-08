@@ -23,21 +23,21 @@ includes `Tally_Contract.yaml`. The other ten are standalone clauses.
 
 | CID | File |
 |-----|------|
-| `baguqeeravcxd6xe4hiwi37cc5kzkqcac6ckgvfs7vwsqfrq7oxthfmjwiqga` | CHIP_Definition.yaml |
-| `baguqeera6bvvt35rmwsrnobp4hhctkpzvex5365yll4xxuwwd63tchdsdslq` | Credit_Terms.yaml |
-| `baguqeeramtnbavhp2wz7wnovfcanrjn7rv6kozrlwryslhwqr7cecvruhc4q` | Defaults.yaml |
-| `baguqeeraf7zzdx4c4pagt6lpk6ybquckd4idmwptqf4eafjfwn4cxrg5csea` | Duties_Rights.yaml |
-| `baguqeera7ng4eluiooneaufkarxpbk6iwf77e6mqmt44lpcvvstftqojxamq` | Ethics.yaml |
-| `baguqeeraype3mnrczouljhczmuyulnn34gx5trbtukftyej42cvets7h4x6a` | Free.yaml |
-| `baguqeeraurtgopiqpgclt7x76s72365z73yyuw7ku5vvepns7dllrmxacqrq` | Recitals.yaml |
-| `baguqeerardiejtjw7p75ptrt442fsnt3cxbbovp5avlr2wzarmrgjt4hjqzq` | Representations.yaml |
-| `baguqeerawiiy2wqafvg7rftiojfvrcxhwp52yckmmidgzk3pjilxsueva62q` | Sending_Value.yaml |
-| `baguqeera56bfnrqnf54kmd3c6ovga3mbinfdkwrdqwks6mntqpez22cjszea` | Tally_Contract.yaml |
-| `baguqeeraq6zgmmt5c3e3bhvalz2gwvhyz4ik37zlex5hfmh6mfugxdfk5npa` | Tally_Definition.yaml |
-| `baguqeeraawxjedwf3rqmgggak6ly64qzbpwlpochthuq56rszxeg3ggcc7hq` | Tally_Testing.yaml |
-| `baguqeera6i3jqel72deg3krtailz6oo4km2ahexq5johl6duqojm3jeqohea` | Values.yaml |
+| `baguqeerauek75qdl53uefgd6veslemr3qr6vyu3xj7nsatxzhwzwcnw2ojta` | CHIP_Definition.yaml |
+| `baguqeera5vr3prrozxdee6c3si4qzsk6ifgoucbnolyucjtfapvofxntldna` | Credit_Terms.yaml |
+| `baguqeeraufonkmm5gpx3tfx6nxf3hpkp6ovcbep5eq66u3fsw2vxfrfatxsq` | Defaults.yaml |
+| `baguqeerawnskbxtditnnnoevid4vp34vnssieony3rmo2m7spldrasyp24rq` | Duties_Rights.yaml |
+| `baguqeerads4vaakixvziadouqdplvj5lohjeydij3iiesdfuut4ueerp6giq` | Ethics.yaml |
+| `baguqeeralhnuqd3x7yvqwkpyoeyejsqzscja246wx4r7smklgnijhnwwscrq` | Free.yaml |
+| `baguqeeralehwsoiftek3dxfsdy5fpj3zp3bf3kvlboxbj6ilq6iyoeyz4a3a` | Recitals.yaml |
+| `baguqeera2czwvp2jqycr6emklk7w6mfw435djhstbo7mjb4adz6x673nt6la` | Representations.yaml |
+| `baguqeerajfdhmxqwvqxh7fpggdkphxtc4wxp77xkwwgwcuc6hiavdwxwgl4q` | Sending_Value.yaml |
+| `baguqeerax7desqybsjlnvrs6p4y4o56prwmlesdwr2xqaegw4fm7n7aqmfka` | Tally_Contract.yaml |
+| `baguqeerao5vxoukkxekl2bh35cgvdqmr3yuugqy4yyb2ryhhlwk7fh4whalq` | Tally_Definition.yaml |
+| `baguqeeraf7u65pfqeywbf2qqihx6oapsweb6tumwfgxweitxejwi3sx4gvca` | Tally_Testing.yaml |
+| `baguqeerawvjgodxyurxfhm5tinrsehqx6c54fce4y4jpptbemh76jkr3eegq` | Values.yaml |
 
-The CIDs change whenever the format changes before it is frozen at `1.0`.
+These are the CIDs under format `1.0` (frozen 2026-10-07). They change only when a document changes.
 
 ## Using them
 

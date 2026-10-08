@@ -7,8 +7,8 @@ import { MemoryStore, compose, findMissing, firstOf, formatNumber, type Composed
 const fixture = (name: string) => fromPlain(JSON.parse(readFileSync(
   new URL(`../../core/test/fixtures/${name}.json`, import.meta.url), 'utf8'))).value as Record<string, unknown>
 
-const CLAUSE = 'baguqeerajvalsjwwhumendz7fedvc7sscqwvjcwiwdflwozdvhpor6jg32dq'
-const base = { stroc: '0.1', language: 'en' }
+const CLAUSE = 'baguqeerarfba72wstizzz3quu2bhl4lpk2oisbwmwe6zahewpa4ewtuzub6q'
+const base = { stroc: '1.0', language: 'en' }
 
 async function library(...docs: unknown[]) {
   const store = new MemoryStore()

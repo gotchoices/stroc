@@ -1,4 +1,4 @@
-// Document validation (Specification 0.14). Never throws; reports every problem found.
+// Document validation (Specification 1.0). Never throws; reports every problem found.
 
 import { CID } from 'multiformats/cid'
 import * as dagJson from '@ipld/dag-json'
@@ -9,7 +9,7 @@ import { isValidId, MAX_ID_LENGTH, looksLikeDomain } from './ids.js'
 import { canonicalLanguageTag, isCanonicalLanguageTag } from './language.js'
 import { parseMarkup, findReferences, findParams } from './markup.js'
 
-export const SUPPORTED_VERSIONS = ['0.1'] as const
+export const SUPPORTED_VERSIONS = ['1.0'] as const
 
 const DOCUMENT_FIELDS = new Set(['stroc', 'language', 'title', 'author', 'published', 'text', 'sections', 'replaces', 'parameters'])
 const INLINE_FIELDS = new Set(['id', 'title', 'text', 'sections'])
@@ -153,8 +153,12 @@ function checkSection(ctx: Ctx, sec: unknown, at: Path) {
 
 function checkVersion(ctx: Ctx, value: unknown) {
   if (value === undefined) { problem(ctx, ['stroc'], 'missing', 'missing format version "stroc"'); return }
-  if (typeof value !== 'string') { problem(ctx, ['stroc'], 'not-string', `must be a string such as '0.1', not ${describe(value)}`); return }
+  if (typeof value !== 'string') { problem(ctx, ['stroc'], 'not-string', `must be a string such as '1.0', not ${describe(value)}`); return }
   if ((SUPPORTED_VERSIONS as readonly string[]).includes(value)) return
+  if (/^0\.\d+$/.test(value)) {
+    problem(ctx, ['stroc'], 'draft-version', `"${value}" is a pre-release draft format version; documents are now "1.0" (changing it changes the CID, so relink anything that includes this document)`)
+    return
+  }
   const newer = /^\d+(\.\d+)*$/.test(value) && compareVersions(value, SUPPORTED_VERSIONS[SUPPORTED_VERSIONS.length - 1]) > 0
   problem(ctx, ['stroc'], newer ? 'version-too-new' : 'unknown-version',
     newer ? `format version "${value}" is newer than this tool supports; upgrade the tool`

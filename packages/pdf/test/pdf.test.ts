@@ -69,7 +69,7 @@ describe('toPdf', () => {
     for (const f of readdirSync(dir).filter(f => f.endsWith('.yaml') && !f.startsWith('.'))) {
       await store.putDocument(lintYaml(readFileSync(new URL(f, dir), 'utf8')).value)
     }
-    const c = await compose('baguqeera56bfnrqnf54kmd3c6ovga3mbinfdkwrdqwks6mntqpez22cjszea', store)
+    const c = await compose('baguqeerax7desqybsjlnvrs6p4y4o56prwmlesdwr2xqaegw4fm7n7aqmfka', store)
     const pdf = text(await toPdf(layout(c).layout!))
     expect(pdf.match(/\/Type \/Page\b/g)!.length).toBeGreaterThanOrEqual(7)
   })

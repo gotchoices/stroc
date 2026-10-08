@@ -1,6 +1,6 @@
 # Converted from MyCHIPs contract/Sending_Value.yaml (published 2020-04-01).
 # Sample content for Stroc; not a legal document in force.
-stroc: '0.1'
+stroc: '1.0'
 language: en
 title: How Value is Transmitted in a MyCHIPs Network
 author: mychips.org

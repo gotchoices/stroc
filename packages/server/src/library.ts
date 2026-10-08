@@ -88,5 +88,5 @@ export function buildCatalog(lib: Library): Catalog {
       ...(d.document.published ? { published: d.document.published } : {}),
       ...(d.document.replaces ? { replaces: d.document.replaces.map(String) } : {}),
     }))
-  return { 'stroc-catalog': '0.1', domain, entries }
+  return { 'stroc-catalog': '1.0', domain, entries }
 }

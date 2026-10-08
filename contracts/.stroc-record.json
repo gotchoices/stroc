@@ -1,0 +1,56 @@
+{
+  "files": {
+    "CHIP_Definition.yaml": {
+      "cid": "baguqeerauek75qdl53uefgd6veslemr3qr6vyu3xj7nsatxzhwzwcnw2ojta",
+      "previous": []
+    },
+    "Credit_Terms.yaml": {
+      "cid": "baguqeera5vr3prrozxdee6c3si4qzsk6ifgoucbnolyucjtfapvofxntldna",
+      "previous": []
+    },
+    "Defaults.yaml": {
+      "cid": "baguqeeraufonkmm5gpx3tfx6nxf3hpkp6ovcbep5eq66u3fsw2vxfrfatxsq",
+      "previous": []
+    },
+    "Duties_Rights.yaml": {
+      "cid": "baguqeerawnskbxtditnnnoevid4vp34vnssieony3rmo2m7spldrasyp24rq",
+      "previous": []
+    },
+    "Ethics.yaml": {
+      "cid": "baguqeerads4vaakixvziadouqdplvj5lohjeydij3iiesdfuut4ueerp6giq",
+      "previous": []
+    },
+    "Free.yaml": {
+      "cid": "baguqeeralhnuqd3x7yvqwkpyoeyejsqzscja246wx4r7smklgnijhnwwscrq",
+      "previous": []
+    },
+    "Recitals.yaml": {
+      "cid": "baguqeeralehwsoiftek3dxfsdy5fpj3zp3bf3kvlboxbj6ilq6iyoeyz4a3a",
+      "previous": []
+    },
+    "Representations.yaml": {
+      "cid": "baguqeera2czwvp2jqycr6emklk7w6mfw435djhstbo7mjb4adz6x673nt6la",
+      "previous": []
+    },
+    "Sending_Value.yaml": {
+      "cid": "baguqeerajfdhmxqwvqxh7fpggdkphxtc4wxp77xkwwgwcuc6hiavdwxwgl4q",
+      "previous": []
+    },
+    "Tally_Contract.yaml": {
+      "cid": "baguqeerax7desqybsjlnvrs6p4y4o56prwmlesdwr2xqaegw4fm7n7aqmfka",
+      "previous": []
+    },
+    "Tally_Definition.yaml": {
+      "cid": "baguqeerao5vxoukkxekl2bh35cgvdqmr3yuugqy4yyb2ryhhlwk7fh4whalq",
+      "previous": []
+    },
+    "Tally_Testing.yaml": {
+      "cid": "baguqeeraf7u65pfqeywbf2qqihx6oapsweb6tumwfgxweitxejwi3sx4gvca",
+      "previous": []
+    },
+    "Values.yaml": {
+      "cid": "baguqeerawvjgodxyurxfhm5tinrsehqx6c54fce4y4jpptbemh76jkr3eegq",
+      "previous": []
+    }
+  }
+}

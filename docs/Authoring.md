@@ -8,7 +8,7 @@ Following it produces files that pass `stroc lint`. The full format is in
 
 ```yaml
 # Comments are allowed anywhere and are not part of the document.
-stroc: '0.1'                  # format version, always quoted
+stroc: '1.0'                  # format version, always quoted
 language: en                  # BCP 47: en, en-US, fr, es-419...
 title: Mutual Confidentiality Agreement
 author: example.org           # a domain (verifiable) or a name such as Jane Smith
@@ -52,14 +52,14 @@ sections:
 
 **The file**
 - YAML (or JSON). No anchors (`&x`), aliases (`*x`), tags (`!!str`) or merge keys (`<<`).
-- Every value is a string. Quote anything YAML could read as a number, date or boolean: `'0.1'`,
+- Every value is a string. Quote anything YAML could read as a number, date or boolean: `'1.0'`,
   `'2026-10-07'`, `'2'`, `'yes'`.
 - Write paragraphs as folded text (`text: >-`) with **one sentence per line**. The lines are joined
   with single spaces, so a line break is only a convenience. Do not use double-quoted strings for
   text (backslashes mean something else there).
 
 **The document** (top level)
-- Required: `stroc: '0.1'`, `language`, `title`.
+- Required: `stroc: '1.0'`, `language`, `title`.
 - Optional: `author` (a lowercase domain the author controls, which can be verified, or a plain
   name), `published`, `text` (a preamble paragraph), `parameters`, `replaces`, `sections`.
 - No other fields. Unknown fields are errors (no `name`, `version`, `id` at the top, no `notes`).

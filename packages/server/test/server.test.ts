@@ -9,7 +9,7 @@ import { compose, HttpResolver, AuthorChecker } from '@stroc/compose'
 import { startServer, parseServeArgs } from '../src/index.js'
 
 const contracts = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../contracts')
-const TALLY = 'baguqeera56bfnrqnf54kmd3c6ovga3mbinfdkwrdqwks6mntqpez22cjszea'
+const TALLY = 'baguqeerax7desqybsjlnvrs6p4y4o56prwmlesdwr2xqaegw4fm7n7aqmfka'
 
 describe('stroc serve on the sample library', () => {
   let server: Awaited<ReturnType<typeof startServer>>
@@ -31,7 +31,7 @@ describe('stroc serve on the sample library', () => {
   })
   it('answers everything else with an error, never a file', async () => {
     expect((await fetch(`${server.url}/ipfs/not-a-cid`)).status).toBe(400)
-    expect((await fetch(`${server.url}/ipfs/baguqeera23wj73l2maypjd4rsenk2gybqesgrydiyhia55u3t2zosx6at2va`)).status).toBe(404)
+    expect((await fetch(`${server.url}/ipfs/baguqeeracqxwoqi4pg3ab52w46ilo7rshuk7l2agc7erux64ocjkiqk22zeq`)).status).toBe(404)
     expect((await fetch(`${server.url}/ipfs/${TALLY}?format=car`)).status).toBe(406)
     expect((await fetch(`${server.url}/Tally_Contract.yaml`)).status).toBe(404)
     expect((await fetch(`${server.url}/.stroc.yaml`)).status).toBe(404)
@@ -77,7 +77,7 @@ describe('stroc serve on the sample library', () => {
 describe('catalog roles and status', () => {
   let dir: string
   let server: Awaited<ReturnType<typeof startServer>>
-  const base = { stroc: '0.1', language: 'en' }
+  const base = { stroc: '1.0', language: 'en' }
   const cids: Record<string, string> = {}
 
   beforeAll(async () => {
@@ -92,7 +92,7 @@ describe('catalog roles and status', () => {
       cids[k] = String((await documentCid(d)).cid)
       writeFileSync(path.join(dir, `${k}.yaml`), stringifyDocument(d))
     }
-    writeFileSync(path.join(dir, 'broken.yaml'), 'stroc: 0.1\ntitle: missing things\n')
+    writeFileSync(path.join(dir, 'broken.yaml'), 'stroc: 1.0\ntitle: missing things\n')
     writeFileSync(path.join(dir, '.stroc.yaml'), `domain: example.org\nendorse: [${cids.theirs}]\nwithdrawn: [${cids.old}]\n`)
     server = await startServer({ folder: dir, port: 0 })
   })

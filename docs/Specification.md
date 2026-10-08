@@ -1,12 +1,12 @@
 # Stroc Specification
 
-**Status**: Work in Progress  
-**Version**: 0.17 (Draft)
+**Status**: Frozen  
+**Version**: 1.0 (2026-10-07)
 
-The document format is not yet frozen. Until it is, documents carry `stroc: "0.1"`; the first
-frozen version will be `"1.0"`, and tools for it will reject `"0.1"` documents.
-
-Items marked *pending* depend on open questions in [STATUS.md](STATUS.md#blocking-questions).
+Documents in this format carry `stroc: "1.0"`. The format is frozen: a change to anything that
+affects a document's bytes, and so its CID, requires a new format version. Documents made with the
+pre-release drafts (`stroc: "1.0"`) are not accepted; they must be changed to `"1.0"`, which gives
+them new CIDs.
 
 ## Overview
 
@@ -26,7 +26,7 @@ Stroc (Structured Documents) is a protocol for creating legal documents where co
 
 ```json
 {
-  "stroc": "0.1",
+  "stroc": "1.0",
   "language": "en",
   "title": "Standard MyCHIPs Tally Contract",
   "author": "mychips.org",
@@ -46,7 +46,7 @@ The document's CID is computed by hashing the entire document. It is not stored 
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `stroc` | string | Yes | Format version (`"0.1"` until frozen). A tool rejects a document whose version is newer than it supports, rather than processing it partially. |
+| `stroc` | string | Yes | Format version: `"1.0"`. A tool rejects a document whose version is newer than it supports, rather than processing it partially. |
 | `language` | string | Yes | BCP 47 language tag (e.g. `en`, `en-US`, `sr-Latn`), in its canonical case |
 | `title` | string | Yes | Human-readable document title |
 | `author` | string | No | Who issues the document: a domain (verifiable) or a name (see [Author](#author)) |
@@ -301,7 +301,7 @@ that the server has it; the catalog states what the server claims about it.
 
 ```json
 {
-  "stroc-catalog": "0.1",
+  "stroc-catalog": "1.0",
   "domain": "sereus.org",
   "entries": [
     {
@@ -359,7 +359,7 @@ To include multiple language versions of a contract, create a **wrapper document
 
 ```json
 {
-  "stroc": "0.1",
+  "stroc": "1.0",
   "language": "en",
   "title": "Tally Agreement (Multilingual)",
   "author": "mychips.org",
@@ -387,7 +387,7 @@ hash of the DAG-JSON spelling. There is no build or compile step between them.
 
 ```yaml
 # Comments are allowed and are not content.
-stroc: '0.1'
+stroc: '1.0'
 language: en
 title: MyCHIPs Tally Agreement
 text: >-
@@ -404,8 +404,8 @@ sections:
 
 Rules:
 - YAML 1.2, core schema. Mappings, sequences and strings only; every value in a Stroc document is
-  a string, so values YAML would read as numbers or booleans must be quoted (`stroc: '0.1'`, not
-  `stroc: 0.1`, which is a number).
+  a string, so values YAML would read as numbers or booleans must be quoted (`stroc: '1.0'`, not
+  `stroc: 1.0`, which is a number).
 - A link is written as a one-key mapping `{/: <cid>}`; standard YAML and DAG-JSON libraries turn it
   into a link without Stroc-specific conversion.
 - Anchors, aliases, tags and merge keys are not allowed.
@@ -502,7 +502,7 @@ const dagJson = require('@ipld/dag-json');
 
 const document = {
   language: "en",
-  stroc: "0.1",
+  stroc: "1.0",
   text: "This is a sentence.",
   title: "Example Document"
 }
@@ -517,7 +517,7 @@ const hash = await sha256.digest(bytes);
 const cid = CID.create(1, dagJson.code, hash);
 
 console.log(cid.toString());
-// "baguqeera23wj73l2maypjd4rsenk2gybqesgrydiyhia55u3t2zosx6at2va"
+// "baguqeeracqxwoqi4pg3ab52w46ilo7rshuk7l2agc7erux64ocjkiqk22zeq"
 ```
 
 ### CID Format
@@ -530,7 +530,7 @@ Stroc CIDs are standard IPFS CIDv1:
 
 Because the codec is DAG-JSON, every Stroc CID begins `baguqeera`. (`bafy…` is the prefix for DAG-PB and DAG-CBOR CIDs; a value starting that way is not a Stroc CID.)
 
-Example (the document above): `baguqeera23wj73l2maypjd4rsenk2gybqesgrydiyhia55u3t2zosx6at2va`
+Example (the document above): `baguqeeracqxwoqi4pg3ab52w46ilo7rshuk7l2agc7erux64ocjkiqk22zeq`
 
 ### Verification
 
@@ -617,7 +617,7 @@ Inline markup is stored within paragraph strings and included in the hash:
 
 ```json
 {
-  "stroc": "0.1",
+  "stroc": "1.0",
   "language": "en",
   "title": "Tally Agreement",
   "text": "The <b>Stock Holder</b> must <i>not</i> transfer the asset.",
@@ -764,3 +764,4 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 | 0.15 | 2026-10-07 | `author` is a verifiable domain or a plain name; published sets use the IPFS trustless-gateway path `/ipfs/<cid>`; catalog at `/.well-known/stroc/catalog.json` with `domain` and per-entry `role` |
 | 0.16 | 2026-10-07 | Emphasis order b, i, u applies at every depth, so each formatting has exactly one spelling |
 | 0.17 | 2026-10-07 | Inline placeholders `<param:key>` for a document's own parameters; collections for catalogs deferred |
+| 1.0 | 2026-10-07 | Frozen. Documents carry `stroc: "1.0"` and catalogs `stroc-catalog: "1.0"`; pre-release `"0.1"` documents are rejected |

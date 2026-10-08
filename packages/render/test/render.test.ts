@@ -49,7 +49,7 @@ describe('layout', () => {
     ])
     const sections = l.blocks.filter(b => b.kind === 'section') as Extract<LayoutBlock, { kind: 'section' }>[]
     expect(sections.map(s => s.number)).toEqual(['1.', '1.1.', '1.2.', '1.3.', '1.4.', '2.'])
-    expect(sections[0]).toMatchObject({ title: 'Duties of the Parties', depth: 1, cid: 'baguqeerajvalsjwwhumendz7fedvc7sscqwvjcwiwdflwozdvhpor6jg32dq' })
+    expect(sections[0]).toMatchObject({ title: 'Duties of the Parties', depth: 1, cid: 'baguqeerarfba72wstizzz3quu2bhl4lpk2oisbwmwe6zahewpa4ewtuzub6q' })
     expect(sections[1].depth).toBe(2)
   })
 
@@ -92,7 +92,7 @@ describe('toHtml', () => {
   })
   it('escapes everything from documents and data', async () => {
     const store = new MemoryStore()
-    const root = await store.putDocument({ stroc: '0.1', language: 'en', title: 'A <script>x</script> title', text: 'Literal \\< and & "quotes"' })
+    const root = await store.putDocument({ stroc: '1.0', language: 'en', title: 'A <script>x</script> title', text: 'Literal \\< and & "quotes"' })
     const html = toHtml(layout(await compose(root, store), { data: {} }).layout!)
     expect(html).not.toContain('<script>')
     expect(html).toContain('A &lt;script&gt;x&lt;/script&gt; title')
@@ -116,7 +116,7 @@ describe('template view', () => {
 })
 
 describe('documentUrl and the closing QR', () => {
-  const cid = 'baguqeera56bfnrqnf54kmd3c6ovga3mbinfdkwrdqwks6mntqpez22cjszea'
+  const cid = 'baguqeerax7desqybsjlnvrs6p4y4o56prwmlesdwr2xqaegw4fm7n7aqmfka'
   it('fetches from the author domain when there is one', () => {
     expect(documentUrl(cid, 'mychips.org')).toBe(`https://mychips.org/ipfs/${cid}`)
     expect(documentUrl(cid, 'Bob Anderson')).toBeUndefined()
@@ -124,7 +124,7 @@ describe('documentUrl and the closing QR', () => {
   })
   it('puts the URL in the QR code for a domain author', async () => {
     const store = new MemoryStore()
-    const root = await store.putDocument({ stroc: '0.1', language: 'en', title: 'T', author: 'example.org' })
+    const root = await store.putDocument({ stroc: '1.0', language: 'en', title: 'T', author: 'example.org' })
     const l = layout(await compose(root, store), { options: { cidQr: true } }).layout!
     const qr = l.blocks.at(-1) as Extract<LayoutBlock, { kind: 'qr' }>
     expect(qr.value).toBe(`https://example.org/ipfs/${l.cid}`)
@@ -133,7 +133,7 @@ describe('documentUrl and the closing QR', () => {
 
 describe('qrModules', () => {
   it('produces a square matrix', () => {
-    const m = qrModules('baguqeera56bfnrqnf54kmd3c6ovga3mbinfdkwrdqwks6mntqpez22cjszea')
+    const m = qrModules('baguqeerax7desqybsjlnvrs6p4y4o56prwmlesdwr2xqaegw4fm7n7aqmfka')
     expect(m.length).toBeGreaterThan(20)
     expect(m.every(row => row.length === m.length)).toBe(true)
   })
@@ -147,7 +147,7 @@ describe('the sample Tally Contract', () => {
       await store.putDocument(lintYaml(readFileSync(new URL(f, dir), 'utf8')).value)
     }
     const root = await store.putDocument(lintYaml(readFileSync(new URL('Tally_Contract.yaml', dir), 'utf8')).value)
-    expect(root.toString()).toBe('baguqeera56bfnrqnf54kmd3c6ovga3mbinfdkwrdqwks6mntqpez22cjszea')
+    expect(root.toString()).toBe('baguqeerax7desqybsjlnvrs6p4y4o56prwmlesdwr2xqaegw4fm7n7aqmfka')
     const c = await compose(root, store)
     expect(c.problems).toEqual([])
     expect(c.sections.map(s => s.title)).toEqual([
@@ -168,7 +168,7 @@ describe('the sample Tally Contract', () => {
     for (const f of readdirSync(dir).filter(f => f.endsWith('.yaml') && !f.startsWith('.'))) {
       await store.putDocument(lintYaml(readFileSync(new URL(f, dir), 'utf8')).value)
     }
-    const c = await compose('baguqeera56bfnrqnf54kmd3c6ovga3mbinfdkwrdqwks6mntqpez22cjszea', store)
+    const c = await compose('baguqeerax7desqybsjlnvrs6p4y4o56prwmlesdwr2xqaegw4fm7n7aqmfka', store)
     const outline = layout(c, { options: { cidQr: true } }).layout!.blocks.map(b =>
       b.kind === 'section' ? `${b.number} ${b.title ?? '¶'}${b.cid ? ` [${b.cid}]` : ''}${b.runs?.some(r => r.ref) ? ' (refs)' : ''}`
       : b.kind === 'qr' ? `qr ${b.value}`
@@ -202,7 +202,7 @@ describe('placeholders', () => {
   it('fills a placeholder in an included clause by its path', async () => {
     const store = new MemoryStore()
     const clause = await store.putDocument(fixture('template'))
-    const root = await store.putDocument({ stroc: '0.1', language: 'en', title: 'Master', sections: [{ id: 'rental', source: clause }] })
+    const root = await store.putDocument({ stroc: '1.0', language: 'en', title: 'Master', sections: [{ id: 'rental', source: clause }] })
     const l = layout(await compose(root, store), { data: { 'rental/owner': 'A', 'rental/renter': 'B', 'rental/weekly-rent': 'C' } }).layout!
     expect(runsOf(l).filter(r => r.param).map(r => r.text)).toEqual(['A', 'B', 'C', '$500'])
   })

@@ -1,6 +1,6 @@
 # Converted from MyCHIPs contract/Free.yaml (published 2020-04-01).
 # Sample content for Stroc; not a legal document in force.
-stroc: '0.1'
+stroc: '1.0'
 language: en
 title: How to Use MyCHIPs at No Cost
 author: mychips.org
@@ -9,12 +9,12 @@ text: >-
   End users may use MyCHIPs royalty free on the condition that, in all contracts and transactions, the following contract sections are included in their full force and intent, and abided by:
 sections:
   - id: recitals
-    source: {/: baguqeeraurtgopiqpgclt7x76s72365z73yyuw7ku5vvepns7dllrmxacqrq}
+    source: {/: baguqeeralehwsoiftek3dxfsdy5fpj3zp3bf3kvlboxbj6ilq6iyoeyz4a3a}
   - id: values
-    source: {/: baguqeera6i3jqel72deg3krtailz6oo4km2ahexq5johl6duqojm3jeqohea}
+    source: {/: baguqeerawvjgodxyurxfhm5tinrsehqx6c54fce4y4jpptbemh76jkr3eegq}
   - id: tally-definition
-    source: {/: baguqeeraq6zgmmt5c3e3bhvalz2gwvhyz4ik37zlex5hfmh6mfugxdfk5npa}
+    source: {/: baguqeerao5vxoukkxekl2bh35cgvdqmr3yuugqy4yyb2ryhhlwk7fh4whalq}
   - id: chip-definition
-    source: {/: baguqeeravcxd6xe4hiwi37cc5kzkqcac6ckgvfs7vwsqfrq7oxthfmjwiqga}
+    source: {/: baguqeerauek75qdl53uefgd6veslemr3qr6vyu3xj7nsatxzhwzwcnw2ojta}
   - id: ethics
-    source: {/: baguqeera7ng4eluiooneaufkarxpbk6iwf77e6mqmt44lpcvvstftqojxamq}
+    source: {/: baguqeerads4vaakixvziadouqdplvj5lohjeydij3iiesdfuut4ueerp6giq}

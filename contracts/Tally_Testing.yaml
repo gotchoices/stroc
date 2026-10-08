@@ -1,6 +1,6 @@
 # Converted from MyCHIPs contract/Tally_Testing.yaml (published 2023-08-17).
 # Sample content for Stroc; not a legal document in force.
-stroc: '0.1'
+stroc: '1.0'
 language: en
 title: Tally Testing and Evaluation Agreement
 author: mychips.org
@@ -12,4 +12,4 @@ text: >-
   Failure to do so on a production system where other binding tallies are in use will likely result in a total loss value from the resulting lift(s)!
 sections:
   - id: tally-contract
-    source: {/: baguqeera56bfnrqnf54kmd3c6ovga3mbinfdkwrdqwks6mntqpez22cjszea}
+    source: {/: baguqeerax7desqybsjlnvrs6p4y4o56prwmlesdwr2xqaegw4fm7n7aqmfka}

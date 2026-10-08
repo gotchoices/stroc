@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 
-const TALLY = 'baguqeera56bfnrqnf54kmd3c6ovga3mbinfdkwrdqwks6mntqpez22cjszea'
+const TALLY = 'baguqeerax7desqybsjlnvrs6p4y4o56prwmlesdwr2xqaegw4fm7n7aqmfka'
 
 // Read state from the editor component.
 const doc = (page: Page) => page.evaluate(() => (document.querySelector('stroc-editor') as unknown as { doc: { text?: string, sections: { key: string, id?: string, title?: string, text?: string, sections: unknown[] }[] } }).doc)

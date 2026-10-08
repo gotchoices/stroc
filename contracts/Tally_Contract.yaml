@@ -1,6 +1,6 @@
 # Converted from MyCHIPs contract/Tally_Contract.yaml (published 2020-04-01).
 # Sample content for Stroc; not a legal document in force.
-stroc: '0.1'
+stroc: '1.0'
 language: en
 title: MyCHIPS Tally Agreement
 author: mychips.org
@@ -13,20 +13,20 @@ text: >-
   All terms and conditions, including those contained in the Tally itself, this document, the other documents it references, and the communications between the Parties, together form the complete Tally Agreement between the Parties.
 sections:
   - id: recitals
-    source: {/: baguqeeraurtgopiqpgclt7x76s72365z73yyuw7ku5vvepns7dllrmxacqrq}
+    source: {/: baguqeeralehwsoiftek3dxfsdy5fpj3zp3bf3kvlboxbj6ilq6iyoeyz4a3a}
   - id: values
-    source: {/: baguqeera6i3jqel72deg3krtailz6oo4km2ahexq5johl6duqojm3jeqohea}
+    source: {/: baguqeerawvjgodxyurxfhm5tinrsehqx6c54fce4y4jpptbemh76jkr3eegq}
   - id: tally-definition
-    source: {/: baguqeeraq6zgmmt5c3e3bhvalz2gwvhyz4ik37zlex5hfmh6mfugxdfk5npa}
+    source: {/: baguqeerao5vxoukkxekl2bh35cgvdqmr3yuugqy4yyb2ryhhlwk7fh4whalq}
   - id: chip-definition
-    source: {/: baguqeeravcxd6xe4hiwi37cc5kzkqcac6ckgvfs7vwsqfrq7oxthfmjwiqga}
+    source: {/: baguqeerauek75qdl53uefgd6veslemr3qr6vyu3xj7nsatxzhwzwcnw2ojta}
   - id: ethics
-    source: {/: baguqeera7ng4eluiooneaufkarxpbk6iwf77e6mqmt44lpcvvstftqojxamq}
+    source: {/: baguqeerads4vaakixvziadouqdplvj5lohjeydij3iiesdfuut4ueerp6giq}
   - id: duties-rights
-    source: {/: baguqeeraf7zzdx4c4pagt6lpk6ybquckd4idmwptqf4eafjfwn4cxrg5csea}
+    source: {/: baguqeerawnskbxtditnnnoevid4vp34vnssieony3rmo2m7spldrasyp24rq}
   - id: representations
-    source: {/: baguqeerardiejtjw7p75ptrt442fsnt3cxbbovp5avlr2wzarmrgjt4hjqzq}
+    source: {/: baguqeera2czwvp2jqycr6emklk7w6mfw435djhstbo7mjb4adz6x673nt6la}
   - id: defaults
-    source: {/: baguqeeramtnbavhp2wz7wnovfcanrjn7rv6kozrlwryslhwqr7cecvruhc4q}
+    source: {/: baguqeeraufonkmm5gpx3tfx6nxf3hpkp6ovcbep5eq66u3fsw2vxfrfatxsq}
   - id: credit-terms
-    source: {/: baguqeera6bvvt35rmwsrnobp4hhctkpzvex5365yll4xxuwwd63tchdsdslq}
+    source: {/: baguqeera5vr3prrozxdee6c3si4qzsk6ifgoucbnolyucjtfapvofxntldna}

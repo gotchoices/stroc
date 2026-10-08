@@ -1,5 +1,5 @@
 {
-  "stroc": "0.1",
+  "stroc": "1.0",
   "language": "en",
   "title": "Tally Agreement",
   "author": "Example Publisher",
@@ -10,9 +10,9 @@
     { "key": "foil-name", "label": "Foil Holder" },
     { "key": "limit", "label": "Maximum Balance", "default": "24" }
   ],
-  "replaces": [ { "/": "baguqeera23wj73l2maypjd4rsenk2gybqesgrydiyhia55u3t2zosx6at2va" } ],
+  "replaces": [ { "/": "baguqeeracqxwoqi4pg3ab52w46ilo7rshuk7l2agc7erux64ocjkiqk22zeq" } ],
   "sections": [
-    { "id": "duties", "source": { "/": "baguqeerajvalsjwwhumendz7fedvc7sscqwvjcwiwdflwozdvhpor6jg32dq" } },
+    { "id": "duties", "source": { "/": "baguqeerarfba72wstizzz3quu2bhl4lpk2oisbwmwe6zahewpa4ewtuzub6q" } },
     { "id": "terms", "title": "Terms", "text": "The Maximum Balance applies as stated in <ref:terms>." }
   ]
 }
