@@ -11,6 +11,7 @@ stroc render <file> -o out.pdf    compose with its includes and write PDF or HTM
 stroc link <folder>               replace file links in drafts with CIDs
 stroc status | update [folder]    keep includes current as documents are revised
 stroc serve <folder> --editor     serve documents, catalog and the editor
+stroc export <folder> -o <dir>    the same as static files, for any web server
 ```
 
 `stroc` with no arguments prints the full usage.

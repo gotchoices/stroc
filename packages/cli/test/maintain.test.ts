@@ -74,3 +74,16 @@ describe('stroc status and update', () => {
     expect(run('status', dir).stdout).toContain('every include in this folder is current')
   })
 })
+
+describe('stroc export', () => {
+  it('writes the folder as static files and reports what it did', () => {
+    expect(run('link', dir).status).toBe(0)
+    const out = path.join(dir, 'site')
+    const r = run('export', dir, '-o', out)
+    expect(r.status).toBe(0)
+    expect(r.stdout).toContain('3 documents for example.org')
+    expect(existsSync(path.join(out, 'ipfs', cidOf(f('master.yaml'))))).toBe(true)
+    expect(JSON.parse(readFileSync(path.join(out, '.well-known/stroc/catalog.json'), 'utf8')).entries).toHaveLength(3)
+    expect(run('export', dir).status).toBe(2)
+  })
+})

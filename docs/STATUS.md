@@ -50,7 +50,7 @@ Stroc stays a general document library: it must not depend on Taleus or Sereus. 
   document: open, edit, validate, save, show its CID, and read included documents by CID. It does
   not track revisions or update other files. A separate command-line package (depending on the
   shared library, not on the editor) does housekeeping in place: `stroc lint`, `stroc status`,
-  `stroc update`, and later `stroc publish`. Updates are deliberate (the files you name, one level
+  `stroc update`, and `stroc export`. Updates are deliberate (the files you name, one level
   at a time, or `--all`); the tool never rewrites what you did not ask for. File names live only
   in the tool's own record file, whose format is the tool's choice. Losing that file costs manual
   work, never correctness: the tool rebuilds it from the folder and the `replaces` chains. Lint
@@ -113,8 +113,8 @@ Stroc stays a general document library: it must not depend on Taleus or Sereus. 
   read-only, serves only valid documents on strict paths, caches CID paths forever, watches the
   folder in development, and runs directly or in Docker behind an HTTPS proxy. A folder config
   supplies the domain, `endorse`/`withdrawn` entries; roles default from `author`, `superseded`
-  from `replaces`. The current dev server folds into it (`--editor`). `stroc publish` writes the
-  same layout as static files.
+  from `replaces`. The current dev server folds into it (`--editor`). `stroc export` writes the
+  same layout as static files (issue #1, 2026-10-08).
 - **The editor keeps a user-controlled list of fetch sites** (2026-10-07), tried in order and
   verified, typically starting with a local `stroc serve`.
 - **Q6 settled: reference scope.** References point only within the document and what it
@@ -376,8 +376,15 @@ Editor
       insert), key rename updates placeholders
 - [x] App blocks (`heading`, `paragraph`, `table`, `qr`) placed after the document; QR drawn by
       the renderer; closing root-CID QR option
-- [ ] `stroc publish`: write what `stroc serve` would serve, as static files (`ipfs/<cid>`, CARs,
-      `.well-known/stroc/catalog.json`, `index.html`); optionally upload to IPFS
+- [x] `stroc export` (issue #1, 2026-10-08): what `stroc serve` serves, as static files for any web
+      server: `ipfs/<cid>` and a page `ipfs/<cid>.html` for each document (current and archived),
+      the catalog, `index.html`, and headers for Apache (`.htaccess`: CORS, caching, the page for
+      browsers by `Accept`), Netlify and Cloudflare Pages (`_headers`) and GitHub Pages
+      (`.nojekyll`). Never deletes or replaces a document; leaves files it did not write alone;
+      writes the catalog last. Checked against a real Apache; tests compare a static copy with the
+      live server
+- [ ] CAR files in the export, with the CAR work
+- [ ] Upload to IPFS (`ipfs dag put` with the DAG-JSON codec; `ipfs add` would give other CIDs)
 - [ ] Bundle as a CAR file (optional, demoted 2026-10-07): agreements refer to the contract by CID
       and apps keep documents once in a content-addressed store; a CAR is only a convenient way to
       ship or archive a whole composition in one file (for a counterparty, a lawyer, a backup)

@@ -22,6 +22,11 @@ from the document format version (`stroc: "1.0"`).
 If publishing stops partway, fix the cause and run `yarn release:publish` again: packages already
 published at this version are skipped.
 
+npm asks for approval in the browser for each package. On the first approval, choose to skip
+two-factor checks for 5 minutes and the rest go through. A package published for the first time
+also gets a placeholder version `0.0.0-stage` (from npm's staged publishing); it is harmless, and
+`latest` points at the real version. A new version can take a few minutes to appear to everyone.
+
 ## Which number
 
 - **patch**: fixes, no API change

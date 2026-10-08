@@ -281,7 +281,9 @@ gateway, and verifies everything it receives.
 | `GET /` (optional) | A human-readable index of the catalog |
 
 - A static host ignores the query string and serves the file, so publishing needs nothing but a web
-  server. A client that does not receive a CAR fetches included documents one by one.
+  server. A client that asks for a CAR must check that it received one (a static host returns the
+  document's bytes); otherwise it fetches included documents one by one. Files are named by the
+  CID's canonical form (CIDv1, base32), so clients request that form.
 - Responses for `/ipfs/<cid>` with `format=raw` never change and may be cached indefinitely. A
   server that also offers the readable page sends `Vary: Accept`. The page is a convenience: it
   proves nothing, and verifying still means fetching the bytes and checking the CID.

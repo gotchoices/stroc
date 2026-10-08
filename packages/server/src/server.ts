@@ -7,8 +7,8 @@ import { watch, type FSWatcher } from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { CID } from 'multiformats/cid'
-import { CATALOG_PATH, MemoryStore, compose } from '@stroc/compose'
-import { layout, toHtml } from '@stroc/render'
+import { CATALOG_PATH } from '@stroc/compose'
+import { documentPage, libraryStore } from './views.js'
 import { loadLibrary, buildCatalog, type Library, type FolderConfig } from './library.js'
 
 const emptyLibrary = (): Library => ({ folder: '', config: {}, documents: new Map(), skipped: [], loaded: new Date() })
@@ -87,22 +87,10 @@ export async function createDocumentServer(options: ServerOptions): Promise<Docu
     res.send(Buffer.from(doc.bytes))
   })
 
-  // The document as a readable page, composed from this server's own library. Missing includes and
-  // other problems are shown (draft view); missing deal-specific values print as blanks.
+  // The document as a readable page, composed from this server's own library.
   async function htmlView(key: string): Promise<string> {
-    const store = new MemoryStore()
-    for (const d of lib.documents.values()) await store.put(d.bytes)
-    const composed = await compose(key, store)
-    const result = layout(composed, { options: { template: true, draft: composed.problems.length > 0 } })
-    const domain = lib.config.domain ?? 'localhost'
-    const entry = buildCatalog(lib).entries.find(e => e.cid === key)
-    const claim = entry ? ` This server lists it as ${entry.role === 'author' ? `issued by ${domain}` : entry.role === 'endorse' ? `recommended by ${domain}` : 'hosted only'} (${entry.status}).` : ''
-    return toHtml(result.layout!, {
-      notice: {
-        text: `Rendered by the server for ${domain}.${claim} To verify, fetch the document itself and check that it hashes to ${key}.`,
-        links: [['Document bytes', `/ipfs/${key}?format=raw`], ['Catalog', CATALOG_PATH], ['All documents', '/']],
-      },
-    })
+    return documentPage(lib, buildCatalog(lib), await libraryStore(lib), key,
+      { bytes: `/ipfs/${key}?format=raw`, catalog: CATALOG_PATH, index: '/' })
   }
 
   app.get(CATALOG_PATH, (_req, res) => {
@@ -114,7 +102,7 @@ export async function createDocumentServer(options: ServerOptions): Promise<Docu
   app.get('/', (_req, res) => {
     if (!options.folder) { res.redirect('/editor/'); return }
     res.set('Cache-Control', 'no-cache')
-    res.type('html').send(indexPage(lib, buildCatalog(lib), options.editor ?? false))
+    res.type('html').send(indexPage(lib, buildCatalog(lib), { editor: options.editor }))
   })
 
   if (options.editor) mountEditor(app)

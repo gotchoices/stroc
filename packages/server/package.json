@@ -29,6 +29,10 @@
       "types": "./dist/src/index.d.ts",
       "import": "./dist/src/index.js"
     },
+    "./args": {
+      "types": "./dist/src/args.d.ts",
+      "import": "./dist/src/args.js"
+    },
     "./package.json": "./package.json"
   },
   "bin": {

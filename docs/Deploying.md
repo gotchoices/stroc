@@ -72,6 +72,50 @@ top-level contract's CID: that is what Taleus offers and both parties sign.
 
 ## 4. Deploy
 
+Either export the set as static files for the site's existing web server, or run the Stroc server.
+
+**Static files** (no Node process on the web host)
+
+```
+yarn stroc export taleus-contracts -o site/      # then copy site/ to the web root
+```
+
+The export writes `ipfs/<cid>` (each document's bytes, current and archived), `ipfs/<cid>.html`
+(its readable page), `.well-known/stroc/catalog.json`, `index.html`, and header files for common
+hosts. Rerun it after every change. It never deletes or replaces a document, and it leaves alone
+any `index.html` or `_headers` it did not write, so it can export into an existing site's root.
+
+| Host | What to do |
+|------|------------|
+| Apache | Nothing: the exported `.htaccess` files set the headers and serve the page to browsers. Needs `mod_headers`, `mod_rewrite` and `AllowOverride FileInfo` |
+| nginx | Add the snippet below |
+| Netlify, Cloudflare Pages | Nothing: `_headers` sets the headers. A browser opening `/ipfs/<cid>` gets the bytes, not the page (these hosts cannot choose by `Accept`); the index links to the pages |
+| GitHub Pages | Nothing: `.nojekyll` keeps the `.well-known` folder. GitHub Pages sends `Access-Control-Allow-Origin: *` itself; the page for browsers is reached from the index |
+
+nginx (not yet tested against a real nginx):
+
+```
+location /ipfs/ {
+  default_type application/vnd.ipld.raw;
+  add_header Access-Control-Allow-Origin * always;
+  add_header X-Content-Type-Options nosniff always;
+  add_header Vary Accept always;
+  set $page "";
+  if ($http_accept ~* "text/html") { set $page ".html"; }
+  if ($arg_format) { set $page ""; }
+  try_files $uri$page $uri =404;
+}
+location /.well-known/stroc/ {
+  add_header Access-Control-Allow-Origin * always;
+  add_header X-Content-Type-Options nosniff always;
+}
+```
+
+Compared with the server, a static host has no `406` for CAR requests (none are served yet) and
+picks up changes only when you export again.
+
+**The Stroc server**
+
 The server is read-only and serves exactly the folder. Two ways to run it:
 
 **Docker**
@@ -114,6 +158,9 @@ curl -s https://sereus.org/.well-known/stroc/catalog.json | head
 curl -s -H 'Accept: application/vnd.ipld.raw' https://sereus.org/ipfs/<contract-cid> | head -c 200
 ```
 
+With static files, also check the headers: `curl -sI https://sereus.org/.well-known/stroc/catalog.json`
+should show `Access-Control-Allow-Origin: *` (browser-based clients need it).
+
 Then open the contract in the editor with `https://sereus.org` as a source: each included document
 should show **✓ Verified** and **✓ Author sereus.org confirmed**.
 
@@ -143,7 +190,8 @@ should show **✓ Verified** and **✓ Author sereus.org confirmed**.
 
   The catalog marks replaced and archived versions `superseded` automatically.
 - To stop recommending a document, list its CID under `withdrawn` in `.stroc.yaml`.
-- After changing files, reload the server: `docker kill -s HUP <container>` (or restart it).
+- After changing files, reload the server (`docker kill -s HUP <container>`, or restart it), or
+  export again and copy the new files to the web root.
 
 ## Several apps on one domain
 

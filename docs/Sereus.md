@@ -70,7 +70,7 @@ A typical flow, using Taleus as the example:
 
 1. **A publisher** (for example sereus.org or mychips.org) maintains a library of documents with
    the Stroc folder tools, each with its domain as `author`, and serves it with `stroc serve` or
-   as static files from `stroc publish`, in the IPFS trustless-gateway layout (`/ipfs/<cid>`) with a
+   as static files from `stroc export`, in the IPFS trustless-gateway layout (`/ipfs/<cid>`) with a
    catalog at `/.well-known/stroc/catalog.json`. IPFS itself is optional.
 2. **The offering party** chooses a contract from a publisher, fetches its bundle, and Stroc
    verifies every document in it against its CID. The app stores the bundle locally.
@@ -92,7 +92,7 @@ What Stroc provides for this:
 - **A local store helper** that keeps verified documents by CID, and a **missing check** that lists
   which included documents a store does not yet hold, so an app knows what to ask for.
 - **A server and a publish format**: `stroc serve` (development and production) and `stroc
-  publish` (static files) produce the same layout, and one HTTP resolver reads it, or any IPFS
+  export` (static files for any web server) produce the same layout, and one HTTP resolver reads it, or any IPFS
   gateway.
 - **An author check**: for a document whose `author` is a domain, report whether that domain's
   catalog lists it as its own, and in what status.

@@ -7,6 +7,11 @@ List changes under **Unreleased** as they are made; `yarn release:version` dates
 
 ## Unreleased
 
+- `stroc export <folder> -o <dir>`: publish a document set as static files on any web server
+  (Apache, nginx, Netlify, Cloudflare Pages, GitHub Pages), with no Node process (issue #1).
+  `exportLibrary` in `@stroc/server`.
+- The `stroc` command starts faster: the server and PDF writer load only when used.
+
 ## 0.1.0 (2026-10-07)
 
 - First public release of the libraries (`core`, `yaml`, `compose`, `render`, `pdf`), the editor

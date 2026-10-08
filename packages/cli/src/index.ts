@@ -4,6 +4,7 @@
 //   stroc cid <files...>            print the CID of each valid document
 //   stroc render <file> [options]   compose a document with its includes and write HTML
 //   stroc serve <folder> [options]  serve a folder of documents over HTTP
+//   stroc export <folder> -o <dir>  write what serve would serve, as static files
 //   stroc link <folder|files...>    replace include links to files with those files' CIDs
 //   stroc status [folder]           each document's CID and the state of every include
 //   stroc update [files] [--all]    bring outdated includes up to date, recording replaces
@@ -15,8 +16,9 @@ import { loadFolder, saveRecord, isArchived, type Folder } from './library.js'
 import { findLinkValues } from '@stroc/yaml'
 import { MemoryStore, compose } from '@stroc/compose'
 import { layout, toHtml } from '@stroc/render'
-import { toPdf } from '@stroc/pdf'
-import { startServer, parseServeArgs, SERVE_USAGE } from '@stroc/server'
+import { parseServeArgs, SERVE_USAGE } from '@stroc/server/args'
+// The server and PDF writer are loaded only by the commands that use them (express alone takes
+// most of a second to load).
 
 const USAGE = `usage:
   stroc lint [--fix] <files...>   check YAML or JSON documents
@@ -36,7 +38,11 @@ const USAGE = `usage:
                                   (source: {/: ./clause.yaml}) with that file's CID, bottom-up
   stroc serve ${SERVE_USAGE}
                                   serve the folder's documents at /ipfs/<cid>, with a catalog
-                                  and index; --watch reloads on change, --editor hosts the editor`
+                                  and index; --watch reloads on change, --editor hosts the editor
+  stroc export <folder> -o <dir> [--domain D]
+                                  write the same as static files for any web server: ipfs/<cid>,
+                                  a page for each, the catalog, index.html and headers for Apache,
+                                  Netlify and Cloudflare Pages; never deletes a document`
 
 function report(file: string, kind: 'error' | 'warning', p: LocatedProblem) {
   const where = p.line ? `${file}:${p.line}:${p.col}` : file
@@ -117,7 +123,7 @@ async function render(args: string[]): Promise<number> {
   }
   const out = option(args, '-o')
   const output = out?.toLowerCase().endsWith('.pdf')
-    ? await toPdf(result.layout, { pageSize: args.includes('--a4') ? 'A4' : 'LETTER' })
+    ? await (await import('@stroc/pdf')).toPdf(result.layout, { pageSize: args.includes('--a4') ? 'A4' : 'LETTER' })
     : toHtml(result.layout)
   if (out) {
     writeFileSync(out, output)
@@ -252,15 +258,32 @@ async function update(args: string[]): Promise<number> {
   return 0
 }
 
+async function exportCommand(args: string[]): Promise<number> {
+  const valued = new Set(['-o', '--domain'])
+  const folder = args.find((a, i) => !a.startsWith('-') && !valued.has(args[i - 1]))
+  const out = option(args, '-o')
+  if (!folder || !out) { console.error(USAGE); return 2 }
+  const { loadLibrary: loadServedLibrary, exportLibrary } = await import('@stroc/server')
+  const lib = await loadServedLibrary(folder, { domain: option(args, '--domain') })
+  for (const s of lib.skipped) console.error(`skipped ${s.file}: ${s.problems[0]?.message ?? 'invalid'}`)
+  const r = await exportLibrary(lib, out)
+  console.log(`${r.documents} documents for ${lib.config.domain} in ${r.dir} (${r.added.length} new)`)
+  if (r.kept.length) console.log(`kept ${r.kept.length} earlier documents no longer in ${folder} (documents are never deleted)`)
+  for (const f of r.notWritten) console.log(`left ${f} alone: it was not written by stroc export`)
+  return lib.skipped.length ? 1 : 0
+}
+
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv
   if (command === 'render') return render(rest)
   if (command === 'link') return rest.length ? link(rest) : (console.error(USAGE), 2)
   if (command === 'status') return status(rest)
   if (command === 'update') return update(rest)
+  if (command === 'export') return exportCommand(rest)
   if (command === 'serve') {
     const opts = parseServeArgs(rest, process.env)
     if (!opts.folder && !opts.editor) { console.error(USAGE); return 2 }
+    const { startServer } = await import('@stroc/server')
     await startServer({ ...opts, log: m => console.log(m) })
     return await new Promise<number>(() => undefined)   // runs until interrupted
   }
