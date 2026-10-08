@@ -3,7 +3,7 @@
 // implementation (for example a native module on a phone) with setSha256; it is checked against
 // known digests first, because a wrong implementation would silently produce wrong CIDs.
 import { from } from 'multiformats/hashes/hasher'
-import { sha256 as nobleSha256 } from '@noble/hashes/sha2'
+import { sha256 as nobleSha256 } from '@noble/hashes/sha2.js'
 
 export type Sha256 = (bytes: Uint8Array) => Uint8Array | Promise<Uint8Array>
 

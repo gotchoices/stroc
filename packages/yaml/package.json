@@ -18,7 +18,7 @@
   },
   "bugs": "https://github.com/gotchoices/stroc/issues",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19"
   },
   "type": "module",
   "sideEffects": false,

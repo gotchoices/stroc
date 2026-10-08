@@ -19,7 +19,7 @@
   },
   "bugs": "https://github.com/gotchoices/stroc/issues",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19"
   },
   "type": "module",
   "main": "dist/src/index.js",
@@ -49,7 +49,7 @@
     "@stroc/ui": "workspace:*",
     "@stroc/yaml": "workspace:*",
     "express": "^4.19.2",
-    "multiformats": "^11.0.2",
+    "multiformats": "^13.4 || ^14",
     "yaml": "^2"
   },
   "devDependencies": {

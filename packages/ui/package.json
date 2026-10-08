@@ -19,7 +19,7 @@
   },
   "bugs": "https://github.com/gotchoices/stroc/issues",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19"
   },
   "type": "module",
   "scripts": {
@@ -35,6 +35,7 @@
     "@stroc/yaml": "workspace:*",
     "esbuild": "^0.28",
     "lit": "^3.1.4",
+    "multiformats": "^13.4 || ^14",
     "pdfmake": "^0.3",
     "typescript": "^5.4.0",
     "vitest": "^3",

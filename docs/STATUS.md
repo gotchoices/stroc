@@ -408,8 +408,12 @@ Prepare the library for others (Taleus first) to install. Nothing is published y
       (verified by `yarn release:check`)
 - [x] **Versioning and release process** (2026-10-07): [Releasing.md](Releasing.md), CHANGELOG.md,
       and `yarn release:check`, `release:version`, `release:publish` (scripts/release.mjs). The check
-      installs the packed tarballs in a scratch project and uses them. First version still to choose
-      (0.1.0 or 1.0.0)
+      installs the packed tarballs in a scratch project and uses them. First release: 0.1.0 (decided
+      2026-10-07; 1.0.0 after Taleus has used the API)
+- [x] **Fits Taleus's dependencies** (2026-10-07): `multiformats` `^13.4 || ^14` (one copy, so the
+      app's `CID` type is Stroc's), `@noble/hashes` ^2, Node 20.19+. Checked by compiling against
+      the packed packages with Taleus's tsconfig and TypeScript 6.0.3, on multiformats 13 and 14, and
+      composing, verifying and rendering the contract set
 - [ ] **npm provenance**: publish from CI (GitHub Actions) with `--provenance`
 - [x] **Consumers' notes**: what a React Native app must provide (`TextEncoder`/`TextDecoder`, fonts
       for PDF) and the native SHA-256 hook are in Rendering.md and Sereus.md

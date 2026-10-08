@@ -18,7 +18,7 @@
   },
   "bugs": "https://github.com/gotchoices/stroc/issues",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19"
   },
   "type": "module",
   "sideEffects": false,
@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "@stroc/core": "workspace:*",
-    "multiformats": "^11.0.2"
+    "multiformats": "^13.4 || ^14"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

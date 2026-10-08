@@ -386,10 +386,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noble/hashes@npm:^1.6.0, @noble/hashes@npm:^1.8":
+"@noble/hashes@npm:^1.6.0":
   version: 1.8.0
   resolution: "@noble/hashes@npm:1.8.0"
   checksum: 10c0/06a0b52c81a6fa7f04d67762e08b2c476a00285858150caeaaff4037356dd5e119f45b2a530f638b77a5eeca013168ec1b655db41bae3236cb2e9d511484fc77
+  languageName: node
+  linkType: hard
+
+"@noble/hashes@npm:^2":
+  version: 2.4.0
+  resolution: "@noble/hashes@npm:2.4.0"
+  checksum: 10c0/f5820a38c52886073a69722a030688ad188bbacb822d01554545371259961c2b916266c57c013c2ce5a0d78aec977142fc68fd2a79be4c97b0644fcee9bb35f6
   languageName: node
   linkType: hard
 
@@ -602,7 +609,7 @@ __metadata:
   resolution: "@stroc/compose@workspace:packages/compose"
   dependencies:
     "@stroc/core": "workspace:*"
-    multiformats: "npm:^11.0.2"
+    multiformats: "npm:^13.4 || ^14"
     typescript: "npm:^5.4.0"
     vitest: "npm:^3"
   languageName: unknown
@@ -613,8 +620,8 @@ __metadata:
   resolution: "@stroc/core@workspace:packages/core"
   dependencies:
     "@ipld/dag-json": "npm:^10.2.0"
-    "@noble/hashes": "npm:^1.8"
-    multiformats: "npm:^11.0.2"
+    "@noble/hashes": "npm:^2"
+    multiformats: "npm:^13.4 || ^14"
     typescript: "npm:^5.4.0"
     vitest: "npm:^3"
   languageName: unknown
@@ -662,7 +669,7 @@ __metadata:
     "@types/express": "npm:^4.17.21"
     "@types/node": "npm:^20.12.12"
     express: "npm:^4.19.2"
-    multiformats: "npm:^11.0.2"
+    multiformats: "npm:^13.4 || ^14"
     typescript: "npm:^5.4.0"
     vitest: "npm:^3"
     yaml: "npm:^2"
@@ -683,6 +690,7 @@ __metadata:
     "@stroc/yaml": "workspace:*"
     esbuild: "npm:^0.28"
     lit: "npm:^3.1.4"
+    multiformats: "npm:^13.4 || ^14"
     pdfmake: "npm:^0.3"
     typescript: "npm:^5.4.0"
     vitest: "npm:^3"
@@ -2439,17 +2447,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"multiformats@npm:^11.0.2":
-  version: 11.0.2
-  resolution: "multiformats@npm:11.0.2"
-  checksum: 10c0/cfc6f1d0332e538af4c86af72f2c23b32152b6d0d298987c1ee1bf7564997628c83ced740b2b1a4a20ca1fb1aa82f4d6e04d86d46befd69e521c914f7d0ef15c
+"multiformats@npm:^13.1.0":
+  version: 13.4.2
+  resolution: "multiformats@npm:13.4.2"
+  checksum: 10c0/b7be09b8bf8198d601c8f8c9a358b9a6aca5a14d61239a84f88d8266322e4e7c3015fe7bdf88b589b9993a4abb752defabb932719d1b457a53277e264c4cee11
   languageName: node
   linkType: hard
 
-"multiformats@npm:^13.1.0":
-  version: 13.4.1
-  resolution: "multiformats@npm:13.4.1"
-  checksum: 10c0/ed3be7a421f579a0c36464b6faac7948e84c9985bc5d62d6bdb5a96d0fbfd7979d7e7d5f6735125f7cc17e3afa2778893e3444c98d6e564027862f3f0755eae8
+"multiformats@npm:^13.4 || ^14":
+  version: 14.0.5
+  resolution: "multiformats@npm:14.0.5"
+  checksum: 10c0/3e3de2da477e51434099636b1d107f1f431dab3441f485665c38e6b33d16db673919c55c2bafc2170295173d84ff78c3ff540e4a62682b20d6cdea8d2ed7fd2b
   languageName: node
   linkType: hard
 
