@@ -1,6 +1,6 @@
 {
   "name": "@stroc/core",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Stroc structured documents: types, validation, canonical DAG-JSON encoding and CIDs",
   "keywords": [
     "stroc",

@@ -7,6 +7,8 @@ List changes under **Unreleased** as they are made; `yarn release:version` dates
 
 ## Unreleased
 
+## 0.1.0 (2026-10-07)
+
 - First public release of the libraries (`core`, `yaml`, `compose`, `render`, `pdf`), the editor
   bundle (`ui`), the document server (`server`) and the `stroc` command (`cli`), for document
   format 1.0.

@@ -1,6 +1,6 @@
 {
   "name": "@stroc/pdf",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Write Stroc documents as PDF in Node, with embedded Noto fonts",
   "keywords": [
     "stroc",
