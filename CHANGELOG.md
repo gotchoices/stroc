@@ -7,6 +7,8 @@ List changes under **Unreleased** as they are made; `yarn release:version` dates
 
 ## Unreleased
 
+## 0.2.0 (2026-10-08)
+
 - `stroc export <folder> -o <dir>`: publish a document set as static files on any web server
   (Apache, nginx, Netlify, Cloudflare Pages, GitHub Pages), with no Node process (issue #1).
   `exportLibrary` in `@stroc/server`.
