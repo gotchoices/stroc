@@ -1,7 +1,26 @@
 {
   "name": "@stroc/server",
   "version": "0.0.1",
+  "description": "Serve a folder of Stroc documents: IPFS trustless-gateway paths, a catalog and readable pages",
+  "keywords": [
+    "stroc",
+    "structured-documents",
+    "server",
+    "ipfs",
+    "gateway"
+  ],
   "license": "MIT",
+  "author": "Got Choices Foundation",
+  "homepage": "https://github.com/gotchoices/stroc/tree/main/packages/server#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gotchoices/stroc.git",
+    "directory": "packages/server"
+  },
+  "bugs": "https://github.com/gotchoices/stroc/issues",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -16,7 +35,7 @@
     "stroc-server": "dist/src/bin.js"
   },
   "files": [
-    "dist/src",
+    "dist/src/**/*",
     "public"
   ],
   "scripts": {
@@ -38,5 +57,8 @@
     "@types/node": "^20.12.12",
     "typescript": "^5.4.0",
     "vitest": "^3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -397,23 +397,22 @@ Prepare the library for others (Taleus first) to install. Nothing is published y
       chosen 2026-10-07. `LICENSE` at the root and in every package; `license` set in every package.
 - [x] **Scope**: the npm organization `stroc` exists (2026-10-07), so the packages publish as
       `@stroc/…`
-- [ ] **Which packages are public**: core, yaml, compose, render, pdf, cli (`stroc` command), server
-      (`stroc-server`); ui (the editor bundle) is currently private: publish it or ship it only inside
-      the server package
-- [ ] **Package metadata**: `description`, `repository`, `homepage`, `keywords`, `author`, `engines`
-      (Node version), `sideEffects: false` for the libraries; a README per package (what it is, a
-      minimal example)
-- [ ] **What a package contains**: `files` lists (built `dist` only, plus `public` and `vendor` where
-      needed); check with `npm pack --dry-run`; ESM-only, with types
-- [ ] **Dependencies between packages**: `workspace:*` references must become real version ranges at
-      publish time (`yarn npm publish` rewrites them; verify)
-- [ ] **Versioning**: package versions are independent of the document format version (`stroc: '1.0'`);
-      decide on 0.x or 1.0 for the first release; a changelog; a release process (for example
-      changesets), tagged in git
-- [ ] **Release checks**: build, `yarn test`, `yarn lint`, `yarn test:e2e` before every publish; npm
-      provenance (publish from CI) and two-factor authentication on the npm account
-- [ ] **Consumers' notes**: what a React Native app must provide (`TextEncoder`/`TextDecoder`, fonts
-      for PDF), and the optional native SHA-256 hook (`setSha256`, done; see Rendering.md)
+- [x] **Which packages are public**: all eight, released together at one version. `@stroc/ui`
+      publishes only the built editor bundle (the server hosts it with `--editor`)
+- [x] **Package metadata**: description, keywords, repository, homepage, author, `engines` (Node
+      20+), `publishConfig.access: public`, `sideEffects: false` for core, yaml, compose and render;
+      a short README per package
+- [x] **What a package contains**: `files` globs (`dist/src/**/*`; a plain `dist/src` packed only the
+      entry file, because Yarn applies the root `.gitignore`); every package carries LICENSE and README
+- [x] **Dependencies between packages**: `workspace:*` becomes the exact version when packed
+      (verified by `yarn release:check`)
+- [x] **Versioning and release process** (2026-10-07): [Releasing.md](Releasing.md), CHANGELOG.md,
+      and `yarn release:check`, `release:version`, `release:publish` (scripts/release.mjs). The check
+      installs the packed tarballs in a scratch project and uses them. First version still to choose
+      (0.1.0 or 1.0.0)
+- [ ] **npm provenance**: publish from CI (GitHub Actions) with `--provenance`
+- [x] **Consumers' notes**: what a React Native app must provide (`TextEncoder`/`TextDecoder`, fonts
+      for PDF) and the native SHA-256 hook are in Rendering.md and Sereus.md
 
 ### Later
 

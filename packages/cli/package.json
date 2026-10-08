@@ -1,13 +1,30 @@
 {
   "name": "@stroc/cli",
   "version": "0.0.1",
+  "description": "The stroc command: lint, CIDs, rendering, serving and folder maintenance for Stroc documents",
+  "keywords": [
+    "stroc",
+    "structured-documents",
+    "cli"
+  ],
   "license": "MIT",
+  "author": "Got Choices Foundation",
+  "homepage": "https://github.com/gotchoices/stroc/tree/main/packages/cli#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gotchoices/stroc.git",
+    "directory": "packages/cli"
+  },
+  "bugs": "https://github.com/gotchoices/stroc/issues",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "bin": {
     "stroc": "dist/src/index.js"
   },
   "files": [
-    "dist/src"
+    "dist/src/**/*"
   ],
   "scripts": {
     "build": "tsc -b && chmod +x dist/src/index.js",
@@ -25,5 +42,8 @@
     "@types/node": "^20.12.12",
     "typescript": "^5.4.0",
     "vitest": "^3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

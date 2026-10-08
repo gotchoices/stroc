@@ -1,7 +1,25 @@
 {
   "name": "@stroc/pdf",
   "version": "0.0.1",
+  "description": "Write Stroc documents as PDF in Node, with embedded Noto fonts",
+  "keywords": [
+    "stroc",
+    "structured-documents",
+    "pdf",
+    "pdfmake"
+  ],
   "license": "MIT",
+  "author": "Got Choices Foundation",
+  "homepage": "https://github.com/gotchoices/stroc/tree/main/packages/pdf#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gotchoices/stroc.git",
+    "directory": "packages/pdf"
+  },
+  "bugs": "https://github.com/gotchoices/stroc/issues",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -12,7 +30,7 @@
     }
   },
   "files": [
-    "dist/src"
+    "dist/src/**/*"
   ],
   "scripts": {
     "build": "tsc -b",
@@ -31,5 +49,8 @@
     "@types/node": "^20.12.12",
     "typescript": "^5.4.0",
     "vitest": "^3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -11,7 +11,10 @@
     "lint": "eslint .",
     "test": "yarn workspaces foreach -A run test",
     "start": "yarn build && yarn stroc serve contracts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "release:check": "node scripts/release.mjs check",
+    "release:version": "node scripts/release.mjs version",
+    "release:publish": "node scripts/release.mjs publish"
   },
   "devDependencies": {
     "@eslint/js": "^9",

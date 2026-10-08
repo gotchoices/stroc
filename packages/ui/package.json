@@ -1,33 +1,55 @@
 {
   "name": "@stroc/ui",
   "version": "0.0.1",
+  "description": "The Stroc document editor: a prebuilt web component bundle",
+  "keywords": [
+    "stroc",
+    "structured-documents",
+    "editor",
+    "web-component",
+    "lit"
+  ],
   "license": "MIT",
-  "private": true,
+  "author": "Got Choices Foundation",
+  "homepage": "https://github.com/gotchoices/stroc/tree/main/packages/ui#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gotchoices/stroc.git",
+    "directory": "packages/ui"
+  },
+  "bugs": "https://github.com/gotchoices/stroc/issues",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
-  "module": "dist/src/index.js",
   "scripts": {
     "build": "tsc -b && esbuild src/index.ts --bundle --format=esm --target=es2022 --sourcemap --outfile=dist/stroc-editor.js --log-level=warning && node scripts/copy-vendor.mjs",
     "test": "vitest run"
   },
-  "dependencies": {
+  "devDependencies": {
     "@expo-google-fonts/noto-sans-mono": "^0.4",
     "@expo-google-fonts/noto-serif": "^0.4",
     "@stroc/compose": "workspace:*",
     "@stroc/core": "workspace:*",
     "@stroc/render": "workspace:*",
     "@stroc/yaml": "workspace:*",
+    "esbuild": "^0.28",
     "lit": "^3.1.4",
     "pdfmake": "^0.3",
+    "typescript": "^5.4.0",
+    "vitest": "^3",
     "yaml": "^2"
   },
-  "devDependencies": {
-    "esbuild": "^0.28",
-    "typescript": "^5.4.0",
-    "vitest": "^3"
-  },
   "exports": {
+    "./stroc-editor.js": "./dist/stroc-editor.js",
     "./package.json": "./package.json"
-  }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/stroc-editor.js",
+    "dist/stroc-editor.js.map",
+    "dist/vendor/**/*"
+  ]
 }

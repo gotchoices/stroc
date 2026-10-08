@@ -1,8 +1,27 @@
 {
   "name": "@stroc/yaml",
   "version": "0.0.1",
+  "description": "Read, lint, fix and write Stroc documents in YAML",
+  "keywords": [
+    "stroc",
+    "structured-documents",
+    "yaml",
+    "lint"
+  ],
   "license": "MIT",
+  "author": "Got Choices Foundation",
+  "homepage": "https://github.com/gotchoices/stroc/tree/main/packages/yaml#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gotchoices/stroc.git",
+    "directory": "packages/yaml"
+  },
+  "bugs": "https://github.com/gotchoices/stroc/issues",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
+  "sideEffects": false,
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "exports": {
@@ -12,7 +31,7 @@
     }
   },
   "files": [
-    "dist/src"
+    "dist/src/**/*"
   ],
   "scripts": {
     "build": "tsc -b",
@@ -25,5 +44,8 @@
   "devDependencies": {
     "typescript": "^5.4.0",
     "vitest": "^3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

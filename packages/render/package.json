@@ -1,8 +1,28 @@
 {
   "name": "@stroc/render",
   "version": "0.0.1",
+  "description": "Lay out composed Stroc documents for HTML and PDF (pdfmake document definitions)",
+  "keywords": [
+    "stroc",
+    "structured-documents",
+    "render",
+    "html",
+    "pdf"
+  ],
   "license": "MIT",
+  "author": "Got Choices Foundation",
+  "homepage": "https://github.com/gotchoices/stroc/tree/main/packages/render#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gotchoices/stroc.git",
+    "directory": "packages/render"
+  },
+  "bugs": "https://github.com/gotchoices/stroc/issues",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
+  "sideEffects": false,
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "exports": {
@@ -12,7 +32,7 @@
     }
   },
   "files": [
-    "dist/src"
+    "dist/src/**/*"
   ],
   "scripts": {
     "build": "tsc -b",
@@ -27,5 +47,8 @@
     "@stroc/yaml": "workspace:*",
     "typescript": "^5.4.0",
     "vitest": "^3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
