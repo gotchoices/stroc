@@ -56,15 +56,15 @@ describe('layout', () => {
   it('renders references as section numbers and keeps emphasis', async () => {
     const l = layout(await contract(), { data: DATA }).layout!
     const preamble = l.blocks[2] as Extract<LayoutBlock, { kind: 'preamble' }>
-    expect(preamble.runs.at(-2)).toEqual({ text: 'Section 1.2', ref: true })
+    expect(preamble.runs.at(-2)).toEqual({ text: 'Section\u00A01.2', ref: true })
     const cure = l.blocks.find(b => b.kind === 'section' && b.number === '1.3.') as Extract<LayoutBlock, { kind: 'section' }>
-    expect(cure.runs).toContainEqual({ text: 'Section 1.2', ref: true })
+    expect(cure.runs).toContainEqual({ text: 'Section\u00A01.2', ref: true })
     expect(cure.runs).toContainEqual({ text: '10 days', bold: true })
   })
 
   it('uses supplied labels', async () => {
     const l = layout(await contract(), { data: DATA, options: { labels: { section: 'Article' } } }).layout!
-    expect(JSON.stringify(l.blocks)).toContain('Article 1.2')
+    expect(JSON.stringify(l.blocks)).toContain('Article\u00A01.2')
   })
 
   it('places app blocks after the document, and the CID QR last', async () => {
@@ -85,7 +85,7 @@ describe('toHtml', () => {
     const html = toHtml(l)
     expect(html.startsWith('<!doctype html>')).toBe(true)
     expect(html).toContain('<h1>Tally Agreement</h1>')
-    expect(html).toContain('<span class="ref">Section 1.2</span>')
+    expect(html).toContain('<span class="ref">Section\u00A01.2</span>')
     expect(html).toContain('<strong>10 days</strong>')
     expect(html).toContain(`<footer class="stroc-footer">Document ${l.cid}</footer>`)
     expect(html).toContain('<td class="supplied">Acme Widgets LLC</td>')

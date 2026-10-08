@@ -16,7 +16,7 @@ export type Block =
   | { kind: 'qr', value: string, caption?: string }
 
 export interface Labels {
-  section: string          // "Section" in "Section 3.1"
+  section: string          // "Section" in "Section 3.1" (joined to the number by a no-break space)
   particulars: string      // heading of the parameter table
   notSpecified: string     // shown for a missing value in drafts
   documentId: string       // label before the root CID
@@ -138,7 +138,7 @@ function runs(nodes: ComposedInline[], labels: Labels, value: ParamValue, style:
     }
     if (n.type === 'ref') {
       return n.target
-        ? [{ text: `${labels.section} ${formatNumber(n.target)}`, ...style, ref: true }]
+        ? [{ text: `${labels.section}\u00A0${formatNumber(n.target)}`, ...style, ref: true }]
         : [{ text: `[${n.path.join('/')}]`, ...style, unresolved: true }]
     }
     const next = { ...style, ...(n.tag === 'b' ? { bold: true } : n.tag === 'i' ? { italic: true } : { underline: true }) }

@@ -389,6 +389,32 @@ Editor
 - [ ] Example tally-style contract written in abstract roles with parameter declarations,
       rendered with sample data
 
+### Publishing on npmjs.org
+
+Prepare the library for others (Taleus first) to install. Nothing is published yet.
+- [ ] **License**: none in the repository yet. Choose one (MyCHIPs uses its own terms; wylib and the
+      Sereus projects should be checked for consistency), add `LICENSE`, and set `license` in every
+      package.
+- [ ] **Scope**: the names are free on npm (`stroc`, `@stroc/core` return 404, checked 2026-10-07), but
+      `@stroc/…` needs an npm organization (or user) named `stroc`; create it, or choose another scope
+- [ ] **Which packages are public**: core, yaml, compose, render, pdf, cli (`stroc` command), server
+      (`stroc-server`); ui (the editor bundle) is currently private: publish it or ship it only inside
+      the server package
+- [ ] **Package metadata**: `description`, `repository`, `homepage`, `keywords`, `author`, `engines`
+      (Node version), `sideEffects: false` for the libraries; a README per package (what it is, a
+      minimal example)
+- [ ] **What a package contains**: `files` lists (built `dist` only, plus `public` and `vendor` where
+      needed); check with `npm pack --dry-run`; ESM-only, with types
+- [ ] **Dependencies between packages**: `workspace:*` references must become real version ranges at
+      publish time (`yarn npm publish` rewrites them; verify)
+- [ ] **Versioning**: package versions are independent of the document format version (`stroc: '1.0'`);
+      decide on 0.x or 1.0 for the first release; a changelog; a release process (for example
+      changesets), tagged in git
+- [ ] **Release checks**: build, `yarn test`, `yarn lint`, `yarn test:e2e` before every publish; npm
+      provenance (publish from CI) and two-factor authentication on the npm account
+- [ ] **Consumers' notes**: what a React Native app must provide (`TextEncoder`/`TextDecoder`, fonts
+      for PDF), and the optional native SHA-256 hook (`setSha256`, done; see Rendering.md)
+
 ### Later
 
 - [ ] Markdown import/export (lossless, round-trip to the same CID; see Sereus.md)
@@ -399,6 +425,8 @@ Editor
 - [ ] Publisher signatures
 - [x] AI drafting guide: [Authoring.md](Authoring.md), tested by having an agent convert a sample agreement
 - [ ] Outline panel and search in the editor (undo/redo done)
+- [ ] Fill parameters by key: a helper that takes `{limit: 500}` and finds the parameter's path
+      (`terms/limit`) itself. A convenience over the data object; no format change
 
 ## Known defects
 

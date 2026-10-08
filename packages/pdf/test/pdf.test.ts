@@ -24,7 +24,7 @@ describe('toPdfDefinition', () => {
     expect(json).toContain('"style":"title"')
     expect(json).toContain('"style":"particularsHeading"')
     for (const n of ['1.', '1.1.', '1.2.', '1.3.', '1.4.', '2.']) expect(json).toContain(`"text":"${n}"`)
-    expect(json).toContain('"text":"Section 1.2"')
+    expect(json).toContain('"text":"Section\u00A01.2"')
     expect(json).toContain('"text":"10 days","bold":true')
   })
   it('puts the document CID and page numbers in every footer', async () => {

@@ -117,7 +117,9 @@ As in [Specification: Composition](Specification.md#composition):
 
 - `<b>`, `<i>`, `<u>` render as bold, italic and underline.
 - `<ref:path>` renders as the target's number in the composed document, e.g. "Section 3.1", or
-  "Section 3" for a whole included document. The word is a localizable label.
+  "Section 3" for a whole included document. The word is a localizable label, joined to the
+  number by a no-break space so a line never ends between them (a rendering choice; documents
+  contain only the `<ref:path>` token).
 - `<param:key>` renders the parameter's value in place (supplied, else the default), marked as
   supplied data; in a template with no value it renders as `[Label]`.
 - Escapes (`\<`, `\\`) render as the literal characters.
@@ -159,7 +161,12 @@ label set passed in options. English is the default. The document's own text is 
   A React Native app must provide `TextEncoder` and `TextDecoder` (polyfills, if its React Native
   version lacks them) and load the fonts into pdfmake's virtual file system
   (`pdfMake.virtualfs.writeFileSync(name, base64, 'base64')`); React Native already provides the
-  `window` and `navigator` globals pdfmake reads. Not yet run inside an actual React Native app,
+  `window` and `navigator` globals pdfmake reads.
+- Hashing is pure JavaScript by default. An app with a faster SHA-256 (for example a native module)
+  can install it with `await setSha256(fn)` from `@stroc/core`; `fn` may be synchronous or return a
+  promise. It is checked against known digests (including a 1 MB input) before it is used, and
+  rejected if it is wrong, since a wrong hash would silently give documents wrong CIDs.
+  `resetSha256()` restores the built-in one. Not yet run inside an actual React Native app,
   or in NativeScript.
 
 ## Open issues

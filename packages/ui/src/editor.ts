@@ -283,14 +283,14 @@ export class StrocEditor extends LitElement {
     return map
   }
 
-  // The live label of a reference, e.g. "Section 3.1", or undefined if it does not resolve.
+  // The live label of a reference, e.g. "Section 3.1" (with a no-break space), or undefined if it does not resolve.
   private refLabel = (path: string[]): string | undefined => {
     const first = this.numbers().get(path[0])
     if (!first) return undefined
-    if (path.length === 1) return `Section ${first.number}`
+    if (path.length === 1) return `Section\u00A0${first.number}`
     const info = first.section.source ? this.includes.get(first.section.source) : undefined
     const within = info?.composed ? numberWithin(info.composed, path.slice(1)) : undefined
-    return within ? `Section ${joinNumber(first.number, within)}` : undefined
+    return within ? `Section\u00A0${joinNumber(first.number, within)}` : undefined
   }
 
   // The label a placeholder shows, or undefined if the parameter is not declared.

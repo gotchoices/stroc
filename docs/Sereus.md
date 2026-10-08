@@ -110,7 +110,7 @@ and PDF output. Each takes only what it needs.
   bundles, rendering, the folder tools, the editor. Core never pulls them in.
 - **Everything except the editor and the folder tools runs in browsers, Node and React Native.**
   No Node-only APIs in any package a phone app would import. Hashing is pure JavaScript, so no
-  WebCrypto is needed. A React Native app supplies `TextEncoder`/`TextDecoder` if its version lacks
+  WebCrypto is needed; an app may install a native SHA-256 with `setSha256` (self-tested first). A React Native app supplies `TextEncoder`/`TextDecoder` if its version lacks
   them. (Checked on the Hermes VM, 2026-10-07; see Rendering.md.)
 - **The development server is not part of the library.** No app needs it.
 
