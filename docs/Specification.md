@@ -183,6 +183,13 @@ text: >-
 
 Each section stores a **single paragraph string** in `text`. Additional paragraphs are represented as child sections (which may omit `title` if they are simple paragraphs within a parent section). There is no sentence-level storage.
 
+This is deliberate. In a document that people sign and later cite, every paragraph should be
+addressable: each one gets a number when rendered ("Section 4.2"), and any one can carry an `id`
+for references. A list of paragraphs inside `text` would give paragraphs with neither, so a dispute
+would be back to "the second paragraph of Section 4". It would also give two ways to write the same
+content (a list, or untitled child sections), and so two CIDs for it. A section may have as many
+paragraphs as it needs; each is an untitled child section.
+
 **Sections store nesting, not depth.** A section has no heading level or number of its own; both
 are computed when rendering, from where the section sits in the composed document. This is what
 lets a document written once be included at any depth.
