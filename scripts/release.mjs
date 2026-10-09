@@ -115,6 +115,20 @@ function version(how) {
   console.log(`\nversion ${next}: committed and tagged v${next}. Next: yarn release:publish`)
 }
 
+// Whether this version is already on npm, asked through the npm login: unlike the anonymous view
+// (which --tolerate-republish uses), it shows a version as soon as it is published, so a rerun
+// after a failure skips what already went out instead of trying to publish it again.
+function isPublished(name, version) {
+  let text
+  try {
+    text = out(`yarn npm info ${name} --fields versions --json`, { stdio: 'pipe' })
+  } catch (err) {
+    if (/404|Package not found/.test(String(err.stdout))) return false     // a package's first release
+    fail(`could not ask npm whether ${name}@${version} is published:\n${err.stdout ?? err.message}`)
+  }
+  return (JSON.parse(text).versions ?? []).includes(version)
+}
+
 function publish() {
   requireClean()
   const v = currentVersion()
@@ -124,6 +138,7 @@ function publish() {
   step('build'); run('yarn build')
   for (const dir of packages()) {
     const { name } = readManifest(dir)
+    if (isPublished(name, v)) { console.log(`${name}@${v} is already on npm; skipping`); continue }
     step(`publish ${name}@${v}`)
     run(`yarn workspace ${name} npm publish --tolerate-republish`)
   }

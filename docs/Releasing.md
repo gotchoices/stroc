@@ -5,7 +5,16 @@ from the document format version (`stroc: "1.0"`).
 
 ## Once
 
-- `yarn npm login` (account with publish rights in the `stroc` npm organization; two-factor on)
+Publishing uses an npm token, so no one-time codes are asked for:
+
+1. On npmjs.com, create a granular access token: read and write on the `@stroc` packages, with
+   "Bypass two-factor authentication" ticked. Write tokens expire (at most 90 days); renew it then.
+2. Keep it out of the repository, in your account-wide Yarn config:
+   `yarn config set npmAuthToken <token> --home` (without `--home` it would go into this
+   repository's `.yarnrc.yml`).
+3. If `~/.yarnrc.yml` also has an `npmRegistries:` entry (left by `yarn npm login`), delete it:
+   it overrides the token above.
+4. `yarn npm whoami` prints your npm user name.
 
 ## Each release
 
@@ -16,16 +25,17 @@ from the document format version (`stroc: "1.0"`).
    the tarballs in a scratch project, and imports, lints and renders with them.
 4. `yarn release:version patch` (or `minor`, `major`, or an exact `x.y.z`): sets the version in
    every package, dates the changelog section, commits `Release vX` and tags `vX`.
-5. `yarn release:publish`: builds, publishes every package to npm in dependency order (prompts for
-   the one-time password), then pushes the commit and the tag.
+5. `yarn release:publish`: builds, publishes every package to npm in dependency order, then pushes
+   the commit and the tag.
 
-If publishing stops partway, fix the cause and run `yarn release:publish` again: packages already
-published at this version are skipped.
+If publishing stops partway, fix the cause and run `yarn release:publish` again. It asks npm
+(through your login, which sees new versions at once) which packages already have this version,
+and skips them.
 
-npm asks for approval in the browser for each package. On the first approval, choose to skip
-two-factor checks for 5 minutes and the rest go through. A package published for the first time
-also gets a placeholder version `0.0.0-stage` (from npm's staged publishing); it is harmless, and
-`latest` points at the real version. A new version can take a few minutes to appear to everyone.
+Without a token, npm asks for a one-time code for every package (a browser page, then the code at
+the prompt; each code works once). A package published for the first time also gets a placeholder
+version `0.0.0-stage` (from npm's staged publishing); it is harmless, and `latest` points at the
+real version. A new version can take a few minutes to appear to everyone.
 
 ## Which number
 
