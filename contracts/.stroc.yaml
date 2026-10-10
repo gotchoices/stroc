@@ -3,3 +3,8 @@
 # makes the catalog list them with role "author"; the claim only confirms anything when the
 # catalog is actually served from https://mychips.org.
 domain: mychips.org
+
+# Named lists for apps. "tally-contracts" is what an app offers as a tally contract; the clauses
+# the contract includes are in no collection. Listed by file, so each edit's new version is used.
+collections:
+  tally-contracts: [Tally_Contract.yaml]

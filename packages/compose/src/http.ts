@@ -50,6 +50,8 @@ export interface CatalogEntry {
   status: CatalogStatus
   published?: string
   replaces?: string[]
+  collections?: string[]   // the publisher's named lists this document is in (for example the
+                           // contracts an app should offer); components are usually in none
 }
 
 export interface Catalog {
@@ -60,6 +62,12 @@ export interface Catalog {
 
 const ROLES = new Set<string>(['author', 'endorse', 'mirror'])
 const STATUSES = new Set<string>(['current', 'superseded', 'withdrawn'])
+
+// A collection name: lowercase letters, digits and hyphens, chosen by the publisher and agreed with
+// the apps that read it (for example `tally-contracts`).
+export function isCollectionName(name: unknown): name is string {
+  return typeof name === 'string' && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)
+}
 
 // Check the shape of a fetched catalog. Returns undefined (with a reason) if it is not one.
 export function parseCatalog(value: unknown): { catalog?: Catalog, error?: string } {
@@ -72,8 +80,33 @@ export function parseCatalog(value: unknown): { catalog?: Catalog, error?: strin
     if (typeof e?.cid !== 'string' || !ROLES.has(e.role as string) || !STATUSES.has(e.status as string)) {
       return { error: 'an entry lacks a valid cid, role or status' }
     }
+    if (e.collections !== undefined && !(Array.isArray(e.collections) && e.collections.every(isCollectionName))) {
+      return { error: `entry ${e.cid}: "collections" must be a list of names (lowercase letters, digits, hyphens)` }
+    }
   }
   return { catalog: value as Catalog }
+}
+
+// Fetch and check a publisher's catalog from a site (a Stroc server, a static host or a mirror),
+// for example to list what a domain offers. The site's catalog speaks only for its own domain.
+export async function fetchCatalog(base: string, options: { fetch?: Fetch } = {}): Promise<{ catalog?: Catalog, error?: string }> {
+  const fetchFn = options.fetch ?? globalThis.fetch.bind(globalThis)
+  try {
+    const res = await fetchFn(`${base.replace(/\/+$/, '')}${CATALOG_PATH}`, { headers: { Accept: 'application/json' } })
+    if (!res.ok) return { error: `HTTP ${res.status}` }
+    return parseCatalog(await res.json())
+  } catch (err) {
+    return { error: (err as Error).message }
+  }
+}
+
+// The entries of a named collection, by default only the current ones the domain stands behind
+// (role author or endorse, not mirror): what an app should offer. Pass `all: true` for every entry
+// in the collection (superseded and withdrawn versions too, to recognise a document something was
+// agreed under). To know who issued an endorsed document, check its author (AuthorChecker).
+export function collectionEntries(catalog: Catalog, name: string, options: { all?: boolean } = {}): CatalogEntry[] {
+  return catalog.entries.filter(e => e.collections?.includes(name) &&
+    (options.all || (e.role !== 'mirror' && e.status === 'current')))
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -1,11 +1,11 @@
 # Stroc Specification
 
 **Status**: Frozen  
-**Version**: 1.0 (2026-10-07)
+**Version**: 1.1 (2026-10-10); document format 1.0, catalog 1.1
 
-Documents in this format carry `stroc: "1.0"`. The format is frozen: a change to anything that
+Documents in this format carry `stroc: "1.0"`. The document format is frozen: a change to anything that
 affects a document's bytes, and so its CID, requires a new format version. Documents made with the
-pre-release drafts (`stroc: "1.0"`) are not accepted; they must be changed to `"1.0"`, which gives
+pre-release drafts (`stroc: "0.1"`) are not accepted; they must be changed to `"1.0"`, which gives
 them new CIDs.
 
 ## Overview
@@ -310,7 +310,7 @@ that the server has it; the catalog states what the server claims about it.
 
 ```json
 {
-  "stroc-catalog": "1.0",
+  "stroc-catalog": "1.1",
   "domain": "sereus.org",
   "entries": [
     {
@@ -319,7 +319,8 @@ that the server has it; the catalog states what the server claims about it.
       "role": "author",
       "status": "current",
       "published": "2026-10-06",
-      "replaces": ["baguqeera..."]
+      "replaces": ["baguqeera..."],
+      "collections": ["tally-contracts"]
     }
   ]
 }
@@ -335,6 +336,7 @@ that the server has it; the catalog states what the server claims about it.
 | `entries[].status` | `current`, `superseded` (a newer version exists) or `withdrawn` (no longer recommended) |
 | `entries[].published` | ISO 8601 date first listed |
 | `entries[].replaces` | CIDs (strings) of earlier versions, copied from the document's `replaces` |
+| `entries[].collections` | Optional (catalog 1.1). Names of the publisher's lists this document is in, such as `tally-contracts`: lowercase letters, digits and hyphens |
 
 - The catalog is ordinary JSON, not a Stroc document. It is not content-addressed, and the domain
   may update it at any time (for example to mark an entry superseded or withdrawn).
@@ -350,6 +352,15 @@ that the server has it; the catalog states what the server claims about it.
   example to show "recommended by sereus.org" for a clause another domain wrote.
 - Documents never contain URLs. Where to fetch a document is the application's knowledge; who
   issues it is the document's `author`.
+- **Collections** say what the publisher intends a document for. A catalog lists every document,
+  including the clauses and components that larger documents include; a collection names the ones
+  meant for a purpose, for example the contracts an app should offer. The publisher chooses the
+  names and documents them for the apps that read them. To offer contracts, an app lists the
+  entries in its collection whose role is `author` or `endorse` and whose status is `current`. A
+  collection also keeps a document's earlier versions (marked `superseded`), so an app can recognise
+  the version something was agreed under. A document can be in several collections or none.
+  Collections are the publisher's statement, not part of the document: they can change without
+  changing any CID. Readers of catalog 1.0 ignore the field.
 
 #### Reference Validation
 
@@ -774,3 +785,4 @@ Tracked in [STATUS.md](STATUS.md#blocking-questions).
 | 0.16 | 2026-10-07 | Emphasis order b, i, u applies at every depth, so each formatting has exactly one spelling |
 | 0.17 | 2026-10-07 | Inline placeholders `<param:key>` for a document's own parameters; collections for catalogs deferred |
 | 1.0 | 2026-10-07 | Frozen. Documents carry `stroc: "1.0"` and catalogs `stroc-catalog: "1.0"`; pre-release `"0.1"` documents are rejected |
+| 1.1 | 2026-10-10 | Catalog 1.1: optional `collections` on catalog entries, so a publisher can say which documents are meant for a purpose (such as the contracts to offer). The document format is unchanged (`stroc: "1.0"`) |

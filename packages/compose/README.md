@@ -11,6 +11,15 @@ const resolver = firstOf(localStore, new HttpResolver('https://mychips.org'))
 const composed = await compose(cid, resolver)
 ```
 
+To list what a publisher offers, read its catalog and the collection the app agreed on:
+
+```js
+import { fetchCatalog, collectionEntries } from '@stroc/compose'
+
+const { catalog } = await fetchCatalog('https://mychips.org')
+const contracts = collectionEntries(catalog, 'tally-contracts')   // current, not the clauses
+```
+
 Part of [Stroc](https://github.com/gotchoices/stroc), a format for structured legal documents
 identified by content (IPLD CIDs). The format is specified in
 [docs/Specification.md](https://github.com/gotchoices/stroc/blob/main/docs/Specification.md).

@@ -27,6 +27,7 @@ export function indexPage(lib: Library, catalog: Catalog, options: { editor?: bo
   <td><a href="${exported ? `ipfs/${esc(e.cid)}.html` : `/ipfs/${esc(e.cid)}`}">${esc(e.title ?? '')}</a></td>
   <td>${esc(doc?.document.author ?? '')}</td>
   <td>${esc(ROLE_TEXT[e.role])}</td>
+  <td>${esc((e.collections ?? []).join(', '))}</td>
   <td class="${e.status}">${esc(e.status)}</td>
   <td><code>${esc(e.cid)}</code></td>
 </tr>`
@@ -52,7 +53,7 @@ p.meta { color: #555; font-size: 0.9em; }
 <p class="meta">${catalog.entries.length} documents. Machine-readable catalog: <a href="${catalogHref}">${CATALOG_PATH}</a>.
 Documents are at <code>/ipfs/&lt;cid&gt;</code>; verify every document against its CID.${editor ? ' Editor: <a href="/editor/">/editor/</a>.' : ''}</p>
 <table>
-<thead><tr><th>Title</th><th>Author</th><th>This server's claim</th><th>Status</th><th>CID</th></tr></thead>
+<thead><tr><th>Title</th><th>Author</th><th>This server's claim</th><th>Collections</th><th>Status</th><th>CID</th></tr></thead>
 <tbody>
 ${rows}
 </tbody>

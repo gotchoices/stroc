@@ -11,7 +11,7 @@ import { CATALOG_PATH } from '@stroc/compose'
 import { documentPage, libraryStore } from './views.js'
 import { loadLibrary, buildCatalog, type Library, type FolderConfig } from './library.js'
 
-const emptyLibrary = (): Library => ({ folder: '', config: {}, documents: new Map(), skipped: [], loaded: new Date() })
+const emptyLibrary = (): Library => ({ folder: '', config: {}, documents: new Map(), skipped: [], collections: new Map(), loaded: new Date() })
 import { indexPage } from './index-page.js'
 
 const require = createRequire(import.meta.url)

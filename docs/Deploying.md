@@ -36,7 +36,17 @@ taleus-contracts/
 domain: sereus.org         # the domain this set is served for
 endorse: []                # CIDs of documents by other authors that this domain recommends
 withdrawn: []              # CIDs no longer recommended
+collections:               # what each document is for (see below)
+  tally-contracts: [Tally_Contract.yaml]
 ```
+
+**Collections** tell apps which documents are meant for what. The catalog lists every document,
+clauses included; a collection names the ones an app should offer, such as the contracts Taleus
+lists for a new tally. List files by name, so the collection always holds a file's current version;
+earlier versions stay in it, marked superseded, so a tally signed under one is still recognised. A
+CID (for example an endorsed document by another author) works too. Agree the collection names with
+the apps that read them. An app reads them with `fetchCatalog` and `collectionEntries` from
+`@stroc/compose`.
 
 Write the documents following [Authoring.md](Authoring.md), with `author: sereus.org` on every
 document the domain issues. Starting from the MyCHIPs set: copy `contracts/*.yaml`, change `author`,
@@ -200,8 +210,7 @@ domain hosts documents for several apps (Taleus, chat, bonum...):
 
 - **One shared set** (recommended when the domain issues all of them): one folder, one catalog.
   Mixing is harmless, since CIDs are global and each app uses only the documents it is given.
-  An optional `collections` field on catalog entries (`taleus`, `chat`), so an app could list only
-  its own, was considered and deferred (2026-10-07) until a need appears.
+  Give each app its own collection (`tally-contracts`, `chat-terms`) so it lists only its own.
 - **A subdomain per app** (`taleus.sereus.org`): its own folder, server and catalog, with
   `author: taleus.sereus.org`. Use this when an app is, or may become, a separate publisher.
 - Not supported: one set per path (`sereus.org/taleus/...`). It would put a URL path into the

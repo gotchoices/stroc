@@ -140,7 +140,11 @@ All settled 2026-10-06; details under Decisions above, and in the spec and
 
 - [x] **Inline placeholders** (decided 2026-10-07, spec 0.17): `<param:key>` for the document's own
   parameters, prompted by the AI authoring test, where blanks could not keep their wording.
-- [x] **Collections for multi-app domains**: deferred (2026-10-07) until a need appears.
+- [x] **Collections** (2026-10-10): optional `collections` on catalog entries (catalog 1.1), set in
+      `.stroc.yaml` by file or CID. Says which documents are meant for what, such as the contracts
+      an app offers versus the clauses they include, and separates apps sharing a domain. Earlier
+      versions stay in a collection (superseded). `fetchCatalog` and `collectionEntries` in
+      `@stroc/compose`. Deferred on 2026-10-07; Taleus needed it to list contracts.
 - [x] **`stroc link`**: approved (2026-10-07).
 
 - [x] **Trim [Sereus.md](Sereus.md).** Done 2026-10-06: now describes how Stroc serves Sereus apps
