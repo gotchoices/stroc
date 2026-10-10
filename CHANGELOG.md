@@ -7,6 +7,8 @@ List changes under **Unreleased** as they are made; `yarn release:version` dates
 
 ## Unreleased
 
+## 0.3.0 (2026-10-10)
+
 - Collections: a publisher names which documents are meant for what in `.stroc.yaml`
   (`collections: {tally-contracts: [Tally_Contract.yaml]}`), and the catalog lists them on each
   entry (catalog format 1.1), so an app can offer the contracts and not the clauses they include.

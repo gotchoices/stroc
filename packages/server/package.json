@@ -1,6 +1,6 @@
 {
   "name": "@stroc/server",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Serve a folder of Stroc documents: IPFS trustless-gateway paths, a catalog and readable pages",
   "keywords": [
     "stroc",
